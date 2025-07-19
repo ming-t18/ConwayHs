@@ -58,3 +58,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - ConwayHs
+    - QuickCheck >= 2.15 && < 2.16

@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Dyadic
+      FundamentalSeq
       Lib
       Typeclasses
   other-modules:
@@ -67,6 +68,7 @@ test-suite ConwayHs-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       ConwayHs
+    , QuickCheck ==2.15.*
     , base >=4.7 && <5
     , containers
   default-language: Haskell2010

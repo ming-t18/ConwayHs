@@ -1,7 +1,9 @@
 module Main (main) where
 
-import Lib (Conway, omega, mono1, veb1, epsilon, epsilon0)
+import Lib (Conway, omega, mono1, veb1, epsilon, epsilon0, Ordinal)
+import FundamentalSeq(fsOrd)
 import Dyadic(Dyadic)
+import Numeric.Natural(Natural)
 
 test1, test2 :: Conway Dyadic
 test1 = mono1 (mono1 (veb1 omega 1 + 1) + 1)

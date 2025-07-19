@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Typeclasses (Zero(..), One(..), OrdZero(..), AddSub(..), Mult(..), OrdRing) where
 import Data.Ratio (Ratio, (%))
+import Numeric.Natural
 
 class Zero a where
     zero :: a
@@ -9,6 +10,12 @@ class Zero a where
 class One a where
     one :: a
 
+-- | Typeclass for a total order with a zero element and negation around the zero element.
+-- |
+-- | Properties:
+-- | 1. @neg zero == zero@
+-- | 2. @neg (neg x) == x@
+-- | 3. @x <= y ==> neg y <= neg x@
 class (Zero a, Ord a) => OrdZero a where
     neg :: a -> a
     isZero, isPositive, isNegative :: a -> Bool
@@ -46,6 +53,25 @@ instance Mult Integer where
     mult = (*)
 
 instance OrdRing Integer where
+
+instance Zero Natural where
+    zero = 0
+
+instance One Natural where
+    one = 1
+
+instance OrdZero Natural where
+  neg = negate
+
+instance AddSub Natural where
+    add = (+)
+    sub = (-)
+
+instance Mult Natural where
+    mult = (*)
+
+instance OrdRing Natural where
+
 
 instance (Integral a, Zero a, One a) => Zero (Ratio a) where
     zero = zero % one
