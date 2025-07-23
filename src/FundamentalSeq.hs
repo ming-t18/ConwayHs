@@ -15,10 +15,13 @@ import qualified Data.List.NonEmpty as NE hiding (takeWhile)
 import qualified Data.Map.Strict as M
 import Lib
 import Numeric.Natural (Natural)
-import Typeclasses (isZero)
+import qualified Data.List
 
 type VebMonoOrd = VebMono Natural
 
+-- | A fundamental sequence is an infinite list, represented by
+-- a `Data.List.NonEmpty Ordinal`, listing
+-- @[f 0, f 1, f 2, f 3, ...]@
 type FSeq = NE.NonEmpty Ordinal
 
 m1 :: Ordinal -> Ordinal
@@ -53,9 +56,12 @@ fsOrdMono (VebMono b0 p) =
     Right f -> NE.map (veb1 b0) f
 
 -- | Function to determine the fundamental sequence of an ordinal number.
--- - If the ordinal number is zero, return @Left 0@.
--- - If the ordinal number is a successor, return @Left@ of the predecessor.
--- - If the ordinal number is a limit, return @Right@ of the fundamental sequence as a function from natural number.
+--
+-- * If the ordinal number is zero, return @Left 0@.
+--
+-- * If the ordinal number is a successor, return @Left@ of the predecessor.
+--
+-- * If the ordinal number is a limit, return @Right@ of the fundamental sequence as a function from natural number.
 fsOrd :: Ordinal -> Either Ordinal FSeq
 fsOrd o = case M.toAscList om of
   [] -> Left 0
@@ -78,6 +84,13 @@ fsOrd o = case M.toAscList om of
         let f = fromRight undefined $ fsOrd' ((b, c), 1)
          in Right $ NE.map (+ veb b c (k - 1)) f
 
+-- | Given an ordinal number, returns a new ordinal (zero/limit) without the successor part.
+--
+-- * If the input is zero, return `Nothing`
+--
+-- * If the input is finite, return `Just 0`
+--
+-- * If the input is a successor ordinal, return `Just x` where `x` is the ordinal with the successors removed.
 removeSucc :: Ordinal -> Maybe Ordinal
 removeSucc o = case M.toAscList om of
   [] -> Nothing
@@ -87,10 +100,12 @@ removeSucc o = case M.toAscList om of
   where
     om = toMap o
 
--- | The fundamental sequence of the Feferman-Schütte ordinal, $Gamma_0$
+-- | The fundamental sequence of the Feferman-Schütte ordinal, Γ_0.
 fsFefermanShutte :: FSeq
 fsFefermanShutte = nest (`veb1` 0) 0
 
+-- | Given an ordinal number, returns a smaller and simpler ordinal by either picking the first infinite value
+-- from its fundamental sequence, or @1@ for @omega@.
 levelDown :: Ordinal -> Maybe Ordinal
 levelDown o
   | o == omega = Just 1
@@ -103,14 +118,17 @@ levelDown o
           Left _ -> error "levelDown: not possible"
           Right ys -> Just $ head $ dropWhile (<= 1) $ NE.toList ys
 
+-- | Given an ordinal number, returns a iterating sequence of `levelDown` until reaching zero.
 levelDownSeq :: Ordinal -> [Ordinal]
 levelDownSeq o = case levelDown o of
                    Nothing -> []
                    Just x -> x : levelDownSeq x
 
+-- | Converts a fundamental sequence to a Haskell list.
 fsToList :: FSeq -> [Ordinal]
 fsToList = NE.toList
 
+-- | Truncates a fundamental sequence to a limited number of terms.
 truncateFS :: Int -> FSeq -> [Ordinal]
 truncateFS 0 _ = []
 truncateFS n xs = take n $ NE.toList xs

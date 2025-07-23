@@ -1,6 +1,15 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Lib (
+    {- |
+    Ordinal numbers and surreal numbers with the two-argument Veblen function.
+
+    The ordinal values representable is up to and not including the Feferman–Schütte ordinal.
+
+    The surreal values representable must have finite Conway normal forms (number of terms and nesting depth).
+
+    The Veblen order (the @a@ of @veb1 a b@) must be an ordinal number and is not generalized to negatives or surreals.
+    -}
     -- * Types
     Conway,
     VebMono(VebMono),
@@ -23,12 +32,14 @@ module Lib (
 import Data.Map.Strict(Map)
 import qualified Data.Map.Strict as M
 import Typeclasses
-import Data.List (intercalate, sortBy)
-import Data.Ord (comparing, Down (Down))
+import Data.List (intercalate)
 import GHC.Natural (Natural)
 
 type Ordinal = Conway Natural
 
+-- | Represents an ordinal number or surreal number in Cantor or Conway normal form.
+-- The underlying representing is a strict `Map` from the two Veblen arguments
+-- to a non-zero coefficient of the generic type.
 newtype Conway a = Conway (Map (Ordinal, Conway a) a)
     deriving (Eq)
 
@@ -95,26 +106,26 @@ instance (OrdRing a, Num a) => Num (Conway a) where
     fromInteger = mono zero . fromInteger
     negate = neg
 
--- | Given a `Map` from monomial to its coefficient, constructs a new `Conway`.
+-- | Given a `Map` from the 2 Veblen arguments (2-tuple) to the coefficient, constructs a new `Conway`.
 conway :: OrdZero a => Map (Ordinal, Conway a) a -> Conway a
 conway = Conway . zeroNormalize
 
--- | Given a `Conway`, returns its `Map` representation.
+-- | Given a `Conway`, returns its `Map` representation from the Veblen arguments (2-tuple) to the coefficient.
 toMap :: Conway a -> Map (Ordinal, Conway a) a
 toMap (Conway x) = x
 
--- | Given a `Conway`, returns its terms list in Conway normal form order.
-termsList :: (OrdZero a, One a) => Conway a -> [(VebMono a, a)]
-termsList = sortBy (comparing Data.Ord.Down) . map toMonoTerm . M.toDescList . toMap where
+-- | Given a `Conway`, returns its terms list in Cantor/Conway normal form order, which is
+-- descending by coefficient.
+termsList :: Conway a -> [(VebMono a, a)]
+termsList = map toMonoTerm . M.toDescList . toMap where
     toMonoTerm :: ((Ordinal, Conway a), a) -> (VebMono a, a)
     toMonoTerm ((a, p), c) = (VebMono a p, c)
 
 {- |
-Represents a Veblen hierarchy mono1 with the specified Veblen order and its argument.
+Represents a Veblen hierarchy monomial with coefficient of 1.
 
-A Veblen monomial `[a, p]` has the following equality rule:
+@VebMono a b@ represents @veb1 a b@
 
-* If `a < b`, then `[a, [b, p]] == [b, p]`
 -}
 data VebMono a = VebMono Ordinal (Conway a)
 
@@ -154,18 +165,19 @@ matchMono (Conway xs) =
         [((a, p), c)] -> Just ((a, p), c)
         _ : (_ : _) -> Nothing
 
--- | True if and only if V_a(b) = b
+-- | True if and only if @veb1 a b == b@
 isVebFixed :: Zero a => Ordinal -> Conway a -> Bool
 isVebFixed a b = case matchMono b of
                    Nothing -> False
                    Just ((a', _), _) -> isPositive a' && a < a'
 
+-- | Construct a finite ordinal or surreal value.
 finite :: OrdZero a => a -> Conway a
 finite = conway . M.singleton (zero, zero)
 
 -- * Specific values
 
--- | Creates a Veblen monomial $w^p.c$.
+-- | The power of omega times a coefficient, @mono p c == (veb1 0 p) * c@
 mono :: (Mult a) => Conway a -> a -> Conway a
 mono p c = case matchMono p of
             Nothing -> conway $ M.singleton (zero, p) c
@@ -175,7 +187,7 @@ mono p c = case matchMono p of
                 else
                     conway $ M.singleton (a', p') (mult c c')
 
--- | Creates a Veblen mono1 $w^p$.
+-- | The power of omega, @mono1 p === veb1 0 p@
 mono1 :: (One a, OrdZero a) => Conway a -> Conway a
 mono1 p = case matchMono p of
             Nothing -> conway $ M.singleton (zero, p) one
@@ -185,20 +197,20 @@ mono1 p = case matchMono p of
                 else
                     conway $ M.singleton (a', p') c'
 
--- | V_a(p)
+-- | The two-argument Veblen function, @V(a, p)@
 veb1 :: (One a, OrdZero a) => Ordinal -> Conway a -> Conway a
 veb1 a p
     | isVebFixed a p = p
     | otherwise = conway $ M.singleton (a, p) one
 
--- | V_a(p).c
+-- | The two-argument Veblen function, times a coefficient, @V(a, p) * c@
 veb :: (Mult a, AddSub a) => Ordinal -> Conway a -> a -> Conway a
 veb a p c
     | c == one = veb1 a p
     | isVebFixed a p = mult p $ finite c
     | otherwise = conway $ M.singleton (a, p) c
 
--- V_a(p).c * x = sum [ V_a(p).c * V | pi ]
+-- | A sum of two-argument Veblen function terms with coefficients, @sum [(veb a p) * c | ...]@.
 multMono :: (AddSub a, Mult a) => ((Ordinal, Conway a), a) -> Conway a -> Conway a
 multMono ((a, p), c) (Conway x) = foldl combineMono zero $ M.toList x where
     -- a > 0 and a' > 0
@@ -215,11 +227,14 @@ multMono ((a, p), c) (Conway x) = foldl combineMono zero $ M.toList x where
       | otherwise                   = add s $ mono (add (veb1 a p) (veb1 a' p')) c''
       where c'' = mult c c'
 
+-- | The simplest infinite ordinal, @omega = veb1 0 1@.
 omega :: (One a, OrdZero a) => Conway a
 omega = conway $ M.singleton (zero, one) one
 
+-- | The first fixed point of the omega-map, @epsilon0 = veb1 1 0@.
 epsilon0 :: (One a, OrdZero a) => Conway a
 epsilon0 = conway $ M.singleton (one, zero) one
 
+-- | Creates an Epsilon number, @epsilon x = veb1 1 x@.
 epsilon :: (One a, OrdZero a) => Conway a -> Conway a
 epsilon = veb1 one

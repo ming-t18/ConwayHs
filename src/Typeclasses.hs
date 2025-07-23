@@ -1,6 +1,10 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Typeclasses (Zero(..), One(..), OrdZero(..), AddSub(..), Mult(..), OrdRing) where
+module Typeclasses (
+    -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
+    -- Custom numeric types should implement these typeclasses so they can be used in @Conway@.
+    Zero(..), One(..), OrdZero(..), AddSub(..), Mult(..), OrdRing
+) where
 import Data.Ratio (Ratio, (%))
 import Numeric.Natural
 
@@ -11,11 +15,14 @@ class One a where
     one :: a
 
 -- | Typeclass for a total order with a zero element and negation around the zero element.
--- |
--- | Properties:
--- | 1. @neg zero == zero@
--- | 2. @neg (neg x) == x@
--- | 3. @x <= y ==> neg y <= neg x@
+--
+-- Properties:
+--
+-- 1. @neg zero == zero@
+--
+-- 2. @neg (neg x) == x@
+--
+-- 3. @x >= y ==> neg y >= neg x@
 class (Zero a, Ord a) => OrdZero a where
     neg :: a -> a
     isZero, isPositive, isNegative :: a -> Bool
@@ -60,6 +67,7 @@ instance Zero Natural where
 instance One Natural where
     one = 1
 
+-- | Negating a non-zero natural number causes the arithmetic underflow error.
 instance OrdZero Natural where
   neg = negate
 
