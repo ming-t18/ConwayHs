@@ -15,7 +15,6 @@ import qualified Data.List.NonEmpty as NE hiding (takeWhile)
 import qualified Data.Map.Strict as M
 import Lib
 import Numeric.Natural (Natural)
-import qualified Data.List
 
 type VebMonoOrd = VebMono Natural
 
@@ -72,16 +71,16 @@ fsOrd o = case M.toAscList om of
           Right f -> Right $ NE.map (o' +) f
   where
     om = toMap o
-    fsOrd' :: ((Ordinal, Ordinal), Natural) -> Either Ordinal FSeq
+    fsOrd' :: (VebMono Natural, Natural) -> Either Ordinal FSeq
     fsOrd' x = case x of
-      ((0, 0), 0) -> error "fsOrd: not possible (normalization)"
+      (VebMono 0 0, 0) -> error "fsOrd: not possible (normalization)"
       -- finite ordinal
-      ((0, 0), n) -> Left $ finite (n - 1)
+      (VebMono 0 0, n) -> Left $ finite (n - 1)
       -- V[b, c][i] = fsOrdMono ...
-      ((b, c), 1) -> Right $ fsOrdMono (VebMono b c)
+      (VebMono b c, 1) -> Right $ fsOrdMono (VebMono b c)
       -- (V[b, c]. k)[i] = V[b, c].(k - 1) + V[b, c][i]
-      ((b, c), k) ->
-        let f = fromRight undefined $ fsOrd' ((b, c), 1)
+      (VebMono b c, k) ->
+        let f = fromRight undefined $ fsOrd' (VebMono b c, 1)
          in Right $ NE.map (+ veb b c (k - 1)) f
 
 -- | Given an ordinal number, returns a new ordinal (zero/limit) without the successor part.
@@ -94,7 +93,7 @@ fsOrd o = case M.toAscList om of
 removeSucc :: Ordinal -> Maybe Ordinal
 removeSucc o = case M.toAscList om of
   [] -> Nothing
-  ((0, 0), _) : _ ->
+  (VebMono 0 0, _) : _ ->
     Just $ conway $ M.deleteMin om
   _ -> Nothing
   where

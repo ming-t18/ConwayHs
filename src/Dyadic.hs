@@ -37,6 +37,7 @@ instance Ord Dyadic where
 
 instance Zero Dyadic where
     zero = Dyadic 0 0
+    isZero = (==) 0
 
 instance One Dyadic where
     one = Dyadic 1 0

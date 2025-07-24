@@ -10,6 +10,7 @@ import Numeric.Natural
 
 class Zero a where
     zero :: a
+    isZero :: a -> Bool
 
 class One a where
     one :: a
@@ -25,8 +26,7 @@ class One a where
 -- 3. @x >= y ==> neg y >= neg x@
 class (Zero a, Ord a) => OrdZero a where
     neg :: a -> a
-    isZero, isPositive, isNegative :: a -> Bool
-    isZero = (==) zero
+    isPositive, isNegative :: a -> Bool
     isPositive = (> zero)
     isNegative = (< zero)
     compareZero :: a -> Ordering
@@ -45,6 +45,7 @@ class (OrdZero a, AddSub a, Mult a) => OrdRing a where
 
 instance Zero Integer where
     zero = 0
+    isZero = (==) 0
 
 instance One Integer where
     one = 1
@@ -63,6 +64,7 @@ instance OrdRing Integer where
 
 instance Zero Natural where
     zero = 0
+    isZero = (==) 0
 
 instance One Natural where
     one = 1
@@ -83,6 +85,7 @@ instance OrdRing Natural where
 
 instance (Integral a, Zero a, One a) => Zero (Ratio a) where
     zero = zero % one
+    isZero = (==) zero
 
 instance (Integral a, One a) => One (Ratio a) where
     one = one % one

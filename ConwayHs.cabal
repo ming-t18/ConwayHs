@@ -28,6 +28,8 @@ library
       Dyadic
       FundamentalSeq
       Lib
+      OrdBag
+      OrdinalArith
       Typeclasses
   other-modules:
       Paths_ConwayHs
