@@ -28,7 +28,9 @@ module Lib (
     veb1,
     omega,
     epsilon0,
-    epsilon
+    epsilon,
+    -- * Other
+    isVebFixed,
 ) where
 
 import Data.Map.Strict(Map)
@@ -133,7 +135,9 @@ instance (One a, OrdZero a) => Eq (VebMono a) where
 
 instance (OrdZero a, One a) => Ord (VebMono a) where
     compare l@(VebMono a p) r@(VebMono b q)
+    -- V[a, p] <= V[a, q] ==> p <= q
         | a == b = compare p q
+    -- V[a, p] <= V[b, q] ==> V[a, p] <= V[a, V[b, q]] ==> p <= V[b, q]
         | a < b = compare p (fromVebMono r)
         | otherwise = compare (fromVebMono l) q
 
@@ -157,18 +161,18 @@ fromVebMono (VebMono a' p') = veb1 a' p'
 zeroNormalize :: OrdZero v => Map k v -> Map k v
 zeroNormalize = M.filter (not . isZero)
 
-matchMono :: Zero a => Conway a -> Maybe ((Ordinal, Conway a), a)
+matchMono :: Zero a => Conway a -> Maybe (VebMono a, a)
 matchMono (Conway xs) =
     case M.toList xs of
-        [] ->  Just ((zero, zero), zero)
-        [(VebMono a p, c)] -> Just ((a, p), c)
+        [] -> Just (VebMono zero zero, zero)
+        [(v, c)] -> Just (v, c)
         _ : (_ : _) -> Nothing
 
 -- | True if and only if @veb1 a b == b@
-isVebFixed :: Zero a => Ordinal -> Conway a -> Bool
+isVebFixed :: (Zero a, One a, Eq a) => Ordinal -> Conway a -> Bool
 isVebFixed a b = case matchMono b of
                    Nothing -> False
-                   Just ((a', _), _) -> isPositive a' && a < a'
+                   Just (VebMono a' _, c) -> c == one && isPositive a' && a < a'
 
 -- | Construct a finite ordinal or surreal value.
 finite :: OrdZero a => a -> Conway a
@@ -178,23 +182,11 @@ finite = conway . M.singleton (VebMono zero zero)
 
 -- | The power of omega times a coefficient, @mono p c == (veb1 0 p) * c@
 mono :: (Mult a) => Conway a -> a -> Conway a
-mono p c = case matchMono p of
-            Nothing -> conway $ M.singleton (VebMono zero p) c
-            Just ((a', p'), c') ->
-                if isZero a' then
-                    conway $ M.singleton (VebMono zero p) c
-                else
-                    conway $ M.singleton (VebMono a' p') (mult c c')
+mono = veb zero
 
 -- | The power of omega, @mono1 p === veb1 0 p@
-mono1 :: (One a, OrdZero a) => Conway a -> Conway a
-mono1 p = case matchMono p of
-            Nothing -> conway $ M.singleton (VebMono zero p) one
-            Just ((a', p'), c') ->
-                if isZero a' then
-                    conway $ M.singleton (VebMono zero p) one
-                else
-                    conway $ M.singleton (VebMono a' p') c'
+mono1 :: (Mult a) => Conway a -> Conway a
+mono1 p = veb zero p one
 
 -- | The two-argument Veblen function, @V(a, p)@
 veb1 :: (One a, OrdZero a) => Ordinal -> Conway a -> Conway a
@@ -203,28 +195,33 @@ veb1 a p
     | otherwise = conway $ M.singleton (VebMono a p) one
 
 -- | The two-argument Veblen function, times a coefficient, @V(a, p) * c@
-veb :: (Mult a, AddSub a) => Ordinal -> Conway a -> a -> Conway a
+veb :: (Mult a) => Ordinal -> Conway a -> a -> Conway a
 veb a p c
     | c == one = veb1 a p
-    | isVebFixed a p = mult p $ finite c
     | otherwise = conway $ M.singleton (VebMono a p) c
 
 -- | A sum of two-argument Veblen function terms with coefficients, @sum [(veb a p) * c | ...]@.
 multMono :: (AddSub a, Mult a) => (VebMono a, a) -> Conway a -> Conway a
 multMono (VebMono a p, c) (Conway x) = foldl combineMono zero $ M.toList x where
     -- a > 0 and a' > 0
-    -- Notation: [a, b] = veb1 a b, [a, b].c = veb a b c
-    -- [0, p].c * [0,  p'].c' = [0, p + p'] (c * c')
-    -- [0, p].c * [a', p'].c' = [0, p + [a', p']] (c * c')
-    -- [a, p].c * [0,  p'].c' = [0, [a, p'] + p'] (c * c')
-    -- [a, p].c * [a', p'].c' = [0, [a, p]] * [0, [a', p']] * (c * c')
-    --                        = [0, [a, p] + [a', p']] * (c * c')
+    -- Notation: V[a, b] = veb1 a b, V[a, b].c = veb a b c, V[0, p] = mono p
 
     -- combineMono :: (AddSub a, Mult a) => Conway a -> (VebMono a, a) -> Conway a
     combineMono s (VebMono a' p', c')
+    --   V[0, p].c * V[0, p'].c'
+    -- = V[0, p + p'] . (c * c')
       | isZero a && isZero a'       = add s $ mono (add p p') c''
+    --   V[0, p].c * V[a', p'].c'
+    -- = (V[0, p] * V[0, V[a', p']]) . (c * c')
+    -- = V[0, p + V[a', p']] (c * c')
       | isZero a && not (isZero a') = add s $ mono (add p (veb1 a' p')) c''
+    --   V[a, p].c * V[0,  p'].c'
+    -- = V[0, V[a, p]] * V[0, p'] . (c * c')
+    -- = V[0, V[a, p'] + p'] . (c * c')
       | not (isZero a) && isZero a' = add s $ mono (add (veb1 a p) p') c''
+    --   V[a, p].c * V[a', p'].c'
+    -- = V[0, V[a, p]] * V[0, V[a', p']] . (c * c')
+    --                          = V[0, V[a, p] + V[a', p']] * (c * c')
       | otherwise                   = add s $ mono (add (veb1 a p) (veb1 a' p')) c''
       where c'' = mult c c'
 

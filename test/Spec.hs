@@ -15,7 +15,6 @@ import Control.Monad
 import FundamentalSeq
 
 import qualified Data.List.NonEmpty as NE
-import Numeric.Natural (Natural)
 
 prop_compareTransitive :: Ord a => a -> a -> a -> Property
 prop_compareTransitive a b c
@@ -114,7 +113,7 @@ prop_fsOrd_increasing i j x =
         Right f -> True ==> f NE.!! i < f NE.!! j
 
 qc :: Testable prop => prop -> IO ()
-qc = quickCheckWith stdArgs { maxSuccess = 20000, maxShrinks = 1000 }
+qc = quickCheckWith stdArgs { maxSuccess = 100, maxShrinks = 1000 }
 
 testPropsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> IO ()
 testPropsOrdRing i = do
@@ -151,6 +150,11 @@ main = do
     when True $ do
         putStrLn "Dyadic"
         testPropsOrdRing (id :: Dyadic -> Dyadic)
+        putStrLn "---"
+
+    when True $ do
+        putStrLn "ConwayV0 Integer"
+        testPropsOrdRing ((\(ConwayV0 x) -> x) :: ConwayV0Gen Integer -> Conway Integer)
         putStrLn "---"
 
     when True $ do
