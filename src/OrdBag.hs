@@ -6,12 +6,19 @@ module OrdBag (
     toMap,
     toDescList,
     sumWith,
+    negate,
 ) where
 import qualified Data.Map.Strict as M
 import Data.Map.Strict(Map)
 import Typeclasses (Zero(..), Zero, OrdZero (..))
+import Prelude hiding (negate)
 
-newtype OrdBag a b = OrdBag (Map a b)
+-- | Represents a multiset of elements of type @k@ and
+-- multiplicity of each element of type @v@.
+--
+-- Represented as a @Data.Map.Strict.Map@ with keys having
+-- zero values eliminated.
+newtype OrdBag k v = OrdBag (Map k v)
     deriving (Eq)
 
 zeroNormalize :: (Zero v) => Map k v -> Map k v
@@ -32,6 +39,12 @@ toDescList (OrdBag m) = M.toDescList m
 sumWith :: (Ord k, Zero v) => (k -> v -> v -> v) -> OrdBag k v -> OrdBag k v -> OrdBag k v
 sumWith f (OrdBag m1) (OrdBag m2) = fromMap $ M.unionWithKey f m1 m2
 
+negate :: (OrdZero v) => OrdBag k v -> OrdBag k v
+negate (OrdBag m) = OrdBag $ M.map neg m
+
+-- | Ordered lexicographically from the largest key to the smallest.
+-- If either side has no matching key, its value is considered as zero.
+-- Negative values are considered to be below zero.
 instance (OrdZero k, OrdZero v) => Ord (OrdBag k v) where
     compare a b = comp ta tb where
         ta = toDescList a
