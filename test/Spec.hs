@@ -180,14 +180,3 @@ main = do
         qc (\(OrdV0 o) (NatGen i) (NatGen j) ->
             j > i ==> prop_fsOrd_increasing (fromIntegral i) (fromIntegral j) o)
         putStrLn "---"
-
---
---  TODO multiAssoc failed for Conway Dyadic and Conway Integer
---  *** Failed! Falsified (after 3604 tests and 7 shrinks):
---  ConwayGen {getConway = w^{-1}}
---  ConwayGen {getConway = φ[3, 0].-1}
---  ConwayGen {getConway = φ[3, 0]}
---  ConwayGen {getConway = w^{-1}}
---  ConwayGen {getConway = ε_0}
---  ConwayGen {getConway = w^{-1}.-1}
---
