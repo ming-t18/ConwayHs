@@ -1,6 +1,7 @@
 
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Gen where
 import Test.QuickCheck
@@ -95,9 +96,9 @@ instance Arbitrary Dyadic where
     arbitrary = getDyadic <$> arbitrary
 instance Arbitrary NaturalGen where
     arbitrary = (\(x :: Integer) -> NatGen $ fromIntegral $ abs x) <$> (arbitrary :: Gen Integer)
-    -- shrink (NatGen 0) = []
-    -- shrink (NatGen 1) = [NatGen 0]
-    -- shrink (NatGen x) = map NatGen [0..x - 1]
+
+instance Arbitrary Natural where
+    arbitrary = getNatural <$> arbitrary
 
 instance Arbitrary FiniteOrdGen where
     arbitrary = FinOrd . finite . getNatural <$> arbitrary
@@ -113,3 +114,7 @@ instance (Arbitrary a, OrdRing a) => Arbitrary (ConwayV0Gen a) where
 instance (Arbitrary a, OrdRing a) => Arbitrary (ConwayGen a) where
     arbitrary = ConwayGen <$> arbConway getOrdV0 (id :: a -> a) maxDepth
     shrink (ConwayGen x) = ConwayGen <$> shrinkConway x
+
+instance Arbitrary (Conway Natural) where
+    arbitrary = getConway <$> arbitrary
+    shrink x = map getConway $ shrink (ConwayGen x)
