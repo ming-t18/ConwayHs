@@ -7,10 +7,11 @@ module FundamentalSeq
     levelDownSeq,
     truncateFS,
     fsToList,
+    isLimit,
   )
 where
 
-import Data.Either (fromRight)
+import Data.Either (fromRight, isRight)
 import qualified Data.List.NonEmpty as NE hiding (takeWhile)
 import qualified Data.Map.Strict as M
 import Lib
@@ -50,7 +51,7 @@ fsOrdMono (VebMono b0 p) =
         -- V[b + 1, c + 1][n] = (V[b, -])^(n times) V[b + 1, c] + 1
         Left b -> nest (b `veb1`) $ veb1 b0 c + 1
         -- V[L, c + 1][n] = V[L[n], V[b, c] + 1]
-        Right g -> NE.map (\sub -> veb1 sub $ veb1 b0 c + 1) g
+        Right g -> NE.map (\s -> veb1 s $ veb1 b0 c + 1) g
     -- V[b, L] [n] = V[b, L[n]]
     Right f -> NE.map (veb1 b0) f
 
@@ -90,11 +91,11 @@ fsOrd o = case M.toAscList om of
 -- * If the input is finite, return `Just 0`
 --
 -- * If the input is a successor ordinal, return `Just x` where `x` is the ordinal with the successors removed.
-removeSucc :: Ordinal -> Maybe Ordinal
+removeSucc :: Ordinal -> Maybe (Ordinal, Natural)
 removeSucc o = case M.toAscList om of
   [] -> Nothing
-  (VebMono 0 0, _) : _ ->
-    Just $ conway $ M.deleteMin om
+  (VebMono 0 0, n) : _ ->
+    Just (conway $ M.deleteMin om, n)
   _ -> Nothing
   where
     om = toMap o
@@ -110,7 +111,7 @@ levelDown o
   | o == omega = Just 1
   | otherwise =
     case removeSucc o of
-      Just x -> Just x
+      Just (x, _) -> Just x
       Nothing ->
         case fsOrd o of
           Left 0 -> Nothing
@@ -131,3 +132,6 @@ fsToList = NE.toList
 truncateFS :: Int -> FSeq -> [Ordinal]
 truncateFS 0 _ = []
 truncateFS n xs = take n $ NE.toList xs
+
+isLimit :: Ordinal -> Bool
+isLimit = isRight . fsOrd

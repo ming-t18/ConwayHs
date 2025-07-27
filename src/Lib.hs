@@ -15,11 +15,13 @@ module Lib (
     Conway,
     VebMono(VebMono),
     Ordinal,
+
     -- * Creation/decomposition
     conway,
     toMap,
     termsList,
     leadingTerm,
+
     -- * Construction helpers
     finite,
     mono,
@@ -29,8 +31,12 @@ module Lib (
     omega,
     epsilon0,
     epsilon,
+    fromVebMono,
+    fromVebMono1,
+
     -- * Other
     isVebFixed,
+    isMono,
 ) where
 
 import Data.Map.Strict(Map)
@@ -158,6 +164,9 @@ instance (OrdZero a, One a, Show a) => Show (VebMono a) where
 fromVebMono :: (One a, OrdZero a) => VebMono a -> Conway a
 fromVebMono (VebMono a' p') = veb1 a' p'
 
+fromVebMono1 :: (One a, OrdZero a) => VebMono a -> Conway a
+fromVebMono1 (VebMono a b) = veb1 a b
+
 zeroNormalize :: OrdZero v => Map k v -> Map k v
 zeroNormalize = M.filter (not . isZero)
 
@@ -177,6 +186,10 @@ isVebFixed a b = case matchMono b of
 -- | Construct a finite ordinal or surreal value.
 finite :: OrdZero a => a -> Conway a
 finite = conway . M.singleton (VebMono zero zero)
+
+-- | T rue if and only if the argument is a monomial (is zero or has only one term in its Cantor/Conway normal form)
+isMono :: Conway a -> Bool
+isMono x = case termsList x of { [] -> True ; [_] -> True ; _ -> False }
 
 -- * Specific values
 
