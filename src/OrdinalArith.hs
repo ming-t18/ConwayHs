@@ -1,12 +1,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module OrdinalArith (
-    ordAdd,
-    ordMult,
-    ordPow,
-    isFinite,
-    maybeFinite,
-    unMono1,
+  ordAdd,
+  ordMult,
+  ordPow,
+  isFinite,
+  isInfinite,
+  maybeFinite,
+  unMono1,
 ) where
+
+import Prelude hiding (isInfinite)
 import Lib
 import Numeric.Natural
 import qualified Data.Map.Strict as M
@@ -34,10 +37,12 @@ unMono1 (VebMono 0 p) = p
 unMono1 v = fromVebMono1 v
 
 -- | Is the ordinal number finite?
-isFinite :: Ordinal -> Bool
+isFinite, isInfinite :: Ordinal -> Bool
 isFinite x = case leadingTerm x of
   (v, _) | isZero v -> True
   _ -> False
+
+isInfinite = not . isFinite
 
 -- | Is the ordinal number finite?
 --
@@ -68,7 +73,6 @@ ordMultByMono o (v, c)
       ordMultByFinite o c
   | otherwise =
     -- only leading terms matters: (V[p].c) is a limit ordinal
-    -- https://proofwiki.org/wiki/Ordinal_Multiplication_via_Cantor_Normal_Form/Infinite_Exponent
     -- https://proofwiki.org/wiki/Ordinal_Multiplication_via_Cantor_Normal_Form/Limit_Base
     -- (V[v0].c0 + ...).(V[v].c)
     let (v0, f) = leadingTerm o in

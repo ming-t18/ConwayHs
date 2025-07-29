@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.37.0.
 --
@@ -9,10 +9,10 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/ConwayHs#readme>
 homepage:       https://github.com/githubuser/ConwayHs#readme
 bug-reports:    https://github.com/githubuser/ConwayHs/issues
-author:         Author name here
+author:         Ming
 maintainer:     example@example.com
 copyright:      2025 Author name here
-license:        BSD-3-Clause
+license:        MIT
 build-type:     Simple
 extra-source-files:
     README.md
@@ -32,8 +32,6 @@ library
       Typeclasses
   other-modules:
       Paths_ConwayHs
-  autogen-modules:
-      Paths_ConwayHs
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
@@ -45,8 +43,6 @@ library
 executable ConwayHs-exe
   main-is: Main.hs
   other-modules:
-      Paths_ConwayHs
-  autogen-modules:
       Paths_ConwayHs
   hs-source-dirs:
       app
@@ -63,14 +59,15 @@ test-suite ConwayHs-test
   other-modules:
       Gen
       Paths_ConwayHs
-  autogen-modules:
-      Paths_ConwayHs
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       ConwayHs
+    , HUnit
     , QuickCheck ==2.15.*
     , base >=4.7 && <5
     , containers
+    , hspec ==2.11.*
+    , hspec-contrib
   default-language: Haskell2010
