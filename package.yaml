@@ -1,8 +1,8 @@
 name:                ConwayHs
 version:             0.1.0.0
 github:              "githubuser/ConwayHs"
-license:             BSD-3-Clause
-author:              "Author name here"
+license:             MIT
+author:              "Ming"
 maintainer:          "example@example.com"
 copyright:           "2025 Author name here"
 
