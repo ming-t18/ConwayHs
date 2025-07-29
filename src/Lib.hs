@@ -46,6 +46,7 @@ import Data.List (intercalate)
 import GHC.Natural (Natural)
 import qualified OrdBag
 import OrdBag (OrdBag)
+import Data.Foldable
 
 type Ordinal = Conway Natural
 
@@ -73,8 +74,8 @@ instance Zero (Conway a) where
 instance (OrdZero a, One a) => Ord (Conway a) where
     compare a b = compare a' b' where
         a', b' :: OrdBag (VebMono a) a
-        a' = OrdBag.fromMap $ toMap a
-        b' = OrdBag.fromMap $ toMap b
+        a' = OrdBag.fromMapUnchecked $ toMap a
+        b' = OrdBag.fromMapUnchecked $ toMap b
 
 instance Zero (VebMono a) where
   zero = VebMono zero zero
@@ -217,7 +218,7 @@ veb a p c
 
 -- | A sum of two-argument Veblen function terms with coefficients, @sum [(veb a p) * c | ...]@.
 multMono :: (AddSub a, Mult a) => (VebMono a, a) -> Conway a -> Conway a
-multMono (VebMono a p, c) (Conway x) = foldl combineMono zero $ M.toList x where
+multMono (VebMono a p, c) (Conway x) = foldl' combineMono zero $ M.toList x where
     -- a > 0 and a' > 0
     -- Notation: V[a, b] = veb1 a b, V[a, b].c = veb a b c, V[0, p] = mono p
 

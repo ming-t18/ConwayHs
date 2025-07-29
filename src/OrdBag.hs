@@ -2,6 +2,7 @@
 module OrdBag (
     OrdBag,
     fromMap,
+    fromMapUnchecked,
     fromList,
     toMap,
     toDescList,
@@ -26,6 +27,11 @@ zeroNormalize = M.filter (not . isZero)
 
 fromMap :: (Zero v) => Map k v -> OrdBag k v
 fromMap = OrdBag . zeroNormalize
+
+-- | Creates a new @OrdBag@ from a map with no zero values.
+-- This precondition is not checked.
+fromMapUnchecked :: Map k v -> OrdBag k v
+fromMapUnchecked = OrdBag
 
 fromList :: (Ord k, Zero v) => [(k, v)] -> OrdBag k v
 fromList = OrdBag . zeroNormalize . M.fromList

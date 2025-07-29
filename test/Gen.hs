@@ -1,4 +1,3 @@
-
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -14,6 +13,7 @@ import Typeclasses
       One(one) )
 import Numeric.Natural (Natural)
 import Dyadic
+import Data.Foldable
 
 maxDepth :: Int
 maxDepth = 4
@@ -62,7 +62,7 @@ monosList x = map (\(VebMono a p, c) -> (a, p, c)) $ termsList x
 shrinkConway :: OrdRing a => Conway a -> [Conway a]
 shrinkConway x =
     [
-        foldl (\s (a, p, c) -> add s (veb a p c)) zero list'
+        foldl' (\s (a, p, c) -> add s (veb a p c)) zero list'
         |  list' <- shrinkList shrinkTriple $ monosList x
     ]
 
