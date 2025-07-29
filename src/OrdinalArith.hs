@@ -13,24 +13,6 @@ import qualified Data.Map.Strict as M
 import Typeclasses
 import Data.Foldable
 
--- (w + 1).(w + 1)
--- = (w + 1).w + (w + 1).1
--- = w^2 + w + w + 1
--- = w^2 + w.2 + 1
-
--- (w + 1).(w^2 + w.2 + 1)
--- = (w + 1).(w^2) + (w + 1).(w.2) + (w + 1)
--- = w.(w^2) + w.(w.2) + (w + 1)
--- = w^3 + w^2.2 + w + 1
-
--- w.2.w = (w.2).w = lim (w.2).k = w.k = w^2
--- w.2.w = w.(2.w) = w.w = w^2
-
--- (w^2 + w.2 + 1).(w+1)
--- (w^3 + w.2.w + w) + (w^2 + w.2 + 1)
--- w^3 + (w^2 + w + w^2) + w.2 + 1
--- w^3 + w^2.2 + w.2 + 1
-
 data VebMonoKind =
   -- | Finite value: @veb1 0 0@
   Fin

@@ -37,6 +37,8 @@ module Lib (
     -- * Other
     isVebFixed,
     isMono,
+    dropLeadingTerm,
+    dropTrailingTerm,
 ) where
 
 import Data.Map.Strict(Map)
@@ -53,6 +55,8 @@ type Ordinal = Conway Natural
 -- | Represents an ordinal number or surreal number in Cantor or Conway normal form.
 -- The underlying representing is a strict `Map` from the two Veblen arguments
 -- to a non-zero coefficient of the generic type.
+--
+-- The map representation follows the no-zero-values invarant of @OrdBag@.
 newtype Conway a = Conway (Map (VebMono a) a)
     deriving (Eq)
 
@@ -107,24 +111,35 @@ instance (OrdRing a, Num a) => Num (Conway a) where
     fromInteger = mono zero . fromInteger
     negate = neg
 
--- | Given a `Map` from the 2 Veblen arguments (2-tuple) to the coefficient, constructs a new `Conway`.
+-- | Given a @Map@ from the 2 Veblen arguments (2-tuple) to the coefficient, constructs a new @Conway@.
 conway :: OrdZero a => Map (VebMono a) a -> Conway a
 conway = Conway . zeroNormalize
 
--- | Given a `Conway`, returns its `Map` representation from the Veblen arguments (2-tuple) to the coefficient.
+-- | Given a @Conway@, returns its @Map@ representation from the Veblen arguments (2-tuple) to the coefficient.
 toMap :: Conway a -> Map (VebMono a) a
 toMap (Conway x) = x
 
--- | Given a `Conway`, returns its terms list in Cantor/Conway normal form order, which is
+-- | Given a @Conway@, returns its terms list in Cantor/Conway normal form order, which is
 -- descending by coefficient.
 termsList :: Conway a -> [(VebMono a, a)]
 termsList = M.toDescList . toMap
 
--- | Given a `Conway`, returns its term in Cantor/Conway normal form, or zero
+-- | Given a @Conway@, returns its term in Cantor/Conway normal form, or zero
 leadingTerm :: OrdZero a => Conway a -> (VebMono a, a)
 leadingTerm x = case termsList x of
     [] -> (VebMono zero zero, zero)
     (t : _) -> t
+
+-- | Given a @Conway@, returns the leading term and the @Conway@ without it.
+dropLeadingTerm :: OrdZero a => Conway a -> ((VebMono a, a), Conway a)
+
+-- | Given a @Conway@, return the @Conway@ without the trailing term and the trailing term.
+dropTrailingTerm :: OrdZero a => Conway a -> (Conway a, (VebMono a, a))
+
+dropLeadingTerm (Conway m) = if M.null m then ((zero, zero), conway M.empty) else (p, conway m')
+    where (p, m') = M.deleteFindMax m
+dropTrailingTerm (Conway m) = if M.null m then (conway M.empty, (zero, zero)) else (conway m', p)
+    where (p, m') = M.deleteFindMin m
 
 {- |
 Represents a Veblen hierarchy monomial with coefficient of 1.

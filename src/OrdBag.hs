@@ -11,14 +11,14 @@ module OrdBag (
 ) where
 import qualified Data.Map.Strict as M
 import Data.Map.Strict(Map)
-import Typeclasses (Zero(..), Zero, OrdZero (..))
+import Typeclasses (Zero(..), OrdZero (..))
 import Prelude hiding (negate)
 
 -- | Represents a multiset of elements of type @k@ and
 -- multiplicity of each element of type @v@.
 --
--- Represented as a @Data.Map.Strict.Map@ with keys having
--- zero values eliminated.
+-- Represented as a @Data.Map.Strict.Map@ without
+-- keys with zero values.
 newtype OrdBag k v = OrdBag (Map k v)
     deriving (Eq)
 
