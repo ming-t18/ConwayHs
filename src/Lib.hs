@@ -136,16 +136,16 @@ data VebMono a = VebMono !Ordinal !(Conway a)
 instance (One a, OrdZero a) => Eq (VebMono a) where
     (==) l@(VebMono a p) r@(VebMono b q)
         | a == b = p == q
-        | a < b = p == fromVebMono r
-        | otherwise = fromVebMono l == q
+        | a < b = p == fromVebMono1 r
+        | otherwise = fromVebMono1 l == q
 
 instance (OrdZero a, One a) => Ord (VebMono a) where
     compare l@(VebMono a p) r@(VebMono b q)
     -- V[a, p] <= V[a, q] ==> p <= q
         | a == b = compare p q
     -- V[a, p] <= V[b, q] ==> V[a, p] <= V[a, V[b, q]] ==> p <= V[b, q]
-        | a < b = compare p (fromVebMono r)
-        | otherwise = compare (fromVebMono l) q
+        | a < b = compare p (fromVebMono1 r)
+        | otherwise = compare (fromVebMono1 l) q
 
 instance (OrdZero a, One a) => OrdZero (VebMono a) where
     neg = error "cannot negate a VebMono"
@@ -161,9 +161,11 @@ instance (OrdZero a, One a, Show a) => Show (VebMono a) where
             showTerm "1" p' = "ε_{" ++ p' ++ "}"
             showTerm a' p' = "φ[" ++ a' ++ ", " ++ p' ++ "]"
 
-fromVebMono :: (One a, OrdZero a) => VebMono a -> Conway a
-fromVebMono (VebMono a' p') = veb1 a' p'
+-- | Similar to @veb@
+fromVebMono :: Mult a => (VebMono a, a) -> Conway a
+fromVebMono (VebMono a b, c) = veb a b c
 
+-- | Similar to @veb1@
 fromVebMono1 :: (One a, OrdZero a) => VebMono a -> Conway a
 fromVebMono1 (VebMono a b) = veb1 a b
 

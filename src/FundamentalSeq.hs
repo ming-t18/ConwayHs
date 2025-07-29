@@ -116,7 +116,10 @@ levelDown o
         case fsOrd o of
           Left 0 -> Nothing
           Left _ -> error "levelDown: not possible"
-          Right ys -> Just $ head $ dropWhile (<= 1) $ NE.toList ys
+          Right ys ->
+            case dropWhile (<= 1) $ NE.toList ys of
+              [] -> error "levelDown: not possible"
+              (x : _) -> Just x
 
 -- | Given an ordinal number, returns a iterating sequence of `levelDown` until reaching zero.
 levelDownSeq :: Ordinal -> [Ordinal]

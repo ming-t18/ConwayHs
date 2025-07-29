@@ -94,8 +94,10 @@ instance Arbitrary DyadicGen where
 
 instance Arbitrary Dyadic where
     arbitrary = getDyadic <$> arbitrary
+
 instance Arbitrary NaturalGen where
-    arbitrary = (\(x :: Integer) -> NatGen $ fromIntegral $ abs x) <$> (arbitrary :: Gen Integer)
+    arbitrary = NatGen . fromIntegral . (`mod` maxValue) . abs <$> (arbitrary :: Gen Integer) where
+        maxValue = 16 :: Integer
 
 instance Arbitrary Natural where
     arbitrary = getNatural <$> arbitrary

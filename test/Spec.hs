@@ -18,6 +18,8 @@ import qualified Data.List.NonEmpty as NE
 import OrdinalArith
 import Numeric.Natural
 
+-- * Ordering
+
 prop_compareTransitive :: Ord a => a -> a -> a -> Property
 prop_compareTransitive a b c
     | a <= b && a <= c = True ==> a <= c
@@ -39,6 +41,8 @@ prop_compareNegation a b = compare a b == f (compare (neg a) (neg b)) where
     f EQ = EQ
     f LT = GT
     f GT = LT
+
+-- * Natural sum and product
 
 prop_orderedAdd :: (AddSub a) => a -> a -> a -> Bool
 prop_orderedAdd a b c
@@ -84,6 +88,8 @@ prop_multPreserveOrder m a b
     | isPositive m = True ==> (a <= b) === (mult m a <= mult m b)
     | otherwise = True ==> (b <= a) === (mult m a <= mult m b)
 
+-- * Ordinal Arithmetic
+
 prop_ordAddZero :: Ordinal -> Property
 prop_ordAddZero x = x `ordAdd` 0 === x
 
@@ -98,6 +104,9 @@ prop_ordAddOrderPreservingLeft x y z = x `compare` y === (z `ordAdd` x) `compare
 
 prop_ordAddAssoc :: Ordinal -> Ordinal -> Ordinal -> Property
 prop_ordAddAssoc x y z = (x `ordAdd` y) `ordAdd` z === x `ordAdd` (y `ordAdd` z)
+
+prop_ordAddAssocSelf :: Ordinal -> Property
+prop_ordAddAssocSelf x = (x `ordAdd` x) `ordAdd` x === x `ordAdd` (x `ordAdd` x)
 
 prop_ordMultZero :: Ordinal -> Property
 prop_ordMultZero x = x `ordMult` 0 === 0
@@ -114,8 +123,64 @@ prop_ordMultSucc x y = x `ordMult` (y + 1) === (x `ordMult` y) `ordAdd` x
 prop_ordMultAssoc :: Ordinal -> Ordinal -> Ordinal -> Property
 prop_ordMultAssoc x y z = (x `ordMult` y) `ordMult` z === x `ordMult` (y `ordMult` z)
 
+prop_ordMultAssocSelf :: Ordinal -> Property
+prop_ordMultAssocSelf x = (x `ordMult` x) `ordMult` x === x `ordMult` (x `ordMult` x)
+
 prop_ordMultLeftDistr :: Ordinal -> Ordinal -> Ordinal -> Property
 prop_ordMultLeftDistr x y z = x `ordMult` (y `ordAdd` z) === (x `ordMult` y) `ordAdd` (x `ordMult` z)
+
+prop_ordMultMono1 :: Ordinal -> Ordinal -> Property
+prop_ordMultMono1 x y = mono1 x `ordMult` mono1 y === mono1 (x `ordAdd` y)
+
+-- * Power
+
+prop_ordZeroPow :: Ordinal -> Property
+prop_ordZeroPow x = not (isZero x) ==> 0 `ordPow` x === 0
+
+prop_ordPowZero :: Ordinal -> Property
+prop_ordPowZero x = x `ordPow` 0 === 1
+
+prop_ordPowOne :: Ordinal -> Property
+prop_ordPowOne x = x `ordPow` 1 === x
+
+-- | For finite @b, c@, @b^(w.c) = (b^w)^c = w^c@
+prop_ordPowFiniteMultW :: Natural -> Natural -> Property
+prop_ordPowFiniteMultW b c = b > 1 && c > 1 ==> finite b `ordPow` mono 1 c === mono1 (finite c)
+
+-- | For finite @b, c@, @b^(w^c) = b^(w.w^(c-1)) = (b^w)^(w^(c-1)) = w^(w^(c-1))@
+prop_ordPowFiniteWPFinite :: Natural -> Natural -> Property
+prop_ordPowFiniteWPFinite b c = b > 1 && c > 1 ==> finite b `ordPow` mono1 (finite c) === mono1 (mono1 $ finite (c - 1))
+
+prop_ordPowSucc :: Ordinal -> Ordinal -> Property
+prop_ordPowSucc x y = x `ordPow` (y + 1) === (x `ordPow` y) `ordMult` x
+
+prop_ordPowFinite :: Natural -> Natural -> Property
+prop_ordPowFinite x y = finite x `ordPow` finite y === finite (x ^ y)
+
+prop_ordPowExponentSum :: Ordinal -> Ordinal -> Ordinal -> Property
+prop_ordPowExponentSum x y z = (x `ordPow` (y `ordAdd` z)) === (x `ordPow` y) `ordMult` (x `ordPow` z)
+
+-- TODO large exponents can cause hangs
+prop_ordPowExponentProduct :: Ordinal -> Ordinal -> Ordinal -> Property
+prop_ordPowExponentProduct x y z =
+    isPositive y && isPositive z ==> (x `ordPow` (y `ordMult` z)) === (x `ordPow` y) `ordPow` z
+
+prop_ordPowOrderPreserving :: Ordinal -> Ordinal -> Ordinal -> Property
+prop_ordPowOrderPreserving x y z
+    | x == y = False ==> True
+    | x < y = True ==> (x `ordPow` z) <= (y `ordPow` z)
+    | otherwise = True ==> (x `ordPow` z) >= (y `ordPow` z)
+
+-- | @x^(w^y) = x^(p0 . w^y)@ where @x = w^p0 . c0 + ...@
+-- ProofWiki: https://proofwiki.org/wiki/Ordinal_Exponentiation_via_Cantor_Normal_Form/Corollary
+-- with @w@ being the base.
+prop_ordPowLeadingTerm :: Ordinal -> Ordinal -> Property
+prop_ordPowLeadingTerm x y = not (isFinite x) && isPositive y ==> x `ordPow` mono1 y === mono1 (p0 `ordMult` mono1 y) where
+    (v, _) = leadingTerm x
+    p0 = unMono1 v
+
+prop_ordPowMono1 :: Ordinal -> Property
+prop_ordPowMono1 x = mono1 x === omega `ordPow` x
 
 -- * Veblen Function
 
@@ -150,6 +215,8 @@ prop_fsOrd_increasing i j x =
     case fsOrd x of
         Left _ -> False ==> True
         Right f -> True ==> f NE.!! i < f NE.!! j
+
+-- * Testing
 
 qc :: Testable prop => prop -> IO ()
 qc = quickCheckWith stdArgs { maxSuccess = 1000, maxShrinks = 1000 }
@@ -192,13 +259,49 @@ testPropsOrdArith = do
     qc prop_ordAddSucc
     qc prop_ordAddOrderPreservingLeft
     qc prop_ordAddAssoc
+    qc prop_ordAddAssocSelf
+
     putStrLn "[ordinal multiplication]"
     qc prop_ordMultZero
     qc prop_ordMultOne
     qc prop_ordMultFinite
+    putStrLn "  multSucc"
     qc prop_ordMultSucc
+    putStrLn "  multAssoc"
     qc prop_ordMultAssoc
+    putStrLn "  multAssocSelf"
+    qc prop_ordMultAssocSelf
+    putStrLn "  multLeftDistr"
     qc prop_ordMultLeftDistr
+    putStrLn "  multMono1"
+    qc prop_ordMultMono1
+
+    putStrLn "[ordinal power]"
+    putStrLn "  zeroPow"
+    qc prop_ordZeroPow
+    putStrLn "  powZero"
+    qc prop_ordPowZero
+    putStrLn "  powOne"
+    qc prop_ordPowOne
+    putStrLn "  pow finite^(w.finite)"
+    qc prop_ordPowFiniteMultW
+    putStrLn "  pow finite^(w^finite)"
+    qc prop_ordPowFiniteWPFinite
+    putStrLn "  powSucc"
+    qc prop_ordPowSucc
+    putStrLn "  powFinite"
+    qc prop_ordPowFinite
+    putStrLn "  powExponentSum"
+    qc prop_ordPowExponentSum
+    putStrLn "  powExponentProduct"
+    qc prop_ordPowExponentProduct
+    putStrLn "  powOrderPresering"
+    qc prop_ordPowOrderPreserving
+    putStrLn "  powLeadingTerm"
+    qc prop_ordPowLeadingTerm
+    putStrLn "  powMono1"
+    qc prop_ordPowMono1
+
 
 main :: IO ()
 main = do
