@@ -190,6 +190,10 @@ prop_ordPowLeadingTerm x y = not (isFinite x) && isPositive y ==> x `ordPow` mon
 prop_ordPowMono1 :: Ordinal -> Property
 prop_ordPowMono1 x = mono1 x === omega `ordPow` x
 
+prop_ordRightSubAddBack :: Ordinal -> Ordinal ->  Property
+prop_ordRightSubAddBack l r = case ordRightSub l r of
+                                  Nothing -> False ==> True
+                                  Just x -> (l `ordAdd` x) === r
 -- * Veblen Function
 
 prop_vebIncrMap, prop_vebDecrMap :: OrdV0Gen -> OrdV0Gen -> Property
@@ -298,6 +302,12 @@ testPropsOrdArith = do
     it "order preservation" $ qc prop_ordPowOrderPreserving
     it "leading term" $ qc prop_ordPowLeadingTerm
     it "mono1" $ qc prop_ordPowMono1
+
+  describe "ordinal right subtraction" $ do
+    it "no solution" $ qc (\x y -> x > y ==> ordRightSub x y === Nothing)
+    it "subtract zero" $ qc (\x -> ordRightSub 0 x === Just x)
+    it "subtract itself" $ qc (\x -> ordRightSub x x === Just 0)
+    it "add back" $ qc prop_ordRightSubAddBack
 
 main :: IO ()
 main = hspec $ parallel $ do

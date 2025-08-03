@@ -3,6 +3,9 @@ module OrdinalArith (
   ordAdd,
   ordMult,
   ordPow,
+  ordRightSub,
+  ordRightSub',
+  ordDivRem,
   isFinite,
   isInfinite,
   maybeFinite,
@@ -101,6 +104,8 @@ ordMultMonoByMono1 (v1, f) v2 =
 ordMultByFinite :: Ordinal -> Natural -> Ordinal
 ordMultByFinite = repeatBinOp ordAdd 0
 
+-- * Power
+
 ordPow :: Ordinal -> Ordinal -> Ordinal
 -- law of exponents: a^(b + c + ...) = a^b * a^c * ...
 ordPow a b = foldl' (\p m -> p `ordMult` ordPowByMono a m) 1 $ termsList b
@@ -155,6 +160,41 @@ ordPowFiniteByMono _ (v, a) =
 -- | Ordinal power @x^p@ where @x@ is finite and @p@ is finite
 ordPowInfiniteByFinite :: Ordinal -> Natural -> Ordinal
 ordPowInfiniteByFinite = repeatBinOp ordMult 1
+
+-- * Right subtraction
+
+-- | Given ordinals @l@ and @r@, solve for @x@ such that @l + x === y@
+--
+-- Returns a @Maybe@ based on if the solution exists.
+ordRightSub :: Ordinal -> Ordinal -> Maybe Ordinal
+ordRightSub 0 a = Just a
+ordRightSub l r
+  | l > r = Nothing
+  | l == r = Just 0
+  | otherwise =
+    let ((p1, c1), l') = dropLeadingTerm l in
+    let ((p2, c2), r') = dropLeadingTerm r in
+    if p1 /= p2 then
+      Just r
+    else
+      case c2 - c1 of
+        0 -> ordRightSub l' r'
+        dc -> Just (fromVebMono (p2, dc) `ordAdd` r')
+
+-- | Like @ordRightSub@, except it is a partial function.
+ordRightSub' :: Ordinal -> Ordinal -> Ordinal
+ordRightSub' a b =
+  case ordRightSub a b of
+    Just r -> r
+    Nothing -> error "ordRightSub': arithmetic underflow"
+
+-- * Long division
+
+-- | Given ordinals @n@ and @d@, find @(q, r)@ such that:
+--
+-- @r < d && d . q + r === n@
+ordDivRem :: Ordinal -> Ordinal -> (Ordinal, Ordinal)
+ordDivRem _ _ = error "TODO"
 
 -- * Helpers
 
