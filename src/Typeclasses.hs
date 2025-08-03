@@ -1,19 +1,20 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FunctionalDependencies #-}
 module Typeclasses (
-    -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
-    -- Custom numeric types should implement these typeclasses so they can be used in @Conway@.
-    Zero(..), One(..), OrdZero(..), AddSub(..), Mult(..), OrdRing
+  -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
+  -- Custom numeric types should implement these typeclasses so they can be used in @Conway@.
+  Zero(..), One(..), OrdZero(..), AddSub(..), Mult(..), OrdRing, Veblen(..)
 ) where
 import Data.Ratio (Ratio, (%))
 import Numeric.Natural
 
 class Zero a where
-    zero :: a
-    isZero :: a -> Bool
+  zero :: a
+  isZero :: a -> Bool
 
 class One a where
-    one :: a
+  one :: a
 
 -- | Typeclass for a total order with a zero element and negation around the zero element.
 --
@@ -25,80 +26,98 @@ class One a where
 --
 -- 3. @x >= y ==> neg y >= neg x@
 class (Zero a, Ord a) => OrdZero a where
-    neg :: a -> a
-    isPositive, isNegative :: a -> Bool
-    isPositive = (> zero)
-    isNegative = (< zero)
-    compareZero :: a -> Ordering
-    compareZero x = compare x zero
+  neg :: a -> a
+  isPositive, isNegative :: a -> Bool
+  isPositive = (> zero)
+  isNegative = (< zero)
+  compareZero :: a -> Ordering
+  compareZero x = compare x zero
 
 class OrdZero a => AddSub a where
-    add :: a -> a -> a
-    sub :: a -> a -> a
-    sub a b = add a (neg b)
+  add :: a -> a -> a
+  sub :: a -> a -> a
+  sub a b = add a (neg b)
 
 class (OrdZero a, One a) => Mult a where
-    mult :: a -> a -> a
+  mult :: a -> a -> a
 
 class (OrdZero a, AddSub a, Mult a) => OrdRing a where
-    --
+  --
+
+-- | A generic typeclass for a type @a@ that contains
+-- a Veblen hierarchy functio @veblen@ with order type @o@.
+--
+-- @o@ can be a representation of ordinal numbers, or a
+-- representation of an array of ordinals such as Klammersymbolen.
+--
+-- Laws of the @Veblen@ typeclass:
+--
+-- * If @a < b@, then @veblen a x < veblen b x@
+--
+-- * If @a < b@, then @veblen a (veblen b x) === veblen b x@
+--
+-- * If @unVeblen x === Just (b, y)@, then @veblen a x === x@ for all @a < b@.
+--
+class (OrdZero o, Ord a) => Veblen a o | a -> o where
+  veblen :: o -> a -> a
+  unVeblen :: a -> Maybe (o, a)
 
 instance Zero Integer where
-    zero = 0
-    isZero = (==) 0
+  zero = 0
+  isZero = (==) 0
 
 instance One Integer where
-    one = 1
+  one = 1
 
 instance OrdZero Integer where
   neg = negate
 
 instance AddSub Integer where
-    add = (+)
-    sub = (-)
+  add = (+)
+  sub = (-)
 
 instance Mult Integer where
-    mult = (*)
+  mult = (*)
 
 instance OrdRing Integer where
 
 instance Zero Natural where
-    zero = 0
-    isZero = (==) 0
+  zero = 0
+  isZero = (==) 0
 
 instance One Natural where
-    one = 1
+  one = 1
 
 -- | Negating a non-zero natural number causes the arithmetic underflow error.
 instance OrdZero Natural where
   neg = negate
 
 instance AddSub Natural where
-    add = (+)
-    sub = (-)
+  add = (+)
+  sub = (-)
 
 instance Mult Natural where
-    mult = (*)
+  mult = (*)
 
 instance OrdRing Natural where
 
 
 instance (Integral a, Zero a, One a) => Zero (Ratio a) where
-    zero = zero % one
-    isZero = (==) zero
+  zero = zero % one
+  isZero = (==) zero
 
 instance (Integral a, One a) => One (Ratio a) where
-    one = one % one
+  one = one % one
 
 instance (Integral a, OrdZero a, One a, Num a) => OrdZero (Ratio a) where
   neg a = -a
 
 instance (Integral a, Num a, OrdZero a, One a) => AddSub (Ratio a) where
-    add = (+)
-    sub = (-)
+  add = (+)
+  sub = (-)
 
 instance (Integral a, Num a, OrdZero a, One a) => Mult (Ratio a) where
-    mult = (*)
+  mult = (*)
 
 instance (Integral a, Num a, OrdRing a) => OrdRing (Ratio a) where
 
@@ -106,13 +125,13 @@ newtype Sum a = Sum a deriving (Eq, Ord, Show, Read, Functor)
 newtype Product a = Product a deriving (Eq, Ord, Show, Read, Functor)
 
 instance AddSub a => Semigroup (Sum a) where
-    (<>) (Sum a) (Sum b) = Sum (add a b)
+  (<>) (Sum a) (Sum b) = Sum (add a b)
 
 instance AddSub a => Monoid (Sum a) where
-    mempty = Sum zero
+  mempty = Sum zero
 
 instance Mult a => Semigroup (Product a) where
-    (<>) (Product a) (Product b) = Product (mult a b)
+  (<>) (Product a) (Product b) = Product (mult a b)
 
 instance Mult a => Monoid (Product a) where
-    mempty = Product zero
+  mempty = Product zero

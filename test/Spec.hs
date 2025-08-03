@@ -4,7 +4,7 @@ import Control.Monad()
 import Gen
 import Test.Hspec
 import Test.QuickCheck
-import Lib
+import Conway
 import Typeclasses
     ( OrdRing,
       OrdZero(neg, isPositive),
@@ -231,7 +231,7 @@ prop_fsOrd_increasing i j x =
 -- qc :: Testable prop => prop -> IO ()
 -- qc = quickCheckWith stdArgs { maxSuccess = 10000, maxShrinks = 1000 }
 qc :: Testable prop => prop -> Property
-qc p = property p
+qc = property
 
 testPropsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> SpecWith ()
 testPropsOrdRing i = do
@@ -300,7 +300,7 @@ testPropsOrdArith = do
     it "mono1" $ qc prop_ordPowMono1
 
 main :: IO ()
-main = hspec $ do
+main = hspec $ parallel $ do
   describe "Dyadic" $ do
     testPropsOrdRing (id :: Dyadic -> Dyadic)
 

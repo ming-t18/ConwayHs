@@ -14,7 +14,7 @@ where
 import Data.Either (fromRight, isRight)
 import qualified Data.List.NonEmpty as NE hiding (takeWhile)
 import qualified Data.Map.Strict as M
-import Lib
+import Conway
 import Numeric.Natural (Natural)
 
 type VebMonoOrd = VebMono Natural

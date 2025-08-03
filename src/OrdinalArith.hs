@@ -10,7 +10,7 @@ module OrdinalArith (
 ) where
 
 import Prelude hiding (isInfinite)
-import Lib
+import Conway
 import Numeric.Natural
 import qualified Data.Map.Strict as M
 import Typeclasses

@@ -1,7 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Lib (
+module Conway (
     {- |
     Ordinal numbers and surreal numbers with the two-argument Veblen function.
 

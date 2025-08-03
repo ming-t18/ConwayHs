@@ -4,7 +4,7 @@
 
 module Gen where
 import Test.QuickCheck
-import Lib
+import Conway
 import Typeclasses
     ( OrdRing,
       OrdZero(neg),

@@ -24,9 +24,9 @@ source-repository head
 
 library
   exposed-modules:
+      Conway
       Dyadic
       FundamentalSeq
-      Lib
       OrdBag
       OrdinalArith
       Typeclasses
