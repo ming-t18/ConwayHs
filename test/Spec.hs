@@ -344,11 +344,17 @@ testPropsOrdArith = do
 
     -- modifyMaxSuccess (const 100000) $ parallel $ do
     it "from product" $ qc prop_ordDivRemProduct
-    it "add back" $ qc prop_ordDivRemAddBack
-    it "add back for x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack x (x `ordAdd` 1))
-    it "add back for 2x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack (x `ordMult` 2) (x `ordAdd` 1))
-    it "add back for 3x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack (x `ordMult` 3) (x `ordAdd` 1))
-    it "remainder is smallest possible" $ qc prop_ordDivRemRemainderSmallest
+    describe "add back" $ do
+      it "any pair" $ qc prop_ordDivRemAddBack
+      it "x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack x (x `ordAdd` 1))
+      it "2x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack (x `ordMult` 2) (x `ordAdd` 1))
+      it "3x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack (x `ordMult` 3) (x `ordAdd` 1))
+
+    describe "remainder is smallest possible" $ do
+      it "any pair" $ qc prop_ordDivRemRemainderSmallest
+      it "x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest x (x `ordAdd` 1))
+      it "2x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest (x `ordMult` 2) (x `ordAdd` 1))
+      it "3x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest (x `ordMult` 3) (x `ordAdd` 1))
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 1000) $ do

@@ -15,7 +15,6 @@ module OrdinalArith (
 
 import Prelude hiding (isInfinite)
 import Conway
-import Numeric.Natural
 import qualified Data.Map.Strict as M
 import Typeclasses
 import Data.Foldable
@@ -193,7 +192,7 @@ ordRightSub' a b =
 
 -- * Long division
 
--- | Given ordinals @n@ and @d@, find @(q, r)@ such that:
+-- | Given ordinal numbers @n@ and @d@, find @(q, r)@ such that:
 --
 -- @r < d && d.q + r === n@
 ordDivRem :: Ordinal -> Ordinal -> (Ordinal, Ordinal)
@@ -207,14 +206,11 @@ ordDivRem n d
     loop :: [(VebMono Natural, Natural)] -> (Ordinal, Ordinal) -> (Ordinal, Ordinal)
     loop [] (q, r) = (q, r)
     loop ((pn0', cn0):ts) (q, r)
-      -- numerator is too small
       | pn0 < pd0 = (q, r)
-      -- coeff quotient is zero, move to next term
-      | isZero cr = loop ts (q, r)
       | toSub <= r = loop ts (q `ordAdd` dq, ordRightSub' toSub r)
-      | cr <= 1 = (q, r)
+      | cq <= 1 = (q, r)
       | otherwise =
-        let dq' = mono de (cr - 1) in
+        let dq' = mono de (cq - 1) in
         let toSub' = d `ordMult` dq' in
         if toSub' > r then
           (q, r)
@@ -223,8 +219,9 @@ ordDivRem n d
       where
         pn0 = unMono1 pn0'
         de = ordRightSub' pd0 pn0
-        cr = if isZero de then cn0 `div` cd0 else cn0
-        dq = mono de cr
+        -- (cq, _cr) = if isZero de then cn0 `divMod` cd0 else (cn0, 0)
+        cq = if isZero de then cn0 `div` cd0 else cn0
+        dq = mono de cq
         toSub = d `ordMult` dq
 
     ((pd0', cd0), _) = dropLeadingTerm d

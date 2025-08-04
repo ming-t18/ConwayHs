@@ -15,6 +15,7 @@ module Conway (
     Conway,
     VebMono(VebMono),
     Ordinal,
+    Natural,
 
     -- * Creation/decomposition
     conway,
@@ -45,7 +46,7 @@ import Data.Map.Strict(Map)
 import qualified Data.Map.Strict as M
 import Typeclasses
 import Data.List (intercalate)
-import GHC.Natural (Natural)
+import Numeric.Natural (Natural)
 import qualified OrdBag
 import OrdBag (OrdBag)
 import Data.Foldable
