@@ -309,6 +309,9 @@ testPropsOrdArith = do
     it "subtract itself" $ qc (\x -> ordRightSub x x === Just 0)
     it "add back" $ qc prop_ordRightSubAddBack
 
+  describe "ordinal long division" $ do
+    it "add back" $ qc (\n d -> d /= 0 ==> let (q, r) = ordDivRem n d in (d `ordMult` q) `ordAdd` r === n)
+
 main :: IO ()
 main = hspec $ parallel $ do
   describe "Dyadic" $ do

@@ -2,6 +2,7 @@
 module OrdinalArith (
   ordAdd,
   ordMult,
+  ordMultByFinite,
   ordPow,
   ordRightSub,
   ordRightSub',
@@ -172,14 +173,15 @@ ordRightSub l r
   | l > r = Nothing
   | l == r = Just 0
   | otherwise =
-    let ((p1, c1), l') = dropLeadingTerm l in
-    let ((p2, c2), r') = dropLeadingTerm r in
     if p1 /= p2 then
       Just r
     else
       case c2 - c1 of
         0 -> ordRightSub l' r'
         dc -> Just (fromVebMono (p2, dc) `ordAdd` r')
+    where
+      ((p1, c1), l') = dropLeadingTerm l
+      ((p2, c2), r') = dropLeadingTerm r
 
 -- | Like @ordRightSub@, except it is a partial function.
 ordRightSub' :: Ordinal -> Ordinal -> Ordinal
@@ -187,14 +189,46 @@ ordRightSub' a b =
   case ordRightSub a b of
     Just r -> r
     Nothing -> error "ordRightSub': arithmetic underflow"
+    -- Nothing -> error $ "ordRightSub': arithmetic underflow: " ++ show (a,b)
 
 -- * Long division
 
 -- | Given ordinals @n@ and @d@, find @(q, r)@ such that:
 --
--- @r < d && d . q + r === n@
+-- @r < d && d.q + r === n@
 ordDivRem :: Ordinal -> Ordinal -> (Ordinal, Ordinal)
-ordDivRem _ _ = error "TODO"
+ordDivRem n d
+  | isZero d = error "ordDivRem: division by zero"
+  | d == 1 = (n, 0)
+  | d > n = (0, n)
+  | n == d = (1, 0)
+  | otherwise = recurse (0, n)
+  where
+    recurse :: (Ordinal, Ordinal) -> (Ordinal, Ordinal)
+    recurse (acc, 0) = (acc, 0)
+    recurse (acc, r)
+      | d > r = (acc, r)
+      | otherwise =
+        if pr == pd then
+          let q = cr `div` cd in
+          let dr = mono pr (q * cd) in
+          recurse (acc `ordAdd` finite q, ordRightSub' dr r)
+        else
+          -- let q = cr `div` cd in
+          let q = cr in -- if cd >= cr then 1 else cr `div` cd in
+          if q == 0 then
+            --error $ "TODO fix this: ((acc, r), d) = " ++ show ((acc, r), d)
+            (acc, r)
+          else
+            let dp = ordRightSub' pd pr in
+            recurse (acc `ordAdd` mono dp q, ordRightSub' (fromVebMono (pr', cr)) r)
+        where
+          ((pr', cr), _) = dropLeadingTerm r
+          pr = unMono1 pr'
+
+    ((pd', cd), _) = dropLeadingTerm d
+    pd = unMono1 pd'
+
 
 -- * Helpers
 
