@@ -18,6 +18,7 @@ import FundamentalSeq
 import qualified Data.List.NonEmpty as NE
 import OrdinalArith
 import Numeric.Natural
+import Test.Hspec.QuickCheck
 
 -- * Ordering
 
@@ -194,6 +195,27 @@ prop_ordRightSubAddBack :: Ordinal -> Ordinal ->  Property
 prop_ordRightSubAddBack l r = case ordRightSub l r of
                                   Nothing -> False ==> True
                                   Just x -> (l `ordAdd` x) === r
+
+prop_ordDivRemProduct :: Ordinal -> Ordinal -> Property
+prop_ordDivRemProduct d q = d /= 0 ==> (d `ordMult` q) `ordDivRem` d === (q, 0)
+
+prop_ordDivRemDistr :: Ordinal -> Ordinal -> Conway Natural -> Property
+prop_ordDivRemDistr a b d = d /= 0 ==> fst ((a `ordAdd` b) `ordDivRem` d) === q1 `ordAdd` q2 where
+  (q1, _) = ordDivRem a d
+  (q2, _) = ordDivRem b d
+
+prop_ordDivRemScalingZeroRem :: Ordinal -> Ordinal -> Conway Natural -> Property
+prop_ordDivRemScalingZeroRem a b d = d /= 0 && r == 0 ==> fst ((a `ordMult` b) `ordDivRem` d) === q `ordMult` b where
+  (q, r) = ordDivRem a d
+
+prop_ordDivRemBy1 :: Ordinal -> Property
+prop_ordDivRemBy1 n = n `ordDivRem` 1 === (n, 0)
+
+prop_ordDivRemAddBack :: Ordinal -> Conway Natural -> Property
+prop_ordDivRemAddBack n d = d /= 0 ==> let (q, r) = ordDivRem n d in (d `ordMult` q) `ordAdd` r === n
+
+prop_ordDivRemRemainderSmallest :: Ordinal -> Ordinal -> Property
+prop_ordDivRemRemainderSmallest n d = d /= 0 ==> snd (ordDivRem n d) < d
 -- * Veblen Function
 
 prop_vebIncrMap, prop_vebDecrMap :: OrdV0Gen -> OrdV0Gen -> Property
@@ -307,13 +329,29 @@ testPropsOrdArith = do
     it "no solution" $ qc (\x y -> x > y ==> ordRightSub x y === Nothing)
     it "subtract zero" $ qc (\x -> ordRightSub 0 x === Just x)
     it "subtract itself" $ qc (\x -> ordRightSub x x === Just 0)
+    it "from sum" $ qc (\a b -> ordRightSub a (a `ordAdd` b) === Just b)
     it "add back" $ qc prop_ordRightSubAddBack
 
   describe "ordinal long division" $ do
-    it "add back" $ qc (\n d -> d /= 0 ==> let (q, r) = ordDivRem n d in (d `ordMult` q) `ordAdd` r === n)
+    it "examples" $ do
+      (veb 2 0 2 `ordDivRem` (veb1 2 0 + 1)) `shouldBe` (1, veb1 2 0)
+
+    it "by zero" $ qc (\x -> x /= 0 ==> 0 `ordDivRem` x === (0, 0))
+    it "div by 1" $ qc prop_ordDivRemBy1
+
+    it "distributive" $ qc prop_ordDivRemDistr
+    it "scaling by multipler, zero remainder" $ qc prop_ordDivRemScalingZeroRem
+
+    -- modifyMaxSuccess (const 100000) $ parallel $ do
+    it "from product" $ qc prop_ordDivRemProduct
+    it "add back" $ qc prop_ordDivRemAddBack
+    it "add back for x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack x (x `ordAdd` 1))
+    it "add back for 2x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack (x `ordMult` 2) (x `ordAdd` 1))
+    it "add back for 3x / (x + 1)" $ qc (\x -> prop_ordDivRemAddBack (x `ordMult` 3) (x `ordAdd` 1))
+    it "remainder is smallest possible" $ qc prop_ordDivRemRemainderSmallest
 
 main :: IO ()
-main = hspec $ parallel $ do
+main = hspec $ parallel $ modifyMaxSuccess (const 1000) $ do
   describe "Dyadic" $ do
     testPropsOrdRing (id :: Dyadic -> Dyadic)
 

@@ -188,8 +188,8 @@ ordRightSub' :: Ordinal -> Ordinal -> Ordinal
 ordRightSub' a b =
   case ordRightSub a b of
     Just r -> r
-    Nothing -> error "ordRightSub': arithmetic underflow"
-    -- Nothing -> error $ "ordRightSub': arithmetic underflow: " ++ show (a,b)
+    -- Nothing -> error "ordRightSub': arithmetic underflow"
+    Nothing -> error $ "ordRightSub': arithmetic underflow: " ++ show (a,b)
 
 -- * Long division
 
@@ -202,32 +202,33 @@ ordDivRem n d
   | d == 1 = (n, 0)
   | d > n = (0, n)
   | n == d = (1, 0)
-  | otherwise = recurse (0, n)
+  | otherwise = loop (termsList n) (0, n)
   where
-    recurse :: (Ordinal, Ordinal) -> (Ordinal, Ordinal)
-    recurse (acc, 0) = (acc, 0)
-    recurse (acc, r)
-      | d > r = (acc, r)
+    loop :: [(VebMono Natural, Natural)] -> (Ordinal, Ordinal) -> (Ordinal, Ordinal)
+    loop [] (q, r) = (q, r)
+    loop ((pn0', cn0):ts) (q, r)
+      -- numerator is too small
+      | pn0 < pd0 = (q, r)
+      -- coeff quotient is zero, move to next term
+      | isZero cr = loop ts (q, r)
+      | toSub <= r = loop ts (q `ordAdd` dq, ordRightSub' toSub r)
+      | cr <= 1 = (q, r)
       | otherwise =
-        if pr == pd then
-          let q = cr `div` cd in
-          let dr = mono pr (q * cd) in
-          recurse (acc `ordAdd` finite q, ordRightSub' dr r)
+        let dq' = mono de (cr - 1) in
+        let toSub' = d `ordMult` dq' in
+        if toSub' > r then
+          (q, r)
         else
-          -- let q = cr `div` cd in
-          let q = cr in -- if cd >= cr then 1 else cr `div` cd in
-          if q == 0 then
-            --error $ "TODO fix this: ((acc, r), d) = " ++ show ((acc, r), d)
-            (acc, r)
-          else
-            let dp = ordRightSub' pd pr in
-            recurse (acc `ordAdd` mono dp q, ordRightSub' (fromVebMono (pr', cr)) r)
-        where
-          ((pr', cr), _) = dropLeadingTerm r
-          pr = unMono1 pr'
+          loop ts (q `ordAdd` dq', ordRightSub' toSub' r)
+      where
+        pn0 = unMono1 pn0'
+        de = ordRightSub' pd0 pn0
+        cr = if isZero de then cn0 `div` cd0 else cn0
+        dq = mono de cr
+        toSub = d `ordMult` dq
 
-    ((pd', cd), _) = dropLeadingTerm d
-    pd = unMono1 pd'
+    ((pd0', cd0), _) = dropLeadingTerm d
+    pd0 = unMono1 pd0'
 
 
 -- * Helpers
