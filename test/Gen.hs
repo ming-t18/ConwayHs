@@ -11,7 +11,6 @@ import Typeclasses
       Zero(zero, isZero),
       AddSub(..),
       One(one) )
-import Numeric.Natural (Natural)
 import Dyadic
 import Data.Foldable
 

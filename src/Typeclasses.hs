@@ -45,7 +45,8 @@ class (OrdZero a, AddSub a, Mult a) => OrdRing a where
   --
 
 -- | A generic typeclass for a type @a@ that contains
--- a Veblen hierarchy functio @veblen@ with order type @o@.
+-- a Veblen hierarchy function @veblen@ indexed by an order
+-- of type @o@.
 --
 -- @o@ can be a representation of ordinal numbers, or a
 -- representation of an array of ordinals such as Klammersymbolen.
@@ -59,7 +60,15 @@ class (OrdZero a, AddSub a, Mult a) => OrdRing a where
 -- * If @unVeblen x === Just (b, y)@, then @veblen a x === x@ for all @a < b@.
 --
 class (OrdZero o, Ord a) => Veblen a o | a -> o where
+  -- | Evaluates the Veblen hierarchy function
   veblen :: o -> a -> a
+
+  -- | Determines if the argument can be written in the form of @veblen o x@,
+  -- for the largest possible @o@, and returns:
+  --
+  -- * @Just (o, x)@ if true
+  --
+  -- * @Nothing@ otherwise
   unVeblen :: a -> Maybe (o, a)
 
 -- * Integer
@@ -116,7 +125,7 @@ instance One Natural where
 -- | Negating a non-zero natural number causes the arithmetic underflow error.
 instance OrdZero Natural where
   neg = negate
-  isNegative _ = False
+  -- isNegative _ = False
 
 -- | @sub@ is subject to arithmetic underflow errors.
 instance AddSub Natural where

@@ -1,6 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Conway (
   {- |
   Ordinal numbers and surreal numbers with the two-argument Veblen function.
@@ -51,6 +52,8 @@ import qualified OrdBag
 import OrdBag (OrdBag)
 import Data.Foldable
 
+-- * Types
+
 type Ordinal = Conway Natural
 
 -- | Represents an ordinal number or surreal number in Cantor or Conway normal form.
@@ -60,6 +63,14 @@ type Ordinal = Conway Natural
 -- The map representation follows the no-zero-values invarant of @OrdBag@.
 newtype Conway a = Conway (Map (VebMono a) a)
   deriving (Eq)
+
+-- | Represents a Veblen hierarchy monomial with coefficient of 1,
+-- with the arguments being type @Conway a@.
+--
+-- @VebMono a b@ represents @veb1 a b@
+data VebMono a = VebMono !Ordinal !(Conway a)
+
+-- * Typeclass Implementations
 
 instance (OrdZero a, One a, Show a) => Show (Conway a) where
   show x =
@@ -94,7 +105,13 @@ instance (One a) => One (Conway a) where
 
 instance (AddSub a, One a) => AddSub (Conway a) where
   add (Conway a) (Conway b) = Conway $ zeroNormalize $ M.unionWith add a b
-  sub (Conway a) (Conway b) = Conway $ zeroNormalize $ M.unionWith sub a b
+  sub (Conway a) (Conway b) = Conway $ zeroNormalize $ M.fromList $ map (\k -> (k, f k)) ks where
+    ks = M.keys $ M.union a b
+    f k = case (M.lookup k a, M.lookup k b) of
+            (Nothing, Nothing) -> zero
+            (Just x, Nothing) -> x
+            (Nothing, Just y) -> neg y
+            (Just x, Just y) -> sub x y
 
 instance (AddSub a, Mult a) => Mult (Conway a) where
   mult (Conway a) b = foldr add zero [ multMono (k1, v1) b | (k1, v1) <- M.toList a]
@@ -103,6 +120,7 @@ instance (OrdRing a) => OrdRing (Conway a) where
 
 instance (OrdRing a, Num a) => Num (Conway a) where
   (+) = add
+  (-) = sub
   (*) = mult
   abs a = if isNegative a then neg a else a
   signum a
@@ -112,6 +130,46 @@ instance (OrdRing a, Num a) => Num (Conway a) where
 
   fromInteger = mono zero . fromInteger
   negate = neg
+
+instance (One a, OrdZero a) => Eq (VebMono a) where
+  (==) l@(VebMono a p) r@(VebMono b q)
+    | a == b = p == q
+    | a < b = p == fromVebMono1 r
+    | otherwise = fromVebMono1 l == q
+
+instance (OrdZero a, One a) => Ord (VebMono a) where
+  compare l@(VebMono a p) r@(VebMono b q)
+  -- V[a, p] <= V[a, q] ==> p <= q
+    | a == b = compare p q
+  -- V[a, p] <= V[b, q] ==> V[a, p] <= V[a, V[b, q]] ==> p <= V[b, q]
+    | a < b = compare p (fromVebMono1 r)
+    | otherwise = compare (fromVebMono1 l) q
+
+instance (OrdZero a, One a) => OrdZero (VebMono a) where
+  neg = error "cannot negate a VebMono"
+
+instance (OrdZero a, One a, Show a) => Show (VebMono a) where
+  show (VebMono a p) = showTerm (show a) (show p)
+    where
+      showTerm "0" "0" = "1"
+      showTerm "0" "1" = "w"
+      showTerm "0" [c] = "w^" ++ [c]
+      showTerm "0" p' = "w^{" ++ p' ++ "}"
+      showTerm "1" [c] = "ε_" ++ [c]
+      showTerm "1" p' = "ε_{" ++ p' ++ "}"
+      showTerm a' p' = "φ[" ++ a' ++ ", " ++ p' ++ "]"
+
+instance (OrdZero a, One a) => Veblen (Conway a) Ordinal where
+  veblen = veb1
+  unVeblen (Conway xs) =
+    case M.toList xs of
+      [] -> Just (zero, zero)
+      [(VebMono p a, c)]
+        | c == one -> Just (p, a)
+        | otherwise -> Nothing
+      _ : (_ : _) -> Nothing
+
+-- * Creation/decomposition
 
 -- | Given a @Map@ from the 2 Veblen arguments (2-tuple) to the coefficient, constructs a new @Conway@.
 conway :: OrdZero a => Map (VebMono a) a -> Conway a
@@ -142,42 +200,6 @@ dropLeadingTerm (Conway m) = if M.null m then ((zero, zero), conway M.empty) els
   where (p, m') = M.deleteFindMax m
 dropTrailingTerm (Conway m) = if M.null m then (conway M.empty, (zero, zero)) else (conway m', p)
   where (p, m') = M.deleteFindMin m
-
-{- |
-Represents a Veblen hierarchy monomial with coefficient of 1.
-
-@VebMono a b@ represents @veb1 a b@
-
--}
-data VebMono a = VebMono !Ordinal !(Conway a)
-
-instance (One a, OrdZero a) => Eq (VebMono a) where
-  (==) l@(VebMono a p) r@(VebMono b q)
-    | a == b = p == q
-    | a < b = p == fromVebMono1 r
-    | otherwise = fromVebMono1 l == q
-
-instance (OrdZero a, One a) => Ord (VebMono a) where
-  compare l@(VebMono a p) r@(VebMono b q)
-  -- V[a, p] <= V[a, q] ==> p <= q
-    | a == b = compare p q
-  -- V[a, p] <= V[b, q] ==> V[a, p] <= V[a, V[b, q]] ==> p <= V[b, q]
-    | a < b = compare p (fromVebMono1 r)
-    | otherwise = compare (fromVebMono1 l) q
-
-instance (OrdZero a, One a) => OrdZero (VebMono a) where
-  neg = error "cannot negate a VebMono"
-
-instance (OrdZero a, One a, Show a) => Show (VebMono a) where
-  show (VebMono a p) = showTerm (show a) (show p)
-    where
-      showTerm "0" "0" = "1"
-      showTerm "0" "1" = "w"
-      showTerm "0" [c] = "w^" ++ [c]
-      showTerm "0" p' = "w^{" ++ p' ++ "}"
-      showTerm "1" [c] = "ε_" ++ [c]
-      showTerm "1" p' = "ε_{" ++ p' ++ "}"
-      showTerm a' p' = "φ[" ++ a' ++ ", " ++ p' ++ "]"
 
 -- | Similar to @veb@
 fromVebMono :: Mult a => (VebMono a, a) -> Conway a

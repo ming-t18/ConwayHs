@@ -17,7 +17,6 @@ import FundamentalSeq
 
 import qualified Data.List.NonEmpty as NE
 import OrdinalArith
-import Numeric.Natural
 import Test.Hspec.QuickCheck
 
 -- * Ordering
