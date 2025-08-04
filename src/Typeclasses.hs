@@ -62,6 +62,8 @@ class (OrdZero o, Ord a) => Veblen a o | a -> o where
   veblen :: o -> a -> a
   unVeblen :: a -> Maybe (o, a)
 
+-- * Integer
+
 instance Zero Integer where
   zero = 0
   isZero = (==) 0
@@ -81,6 +83,29 @@ instance Mult Integer where
 
 instance OrdRing Integer where
 
+-- * Int
+
+instance Zero Int where
+  zero = 0
+  isZero = (==) 0
+
+instance One Int where
+  one = 1
+
+instance OrdZero Int where
+  neg = negate
+
+instance AddSub Int where
+  add = (+)
+  sub = (-)
+
+instance Mult Int where
+  mult = (*)
+
+instance OrdRing Int where
+
+-- * Natural
+
 instance Zero Natural where
   zero = 0
   isZero = (==) 0
@@ -91,7 +116,9 @@ instance One Natural where
 -- | Negating a non-zero natural number causes the arithmetic underflow error.
 instance OrdZero Natural where
   neg = negate
+  isNegative _ = False
 
+-- | @sub@ is subject to arithmetic underflow errors.
 instance AddSub Natural where
   add = (+)
   sub = (-)
@@ -101,6 +128,28 @@ instance Mult Natural where
 
 instance OrdRing Natural where
 
+-- * Float
+
+instance Zero Float where
+  zero = 0
+  isZero = (==) 0
+
+instance One Float where
+  one = 1
+
+instance OrdZero Float where
+  neg = negate
+
+instance AddSub Float where
+  add = (+)
+  sub = (-)
+
+instance Mult Float where
+  mult = (*)
+
+instance OrdRing Float where
+
+-- * Ratio
 
 instance (Integral a, Zero a, One a) => Zero (Ratio a) where
   zero = zero % one
@@ -120,18 +169,3 @@ instance (Integral a, Num a, OrdZero a, One a) => Mult (Ratio a) where
   mult = (*)
 
 instance (Integral a, Num a, OrdRing a) => OrdRing (Ratio a) where
-
-newtype Sum a = Sum a deriving (Eq, Ord, Show, Read, Functor)
-newtype Product a = Product a deriving (Eq, Ord, Show, Read, Functor)
-
-instance AddSub a => Semigroup (Sum a) where
-  (<>) (Sum a) (Sum b) = Sum (add a b)
-
-instance AddSub a => Monoid (Sum a) where
-  mempty = Sum zero
-
-instance Mult a => Semigroup (Product a) where
-  (<>) (Product a) (Product b) = Product (mult a b)
-
-instance Mult a => Monoid (Product a) where
-  mempty = Product zero
