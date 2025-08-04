@@ -44,6 +44,7 @@ module Conway (
 ) where
 
 import Data.Map.Strict(Map)
+import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Typeclasses
 import Data.List (intercalate)
@@ -106,7 +107,7 @@ instance (One a) => One (Conway a) where
 instance (AddSub a, One a) => AddSub (Conway a) where
   add (Conway a) (Conway b) = Conway $ zeroNormalize $ M.unionWith add a b
   sub (Conway a) (Conway b) = Conway $ zeroNormalize $ M.fromList $ map (\k -> (k, f k)) ks where
-    ks = M.keys $ M.union a b
+    ks = S.toList (M.keysSet a `S.union` M.keysSet b)
     f k = case (M.lookup k a, M.lookup k b) of
             (Nothing, Nothing) -> zero
             (Just x, Nothing) -> x
