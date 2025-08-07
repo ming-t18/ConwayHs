@@ -11,10 +11,10 @@ module FundamentalSeq
   )
 where
 
+import Conway
 import Data.Either (fromRight, isRight)
 import qualified Data.List.NonEmpty as NE hiding (takeWhile)
 import qualified Data.Map.Strict as M
-import Conway
 
 type VebMonoOrd = VebMono Natural
 
@@ -109,22 +109,22 @@ levelDown :: Ordinal -> Maybe Ordinal
 levelDown o
   | o == omega = Just 1
   | otherwise =
-    case removeSucc o of
-      Just (x, _) -> Just x
-      Nothing ->
-        case fsOrd o of
-          Left 0 -> Nothing
-          Left _ -> error "levelDown: not possible"
-          Right ys ->
-            case dropWhile (<= 1) $ NE.toList ys of
-              [] -> error "levelDown: not possible"
-              (x : _) -> Just x
+      case removeSucc o of
+        Just (x, _) -> Just x
+        Nothing ->
+          case fsOrd o of
+            Left 0 -> Nothing
+            Left _ -> error "levelDown: not possible"
+            Right ys ->
+              case dropWhile (<= 1) $ NE.toList ys of
+                [] -> error "levelDown: not possible"
+                (x : _) -> Just x
 
 -- | Given an ordinal number, returns a iterating sequence of `levelDown` until reaching zero.
 levelDownSeq :: Ordinal -> [Ordinal]
 levelDownSeq o = case levelDown o of
-                   Nothing -> []
-                   Just x -> x : levelDownSeq x
+  Nothing -> []
+  Just x -> x : levelDownSeq x
 
 -- | Converts a fundamental sequence to a Haskell list.
 fsToList :: FSeq -> [Ordinal]

@@ -1,11 +1,20 @@
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FunctionalDependencies #-}
-module Typeclasses (
-  -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
-  -- Custom numeric types should implement these typeclasses so they can be used in @Conway@.
-  Zero(..), One(..), OrdZero(..), AddSub(..), Mult(..), OrdRing, Veblen(..)
-) where
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+module Typeclasses
+  ( -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
+    -- Custom numeric types should implement these typeclasses so they can be used in @Conway@.
+    Zero (..),
+    One (..),
+    OrdZero (..),
+    AddSub (..),
+    Mult (..),
+    OrdRing,
+    Veblen (..),
+  )
+where
+
 import Data.Ratio (Ratio, (%))
 import Numeric.Natural
 
@@ -33,7 +42,7 @@ class (Zero a, Ord a) => OrdZero a where
   compareZero :: a -> Ordering
   compareZero x = compare x zero
 
-class OrdZero a => AddSub a where
+class (OrdZero a) => AddSub a where
   add :: a -> a -> a
   sub :: a -> a -> a
   sub a b = add a (neg b)
@@ -41,8 +50,9 @@ class OrdZero a => AddSub a where
 class (OrdZero a, One a) => Mult a where
   mult :: a -> a -> a
 
-class (OrdZero a, AddSub a, Mult a) => OrdRing a where
-  --
+class (OrdZero a, AddSub a, Mult a) => OrdRing a
+
+--
 
 -- | A generic typeclass for a type @a@ that contains
 -- a Veblen hierarchy function @veblen@ indexed by an order
@@ -58,7 +68,6 @@ class (OrdZero a, AddSub a, Mult a) => OrdRing a where
 -- * If @a < b@, then @veblen a (veblen b x) === veblen b x@
 --
 -- * If @unVeblen x === Just (b, y)@, then @veblen a x === x@ for all @a < b@.
---
 class (OrdZero o, Ord a) => Veblen a o | a -> o where
   -- | Evaluates the Veblen hierarchy function
   veblen :: o -> a -> a
@@ -90,7 +99,7 @@ instance AddSub Integer where
 instance Mult Integer where
   mult = (*)
 
-instance OrdRing Integer where
+instance OrdRing Integer
 
 -- * Int
 
@@ -111,7 +120,7 @@ instance AddSub Int where
 instance Mult Int where
   mult = (*)
 
-instance OrdRing Int where
+instance OrdRing Int
 
 -- * Natural
 
@@ -125,7 +134,8 @@ instance One Natural where
 -- | Negating a non-zero natural number causes the arithmetic underflow error.
 instance OrdZero Natural where
   neg = negate
-  -- isNegative _ = False
+
+-- isNegative _ = False
 
 -- | @sub@ is subject to arithmetic underflow errors.
 instance AddSub Natural where
@@ -135,7 +145,7 @@ instance AddSub Natural where
 instance Mult Natural where
   mult = (*)
 
-instance OrdRing Natural where
+instance OrdRing Natural
 
 -- * Float
 
@@ -156,7 +166,7 @@ instance AddSub Float where
 instance Mult Float where
   mult = (*)
 
-instance OrdRing Float where
+instance OrdRing Float
 
 -- * Ratio
 
@@ -177,4 +187,4 @@ instance (Integral a, Num a, OrdZero a, One a) => AddSub (Ratio a) where
 instance (Integral a, Num a, OrdZero a, One a) => Mult (Ratio a) where
   mult = (*)
 
-instance (Integral a, Num a, OrdRing a) => OrdRing (Ratio a) where
+instance (Integral a, Num a, OrdRing a) => OrdRing (Ratio a)

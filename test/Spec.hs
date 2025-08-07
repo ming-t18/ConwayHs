@@ -1,44 +1,47 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-import Control.Monad()
-import Gen
-import Test.Hspec
-import Test.QuickCheck
+
+import Control.Monad ()
 import Conway
-import Typeclasses
-    ( OrdRing,
-      OrdZero(neg, isPositive),
-      Zero(zero, isZero),
-      AddSub(..),
-      Mult(..),
-      One(one) )
+import qualified Data.List.NonEmpty as NE
 import Dyadic
 import FundamentalSeq
-
-import qualified Data.List.NonEmpty as NE
+import Gen
 import OrdinalArith
+import Test.Hspec
 import Test.Hspec.QuickCheck
+import Test.QuickCheck
+import Typeclasses
+  ( AddSub (..),
+    Mult (..),
+    One (one),
+    OrdRing,
+    OrdZero (isPositive, neg),
+    Zero (isZero, zero),
+  )
 
 -- * Ordering
 
-prop_compareTransitive :: Ord a => a -> a -> a -> Property
+prop_compareTransitive :: (Ord a) => a -> a -> a -> Property
 prop_compareTransitive a b c
-    | a <= b && a <= c = True ==> a <= c
-    | a <= c && c <= b = True ==> a <= b
-    | a >= b && b >= c = True ==> a >= c
-    | a >= c && c >= b = True ==> a >= b
-    | b <= a && a <= c = True ==> b <= c
-    | b >= a && a >= c = True ==> b >= c
-    | otherwise = False ==> False
+  | a <= b && a <= c = True ==> a <= c
+  | a <= c && c <= b = True ==> a <= b
+  | a >= b && b >= c = True ==> a >= c
+  | a >= c && c >= b = True ==> a >= b
+  | b <= a && a <= c = True ==> b <= c
+  | b >= a && a >= c = True ==> b >= c
+  | otherwise = False ==> False
 
-prop_compareReverse :: Ord a => a -> a -> Bool
-prop_compareReverse a b = compare a b == f (compare b a) where
+prop_compareReverse :: (Ord a) => a -> a -> Bool
+prop_compareReverse a b = compare a b == f (compare b a)
+  where
     f EQ = EQ
     f LT = GT
     f GT = LT
 
-prop_compareNegation :: OrdZero a => a -> a -> Bool
-prop_compareNegation a b = compare a b == f (compare (neg a) (neg b)) where
+prop_compareNegation :: (OrdZero a) => a -> a -> Bool
+prop_compareNegation a b = compare a b == f (compare (neg a) (neg b))
+  where
     f EQ = EQ
     f LT = GT
     f GT = LT
@@ -47,8 +50,8 @@ prop_compareNegation a b = compare a b == f (compare (neg a) (neg b)) where
 
 prop_orderedAdd :: (AddSub a) => a -> a -> a -> Bool
 prop_orderedAdd a b c
-    | a <= b = add a c <= add b c
-    | otherwise = add a c >= add b c
+  | a <= b = add a c <= add b c
+  | otherwise = add a c >= add b c
 
 prop_addZero :: (AddSub a, Show a) => a -> Property
 prop_addZero a = add a zero === a
@@ -65,10 +68,10 @@ prop_dneg a = a === neg (neg a)
 prop_addNegIsSub :: (Show a, AddSub a) => a -> a -> Property
 prop_addNegIsSub a b = a `add` neg b === a `sub` b
 
-prop_multZero :: Mult a => a -> Bool
+prop_multZero :: (Mult a) => a -> Bool
 prop_multZero x = isZero (mult zero x) && isZero (mult x zero)
 
-prop_multOne :: Mult a => a -> Bool
+prop_multOne :: (Mult a) => a -> Bool
 prop_multOne x = mult one x == x && mult x one == x
 
 prop_multComm :: (Mult a, Show a) => a -> a -> Property
@@ -83,10 +86,10 @@ prop_multDistr a b c = mult a (add b c) === add (mult a b) (mult a c)
 prop_multNeg :: (AddSub a, Mult a, Show a) => a -> a -> Property
 prop_multNeg a b = neg (mult a b) === mult (neg a) b
 
-prop_sqPos :: Mult a => a -> Bool
+prop_sqPos :: (Mult a) => a -> Bool
 prop_sqPos a = if a == zero then mult a a == zero else mult a a > zero
 
-prop_multPreserveOrder :: Mult a => a -> a -> a -> Property
+prop_multPreserveOrder :: (Mult a) => a -> a -> a -> Property
 prop_multPreserveOrder m a b
   | isZero m = False ==> True === True
   | isPositive m = True ==> (a <= b) === (mult m a <= mult m b)
@@ -165,13 +168,13 @@ prop_ordPowExponentSum :: Ordinal -> Ordinal -> Ordinal -> Property
 prop_ordPowExponentSum x y z = (x `ordPow` (y `ordAdd` z)) === (x `ordPow` y) `ordMult` (x `ordPow` z)
 
 prop_ordPowInfiniteExponent :: Ordinal -> (Ordinal, Natural) -> Ordinal -> Property
-prop_ordPowInfiniteExponent x (a0, b0) y
-  = x > 1 && a0 > 0 && b0 > 0 && not (isFinite y) ==> ((x `ordPow` a0) `ordMult` finite b0 `ordAdd` 1) `ordMult` (x `ordPow` y) === x `ordPow` (a0 `ordAdd` y)
+prop_ordPowInfiniteExponent x (a0, b0) y =
+  x > 1 && a0 > 0 && b0 > 0 && not (isFinite y) ==> ((x `ordPow` a0) `ordMult` finite b0 `ordAdd` 1) `ordMult` (x `ordPow` y) === x `ordPow` (a0 `ordAdd` y)
 
 -- | large exponents can cause hangs
 prop_ordPowExponentProduct :: Ordinal -> Ordinal -> Ordinal -> Property
 prop_ordPowExponentProduct x y z =
-    isPositive y && isPositive z ==> (x `ordPow` (y `ordMult` z)) === (x `ordPow` y) `ordPow` z
+  isPositive y && isPositive z ==> (x `ordPow` (y `ordMult` z)) === (x `ordPow` y) `ordPow` z
 
 prop_ordPowOrderPreserving :: Ordinal -> Ordinal -> Ordinal -> Property
 prop_ordPowOrderPreserving x y z
@@ -183,29 +186,32 @@ prop_ordPowOrderPreserving x y z
 -- ProofWiki: https://proofwiki.org/wiki/Ordinal_Exponentiation_via_Cantor_Normal_Form/Corollary
 -- with @w@ being the base.
 prop_ordPowLeadingTerm :: Ordinal -> Ordinal -> Property
-prop_ordPowLeadingTerm x y = not (isFinite x) && isPositive y ==> x `ordPow` mono1 y === mono1 (p0 `ordMult` mono1 y) where
+prop_ordPowLeadingTerm x y = not (isFinite x) && isPositive y ==> x `ordPow` mono1 y === mono1 (p0 `ordMult` mono1 y)
+  where
     (v, _) = leadingTerm x
     p0 = unMono1 v
 
 prop_ordPowMono1 :: Ordinal -> Property
 prop_ordPowMono1 x = mono1 x === omega `ordPow` x
 
-prop_ordRightSubAddBack :: Ordinal -> Ordinal ->  Property
+prop_ordRightSubAddBack :: Ordinal -> Ordinal -> Property
 prop_ordRightSubAddBack l r = case ordRightSub l r of
-                                  Nothing -> False ==> True
-                                  Just x -> (l `ordAdd` x) === r
+  Nothing -> False ==> True
+  Just x -> (l `ordAdd` x) === r
 
 prop_ordDivRemProduct :: Ordinal -> Ordinal -> Property
 prop_ordDivRemProduct d q = d /= 0 ==> (d `ordMult` q) `ordDivRem` d === (q, 0)
 
 prop_ordDivRemDistr :: Ordinal -> Ordinal -> Conway Natural -> Property
-prop_ordDivRemDistr a b d = d /= 0 ==> fst ((a `ordAdd` b) `ordDivRem` d) === q1 `ordAdd` q2 where
-  (q1, _) = ordDivRem a d
-  (q2, _) = ordDivRem b d
+prop_ordDivRemDistr a b d = d /= 0 ==> fst ((a `ordAdd` b) `ordDivRem` d) === q1 `ordAdd` q2
+  where
+    (q1, _) = ordDivRem a d
+    (q2, _) = ordDivRem b d
 
 prop_ordDivRemScalingZeroRem :: Ordinal -> Ordinal -> Conway Natural -> Property
-prop_ordDivRemScalingZeroRem a b d = d /= 0 && r == 0 ==> fst ((a `ordMult` b) `ordDivRem` d) === q `ordMult` b where
-  (q, r) = ordDivRem a d
+prop_ordDivRemScalingZeroRem a b d = d /= 0 && r == 0 ==> fst ((a `ordMult` b) `ordDivRem` d) === q `ordMult` b
+  where
+    (q, r) = ordDivRem a d
 
 prop_ordDivRemBy1 :: Ordinal -> Property
 prop_ordDivRemBy1 n = n `ordDivRem` 1 === (n, 0)
@@ -215,9 +221,11 @@ prop_ordDivRemAddBack n d = d /= 0 ==> let (q, r) = ordDivRem n d in (d `ordMult
 
 prop_ordDivRemRemainderSmallest :: Ordinal -> Ordinal -> Property
 prop_ordDivRemRemainderSmallest n d = d /= 0 ==> snd (ordDivRem n d) < d
+
 -- * Veblen Function
 
 prop_vebIncrMap, prop_vebDecrMap :: OrdV0Gen -> OrdV0Gen -> Property
+
 -- | @a < b ==> V[a, V[b, 0] + 1] > V[b, 0]@
 prop_vebIncrMap (OrdV0 a) (OrdV0 b)
   | a == b = False ==> True
@@ -245,17 +253,17 @@ prop_fsOrd_smaller i x =
 -- @i < j ==> x[i] < x[j]@
 prop_fsOrd_increasing :: Int -> Int -> Ordinal -> Property
 prop_fsOrd_increasing i j x =
-  i >= 0 && j >= 0 && i /= j ==> (
-    case fsOrd x of
-      Left _ -> False ==> True
-      Right f -> True ==> (i `compare` j) === (f NE.!! i) `compare` (f NE.!! j)
-  )
+  i >= 0 && j >= 0 && i /= j ==>
+    ( case fsOrd x of
+        Left _ -> False ==> True
+        Right f -> True ==> (i `compare` j) === (f NE.!! i) `compare` (f NE.!! j)
+    )
 
 -- * Testing
 
 -- qc :: Testable prop => prop -> IO ()
 -- qc = quickCheckWith stdArgs { maxSuccess = 10000, maxShrinks = 1000 }
-qc :: Testable prop => prop -> Property
+qc :: (Testable prop) => prop -> Property
 qc = property
 
 testPropsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> SpecWith ()

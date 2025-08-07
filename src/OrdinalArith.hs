@@ -1,23 +1,25 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module OrdinalArith (
-  ordAdd,
-  ordMult,
-  ordMultByFinite,
-  ordPow,
-  ordRightSub,
-  ordRightSub',
-  ordDivRem,
-  isFinite,
-  isInfinite,
-  maybeFinite,
-  unMono1,
-) where
 
-import Prelude hiding (isInfinite)
+module OrdinalArith
+  ( ordAdd,
+    ordMult,
+    ordMultByFinite,
+    ordPow,
+    ordRightSub,
+    ordRightSub',
+    ordDivRem,
+    isFinite,
+    isInfinite,
+    maybeFinite,
+    unMono1,
+  )
+where
+
 import Conway
+import Data.Foldable
 import qualified Data.Map.Strict as M
 import Typeclasses
-import Data.Foldable
+import Prelude hiding (isInfinite)
 
 -- | Is the ordinal number finite?
 --
@@ -31,11 +33,11 @@ maybeFinite x = case leadingTerm x of
 
 -- | Ordinal addition.
 ordAdd :: Ordinal -> Ordinal -> Ordinal
-
-ordAdd a b = a' + b where
-  (VebMono p1 c1, _) = leadingTerm b
-  pCutoff = veb1 p1 c1
-  a' = conway $ M.filterWithKey (\(VebMono p c) _ -> veb1 p c >= pCutoff) $ toMap a
+ordAdd a b = a' + b
+  where
+    (VebMono p1 c1, _) = leadingTerm b
+    pCutoff = veb1 p1 c1
+    a' = conway $ M.filterWithKey (\(VebMono p c) _ -> veb1 p c >= pCutoff) $ toMap a
 
 -- | Ordinal multiplication.
 ordMult :: Ordinal -> Ordinal -> Ordinal
@@ -47,12 +49,11 @@ ordMultByMono o (v, c)
   | isZero v =
       ordMultByFinite o c
   | otherwise =
-    -- only leading terms matters: (V[p].c) is a limit ordinal
-    -- https://proofwiki.org/wiki/Ordinal_Multiplication_via_Cantor_Normal_Form/Limit_Base
-    -- (V[v0].c0 + ...).(V[v].c)
-    let (v0, f) = leadingTerm o in
-    ordMultMonoByMono1 (v0, f) v `ordMultByFinite` c
-
+      -- only leading terms matters: (V[p].c) is a limit ordinal
+      -- https://proofwiki.org/wiki/Ordinal_Multiplication_via_Cantor_Normal_Form/Limit_Base
+      -- (V[v0].c0 + ...).(V[v].c)
+      let (v0, f) = leadingTerm o
+       in ordMultMonoByMono1 (v0, f) v `ordMultByFinite` c
 
 ordMultMonoByMono1 :: (VebMono Natural, Natural) -> VebMono Natural -> Ordinal
 ordMultMonoByMono1 (v1, f) v2 =
@@ -96,15 +97,14 @@ ordPowByMono o p0@(v1, a) =
     (Nothing, _) ->
       -- o = (w^v0.c0 + ...)
       -- exponent = w^v . a
-      let (v0, _) = leadingTerm o in
-      -- Applying https://proofwiki.org/wiki/Ordinal_Exponentiation_via_Cantor_Normal_Form/Corollary
-      --   o^(w^v . a)
-      -- = w^[v0 . w^v . a]
-      mono1 (unMono1 v0 `ordMult` mono (unMono1 v1) a)
+      let (v0, _) = leadingTerm o
+       in -- Applying https://proofwiki.org/wiki/Ordinal_Exponentiation_via_Cantor_Normal_Form/Corollary
+          --   o^(w^v . a)
+          -- = w^[v0 . w^v . a]
+          mono1 (unMono1 v0 `ordMult` mono (unMono1 v1) a)
 
 -- | Ordinal power @x^p@ where @x@ is finite and @p@ is infinite
 ordPowFiniteByMono :: Natural -> (VebMono Natural, Natural) -> Ordinal
-
 ordPowFiniteByMono 1 _ = 1
 ordPowFiniteByMono 0 (_, _) = 0
 ordPowFiniteByMono _ (_, 0) = 1
@@ -120,11 +120,10 @@ ordPowFiniteByMono _ (v, a) =
     -- if b is infinite:
     --   = (w^(w^b))^a
     WP b -> case maybeFinite b of
-              Just b' -> ordPowInfiniteByFinite (mono1 $ mono1 $ finite $ b' - 1) a
-              Nothing -> ordPowInfiniteByFinite (mono1 $ mono1 b) a
+      Just b' -> ordPowInfiniteByFinite (mono1 $ mono1 $ finite $ b' - 1) a
+      Nothing -> ordPowInfiniteByFinite (mono1 $ mono1 b) a
     -- x^(v.a) = x^(w^v.a) = (x^(w^v))^a = w^(v.a)
     _ -> mono1 (fromVebMono1 v `ordMult` finite a)
-
 
 -- | Ordinal power @x^p@ where @x@ is finite and @p@ is finite
 ordPowInfiniteByFinite :: Ordinal -> Natural -> Ordinal
@@ -144,10 +143,10 @@ ordRightSub l r
       Just r
   | dc == 0 = ordRightSub l' r'
   | otherwise = Just (fromVebMono (p2, dc) `ordAdd` r')
-    where
-      ((p1, c1), l') = dropLeadingTerm l
-      ((p2, c2), r') = dropLeadingTerm r
-      dc = c2 - c1
+  where
+    ((p1, c1), l') = dropLeadingTerm l
+    ((p2, c2), r') = dropLeadingTerm r
+    dc = c2 - c1
 
 -- | Like @ordRightSub@, except it is a partial function.
 ordRightSub' :: Ordinal -> Ordinal -> Ordinal
@@ -155,7 +154,7 @@ ordRightSub' a b =
   case ordRightSub a b of
     Just r -> r
     -- Nothing -> error "ordRightSub': arithmetic underflow"
-    Nothing -> error $ "ordRightSub': arithmetic underflow: " ++ show (a,b)
+    Nothing -> error $ "ordRightSub': arithmetic underflow: " ++ show (a, b)
 
 -- * Long division
 
@@ -173,7 +172,7 @@ ordDivRem n d
   where
     loop :: [(VebMono Natural, Natural)] -> (Ordinal, Ordinal) -> (Ordinal, Ordinal)
     loop [] (q, r) = (q, r)
-    loop ((pn0', cn0):ts) (q, r)
+    loop ((pn0', cn0) : ts) (q, r)
       | pn0 < pd0 = (q, r)
       | s <= r = loop ts (q `ordAdd` dq, ordRightSub' s r)
       -- try again with new coeff quotient, cq' = cq - 1 if cq' is non-zero
@@ -191,16 +190,15 @@ ordDivRem n d
     ((pd0', cd0), _) = dropLeadingTerm d
     pd0 = unMono1 pd0'
 
-
 -- * Helpers
 
-data VebMonoKind =
-  -- | Finite value: @veb1 0 0@
-  Fin
-  -- | Power of @w@: @veb1 0 p@ where @p > 0@
-  | WP !Ordinal
-  -- | Veblen numbers above: @veb1 p c@
-  | Other !(VebMono Natural)
+data VebMonoKind
+  = -- | Finite value: @veb1 0 0@
+    Fin
+  | -- | Power of @w@: @veb1 0 p@ where @p > 0@
+    WP !Ordinal
+  | -- | Veblen numbers above: @veb1 p c@
+    Other !(VebMono Natural)
 
 -- | Classifies a @VebMono Natural@ into one of the @VebMonoKind@
 classifyVebMono :: VebMono Natural -> VebMonoKind
@@ -219,15 +217,16 @@ isFinite, isInfinite :: Ordinal -> Bool
 isFinite x = case leadingTerm x of
   (v, _) | isZero v -> True
   _ -> False
-
 isInfinite = not . isFinite
 
 -- | Repeats a binary operation on the same value a natural number times,
 -- by repeatedly halving the natural number
 repeatBinOp :: (a -> a -> a) -> a -> a -> Natural -> a
-repeatBinOp binop v0 v1 = recurse where
-  recurse 0 = v0
-  recurse 1 = v1
-  -- recurse k = recurse (k - 1) `binop` v1
-  recurse k = if even k then b `binop` b  else (b `binop` b) `binop` v1
-    where b = recurse (k `div` 2)
+repeatBinOp binop v0 v1 = recurse
+  where
+    recurse 0 = v0
+    recurse 1 = v1
+    -- recurse k = recurse (k - 1) `binop` v1
+    recurse k = if even k then b `binop` b else (b `binop` b) `binop` v1
+      where
+        b = recurse (k `div` 2)

@@ -1,6 +1,5 @@
-
-module OrdBag (
-    OrdBag,
+module OrdBag
+  ( OrdBag,
     fromMap,
     fromMapUnchecked,
     fromList,
@@ -8,10 +7,12 @@ module OrdBag (
     toDescList,
     sumWith,
     negate,
-) where
+  )
+where
+
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Map.Strict(Map)
-import Typeclasses (Zero(..), OrdZero (..))
+import Typeclasses (OrdZero (..), Zero (..))
 import Prelude hiding (negate)
 
 -- | Represents a multiset of elements of type @k@ and
@@ -20,7 +21,7 @@ import Prelude hiding (negate)
 -- Represented as a @Data.Map.Strict.Map@ without
 -- keys with zero values.
 newtype OrdBag k v = OrdBag (Map k v)
-    deriving (Eq)
+  deriving (Eq)
 
 zeroNormalize :: (Zero v) => Map k v -> Map k v
 zeroNormalize = M.filter (not . isZero)
@@ -52,24 +53,26 @@ negate (OrdBag m) = OrdBag $ M.map neg m
 -- If either side has no matching key, its value is considered as zero.
 -- Negative values are considered to be below zero.
 instance (OrdZero k, OrdZero v) => Ord (OrdBag k v) where
-    compare a b = comp ta tb where
-        ta = toDescList a
-        tb = toDescList b
-        compPair :: (Ord k, OrdZero v) => (k, v) -> (k, v) -> Ordering
-        compPair (p, c) (q, d)
-            | s1 /= s2 = compare s1 s2
-            | s1 == LT = compare q p <> compare c d
-            | otherwise = compare p q <> compare c d
-            where s1 = compareZero c
-                  s2 = compareZero d
+  compare a b = comp ta tb
+    where
+      ta = toDescList a
+      tb = toDescList b
+      compPair :: (Ord k, OrdZero v) => (k, v) -> (k, v) -> Ordering
+      compPair (p, c) (q, d)
+        | s1 /= s2 = compare s1 s2
+        | s1 == LT = compare q p <> compare c d
+        | otherwise = compare p q <> compare c d
+        where
+          s1 = compareZero c
+          s2 = compareZero d
 
-        z :: (Zero k, Zero v) => (k, v)
-        z = (zero, zero)
-        comp :: (OrdZero k, OrdZero v) => [(k, v)] -> [(k, v)] -> Ordering
-        comp [] [] = EQ
-        comp (x:_) [] = compPair x z
-        comp [] (y:_) = compPair z y
-        comp (x:xs) (y:ys) =
-            case compPair x y of
-                EQ -> comp xs ys
-                other -> other
+      z :: (Zero k, Zero v) => (k, v)
+      z = (zero, zero)
+      comp :: (OrdZero k, OrdZero v) => [(k, v)] -> [(k, v)] -> Ordering
+      comp [] [] = EQ
+      comp (x : _) [] = compPair x z
+      comp [] (y : _) = compPair z y
+      comp (x : xs) (y : ys) =
+        case compPair x y of
+          EQ -> comp xs ys
+          other -> other
