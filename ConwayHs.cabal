@@ -29,6 +29,9 @@ library
       FundamentalSeq
       OrdBag
       OrdinalArith
+      SignExpansion
+      SignExpansion.Types
+      SignExpansion.Veb
       Typeclasses
   other-modules:
       Paths_ConwayHs
