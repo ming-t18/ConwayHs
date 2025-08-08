@@ -13,6 +13,8 @@ mono1SE :: SignExpansion -> SignExpansion
 mono1SE' :: Ordinal -> SignExpansion -> SignExpansion
 mono1SE = ((True, 1) `consSE`) . mono1SE' 0
 
+-- | Like @mono1SE@, except with the accumulator (number of pluses so far)
+-- as the first argument
 mono1SE' a xs = case toConsSE xs of
   Nothing -> empty
   Just ((True, n), xs') ->
@@ -25,8 +27,12 @@ mono1SE' a xs = case toConsSE xs of
 -- return the sign expansion of @veb1 o x@.
 veb1SE :: Ordinal -> SignExpansion -> SignExpansion
 veb1SE' :: Ordinal -> Ordinal -> SignExpansion -> SignExpansion
+veb1SE 0 = mono1SE
 veb1SE o = ((True, veb1 o 0) `consSE`) . veb1SE' o 0
 
+-- | Like @veb1SE@, except with the accumulator (number of pluses so far)
+-- as the first argument
+veb1SE' 0 = mono1SE'
 veb1SE' o = recurse
   where
     v1 :: Ordinal -> Ordinal
