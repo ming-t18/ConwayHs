@@ -1,7 +1,8 @@
 module SignExpansion.Veb (mono1SE, mono1SE', veb1SE, veb1SE') where
 
-import Conway
+import Control.Arrow (second)
 import Data.Foldable (foldl')
+import Conway
 import OrdinalArith
 import SignExpansion.Types
 
@@ -10,7 +11,7 @@ m1 = mono1
 
 -- | Given a sign expansion, generate an output sign expansion while keeping track of a state.
 transform :: (a -> (Bool, Ordinal) -> (a, SignExpansion)) -> a -> SignExpansion -> (a, SignExpansion)
-transform f a0 = foldl' (\(a, s) e -> let (a', ds) = f a e in (a', s +++ ds)) (a0, empty) . toList
+transform f a0 = foldl' (\(a, s) -> second (s +++) . f a) (a0, empty) . toList
 
 -- | Given the sign expansion of @x@, return the sign expansion of @mono1 x@.
 mono1SE :: SignExpansion -> SignExpansion
@@ -21,10 +22,11 @@ mono1SE :: SignExpansion -> SignExpansion
 mono1SE' :: Ordinal -> SignExpansion -> (Ordinal, SignExpansion)
 
 mono1SE = ((True, 1) `consSE`) . snd . mono1SE' 0
+
 mono1SE' = transform f
   where
-    f a (True, n) = (a', single (True, m1 a')) where a' = a `ordAdd` n
-    f a (False, n) = (a, single (False, m1 (a `ordAdd` 1) `ordMult` n))
+    f a (True, n) = (a', plus $ m1 a') where a' = a `ordAdd` n
+    f a (False, n) = (a, minus $ m1 (a `ordAdd` 1) `ordMult` n)
 
 -- | Given Veblen order @o@ and the sign expansion of @x@, return the sign expansion of @veb1 o x@.
 veb1SE :: Ordinal -> SignExpansion -> SignExpansion
@@ -41,5 +43,6 @@ veb1SE' 0 = mono1SE'
 veb1SE' o = transform f
   where
     v1 = veb1 o
-    f a (True, n) = (a', single (True, v1 a')) where a' = a `ordAdd` n
-    f a (False, n) = (a, single (False, (v1 a `ordPow` m1 o) `ordMult` n))
+    p = m1 o
+    f a (True, n) = (a', plus $ v1 a') where a' = a `ordAdd` n
+    f a (False, n) = (a, minus $ (v1 a `ordPow` p) `ordMult` n)
