@@ -16,6 +16,7 @@ module SignExpansion
     veb1SE,
     veb1SE',
     commonPrefix,
+    takeCommonPrefix,
   )
 where
 

@@ -13,13 +13,14 @@ module SignExpansion.Types
     toConsSE,
     negate,
     commonPrefix,
+    takeCommonPrefix,
   )
 where
 
 import Conway
 import qualified Data.Bifunctor (first)
 import qualified Data.Foldable as F
-import OrdinalArith (ordAdd)
+import OrdinalArith
 import Typeclasses
 import Prelude hiding (length, negate)
 
@@ -97,14 +98,32 @@ length :: SignExpansion -> Ordinal
 length (SignExpansion xs) = F.foldl' (\a (_, b) -> a `ordAdd` b) 0 xs
 
 commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
-commonPrefix = recurse empty
+takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
+commonPrefix = curry $ recurse empty
   where
-    recurse :: SignExpansion -> SignExpansion -> SignExpansion -> SignExpansion
-    recurse acc (SignExpansion []) _ = acc
-    recurse acc _ (SignExpansion []) = acc
-    recurse acc (SignExpansion (e0@(s0, n0) : xs0)) (SignExpansion ((s1, n1) : xs1))
+    recurse :: SignExpansion -> (SignExpansion, SignExpansion) -> SignExpansion
+    recurse acc (SignExpansion [], _) = acc
+    recurse acc (_, SignExpansion []) = acc
+    recurse acc (SignExpansion (e0@(s0, n0) : xs0), SignExpansion ((s1, n1) : xs1))
       | s0 == s1 =
           if n0 == n1
-            then recurse (acc +++ single e0) (SignExpansion xs0) (SignExpansion xs1)
+            then recurse (acc +++ single e0) (SignExpansion xs0, SignExpansion xs1)
             else acc +++ single (s0, min n0 n1)
       | otherwise = acc
+
+takeCommonPrefix = curry $ recurse empty
+  where
+    recurse :: SignExpansion -> (SignExpansion, SignExpansion) -> (SignExpansion, (SignExpansion, SignExpansion))
+    recurse acc p@(SignExpansion [], _) = (acc, p)
+    recurse acc p@(_, SignExpansion []) = (acc, p)
+    recurse acc p@(SignExpansion (e0@(s0, n0) : xs0), SignExpansion ((s1, n1) : xs1))
+      | s0 == s1 =
+          if n0 == n1
+            then recurse (acc +++ single e0) (SignExpansion xs0, SignExpansion xs1)
+            else
+              if n0 < n1
+                then
+                  (acc +++ single (s0, n0), (SignExpansion xs0, single (s1, ordRightSub' n0 n1) +++ SignExpansion xs1))
+                else
+                  (acc +++ single (s1, n1), (single (s0, ordRightSub' n1 n0) +++ SignExpansion xs0, SignExpansion xs1))
+      | otherwise = (acc, p)
