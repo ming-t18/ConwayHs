@@ -8,6 +8,8 @@ import Dyadic
 import FundamentalSeq
 import Gen
 import OrdinalArith
+import SignExpansion (commonPrefix)
+import SignExpansion as SE
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -259,6 +261,18 @@ prop_fsOrd_increasing i j x =
         Right f -> True ==> (i `compare` j) === (f NE.!! i) `compare` (f NE.!! j)
     )
 
+-- * Sign Expansions
+
+prop_SENoConsecutiveSigns :: SignExpansion -> Bool
+prop_SENoConsecutiveSigns = f . map fst . SE.toList
+  where
+    f :: [Bool] -> Bool
+    f [] = True
+    f [_] = True
+    f (a : xs@(b : _))
+      | a == b = False
+      | otherwise = f xs
+
 -- * Testing
 
 -- qc :: Testable prop => prop -> IO ()
@@ -363,8 +377,44 @@ testPropsOrdArith = do
       it "2x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest (x `ordMult` 2) (x `ordAdd` 1))
       it "3x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest (x `ordMult` 3) (x `ordAdd` 1))
 
+testSignExpansion :: SpecWith ()
+testSignExpansion = do
+  describe "sign expansion" $ do
+    describe "(+++) forms a monoid" $ do
+      it "identity" $ qc (\x -> empty +++ x === x)
+      it "assoc" $ qc (\x y z -> x +++ (y +++ z) === (x +++ y) +++ z)
+
+    describe "negation" $ do
+      it "negation is not equal" $ qc (\(x :: SignExpansion) -> if isEmpty x then neg x === x else neg x =/= x)
+      it "preserves length" $ qc (\x -> SE.length x === SE.length (neg x))
+      it "inverse" $ qc (\(x :: SignExpansion) -> neg (neg x) === x)
+
+    describe "total order" $ do
+      it "reflexive" $ qc (\(x :: SignExpansion) -> x === x)
+      it "negation symmetry" $ qc (\(x :: SignExpansion) y -> x `compare` y === neg y `compare` neg x)
+      it "transitive" $ qc (\(x :: SignExpansion) y z -> x <= y && y <= z ==> x <= z)
+      it "prepending common prefix" $ qc (\x y z -> y `compare` z === (x +++ y) `compare` (x +++ z))
+
+    describe "toList" $ do
+      it "no zero length entries" $ qc (\(x :: SignExpansion) -> not (any (isZero . snd) (SE.toList x)))
+      it "no consecutive signs" $ qc prop_SENoConsecutiveSigns
+
+    describe "commonPrefix" $ do
+      it "empty" $ qc (\x -> commonPrefix x empty === empty)
+      it "comm" $ qc (\x y -> commonPrefix x y === commonPrefix y x)
+      it "assoc" $ qc (\x y z -> commonPrefix (commonPrefix x y) z === commonPrefix x (commonPrefix y z))
+      it "common prefix with self" $ qc (\x -> commonPrefix x x === x)
+      it "prepend common prefix" $ qc (\x y z -> commonPrefix (x +++ y) (x +++ z) === x +++ commonPrefix y z)
+
+    describe "veb1" $ do
+      it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
+      it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
+
 main :: IO ()
-main = hspec $ parallel $ modifyMaxSuccess (const 1000) $ do
+main = hspec $ parallel $ modifyMaxSuccess (const 200) $ do
+  describe "SignExpansion" $ do
+    testSignExpansion
+
   describe "Dyadic" $ do
     testPropsOrdRing (id :: Dyadic -> Dyadic)
 

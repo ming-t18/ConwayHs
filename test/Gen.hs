@@ -7,6 +7,8 @@ module Gen where
 import Conway
 import Data.Foldable
 import Dyadic
+import SignExpansion (SignExpansion)
+import qualified SignExpansion as SE
 import Test.QuickCheck
 import Typeclasses
   ( AddSub (..),
@@ -122,3 +124,7 @@ instance (Arbitrary a, OrdRing a) => Arbitrary (ConwayGen a) where
 instance Arbitrary (Conway Natural) where
   arbitrary = getConway <$> arbitrary
   shrink x = map getConway $ shrink (ConwayGen x)
+
+instance Arbitrary SignExpansion where
+  arbitrary = SE.fromList <$> arbitrary
+  shrink x = SE.fromList <$> shrink (SE.toList x)
