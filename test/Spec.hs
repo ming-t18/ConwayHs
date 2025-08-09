@@ -8,7 +8,7 @@ import Dyadic
 import FundamentalSeq
 import Gen
 import OrdinalArith
-import SignExpansion (commonPrefix)
+import SignExpansion (commonPrefix, takeCommonPrefix)
 import SignExpansion as SE
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -405,6 +405,12 @@ testSignExpansion = do
       it "assoc" $ qc (\x y z -> commonPrefix (commonPrefix x y) z === commonPrefix x (commonPrefix y z))
       it "common prefix with self" $ qc (\x -> commonPrefix x x === x)
       it "prepend common prefix" $ qc (\x y z -> commonPrefix (x +++ y) (x +++ z) === x +++ commonPrefix y z)
+      it "length of common prefix" $ qc (\x y -> let l = SE.length (commonPrefix x y) in l <= SE.length x && l <= SE.length y)
+
+    describe "takeCommonPrefix" $ do
+      it "result of commonPrefix" $ qc (\x y -> commonPrefix x y === fst (takeCommonPrefix x y))
+      it "recover length" $ qc (\x y -> let (z, (x', y')) = takeCommonPrefix x y in (SE.length (z +++ x'), SE.length (z +++ y')) === (SE.length x, SE.length y))
+      it "recover pair" $ qc (\x y -> let (z, (x', y')) = takeCommonPrefix x y in (z +++ x', z +++ y') === (x, y))
 
     describe "veb1" $ do
       it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
