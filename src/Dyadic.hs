@@ -1,7 +1,8 @@
-module Dyadic (Dyadic, pow2, half, makeDyadic, unmakeDyadic) where
+module Dyadic (Dyadic, pow2, half, shl, shr, makeDyadic, unmakeDyadic, parts) where
 
 import GHC.Num (integerDiv)
 import Typeclasses
+import Control.Arrow ((***))
 
 -- | A dyadic rational
 data Dyadic = Dyadic !Integer !Integer
@@ -28,8 +29,28 @@ pow2 p
   | p > 0 = Dyadic (2 ^ p) 0
   | otherwise = Dyadic 1 (-p)
 
+-- | @1/2@
 half :: Dyadic
-half = Dyadic 0 1
+half = makeDyadic 1 1
+
+-- | "Shift left": Multiply by @2^p@ where @p@ is the second argument
+shl :: Dyadic -> Integer -> Dyadic
+shl (Dyadic x p) d = makeDyadic x (p - d)
+
+-- | "Shift right": Multiply by @2^-p@ where @p@ is the second argument
+shr :: Dyadic -> Integer -> Dyadic
+shr (Dyadic x p) d = makeDyadic x (p + d)
+
+-- | Decomposes a @Dyadic@ into the integer and fractional part.
+-- The fractional parts is in @[0, 1)@ for positive value
+-- and @(-1, 0]@ for negative.
+parts :: Dyadic -> (Integer, Dyadic)
+parts 0 = (0, 0)
+parts x@(Dyadic n q)
+  | x < 0 = (negate *** negate) $ parts $ -x
+  | otherwise = (n `div` d, makeDyadic p' q) where
+    d = 2 ^ q
+    p' = n - (n `div` d) * d
 
 instance Eq Dyadic where
   (==) (Dyadic a p) (Dyadic a' p') = a * (2 ^ p') == a' * (2 ^ p)
@@ -43,6 +64,7 @@ instance Zero Dyadic where
 
 instance One Dyadic where
   one = Dyadic 1 0
+  isOne = (==) one
 
 instance AddSub Dyadic where
   add (Dyadic a b) (Dyadic c d) = makeDyadic (a * (2 ^ (d - minP)) + c * (2 ^ (b - minP))) maxP
