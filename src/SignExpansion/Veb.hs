@@ -1,8 +1,8 @@
-module SignExpansion.Veb (mono1SE, mono1SE', veb1SE, veb1SE') where
+module SignExpansion.Veb (mono1SE, mono1SE', veb1SE, veb1SE', veb1SELead, mono1SELead) where
 
 import Control.Arrow (second)
-import Data.Foldable (foldl')
 import Conway
+import Data.Foldable (foldl')
 import OrdinalArith
 import SignExpansion.Types
 
@@ -21,7 +21,7 @@ mono1SE :: SignExpansion -> SignExpansion
 -- The accumulator is the number of pluses in the input so far.
 mono1SE' :: Ordinal -> SignExpansion -> (Ordinal, SignExpansion)
 
-mono1SE = ((True, 1) `consSE`) . snd . mono1SE' 0
+mono1SE = (mono1SELead `consSE`) . snd . mono1SE' 0
 
 mono1SE' = transform f
   where
@@ -37,7 +37,7 @@ veb1SE :: Ordinal -> SignExpansion -> SignExpansion
 veb1SE' :: Ordinal -> Ordinal -> SignExpansion -> (Ordinal, SignExpansion)
 
 veb1SE 0 = mono1SE
-veb1SE o = ((True, veb1 o 0) `consSE`) . snd . veb1SE' o 0
+veb1SE o = (veb1SELead o `consSE`) . snd . veb1SE' o 0
 
 veb1SE' 0 = mono1SE'
 veb1SE' o = transform f
@@ -46,3 +46,10 @@ veb1SE' o = transform f
     p = m1 o
     f a (True, n) = (a', plus $ v1 a') where a' = a `ordAdd` n
     f a (False, n) = (a, minus $ (v1 a `ordPow` p) `ordMult` n)
+
+mono1SELead :: (Bool, Ordinal)
+mono1SELead = (True, 1)
+
+veb1SELead :: Ordinal -> (Bool, Ordinal)
+veb1SELead 0 = (True, 1)
+veb1SELead o = (True, veb1 o 0)

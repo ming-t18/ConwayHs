@@ -15,6 +15,8 @@ module SignExpansion
     mono1SE',
     veb1SE,
     veb1SE',
+    mono1SELead,
+    veb1SELead,
     commonPrefix,
     takeCommonPrefix,
   )

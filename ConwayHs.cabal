@@ -30,6 +30,8 @@ library
       OrdBag
       OrdinalArith
       SignExpansion
+      SignExpansion.Conway
+      SignExpansion.Dyadic
       SignExpansion.Types
       SignExpansion.Veb
       Typeclasses

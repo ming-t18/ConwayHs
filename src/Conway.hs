@@ -104,8 +104,9 @@ instance Zero (VebMono a) where
 instance (OrdZero a, One a) => OrdZero (Conway a) where
   neg (Conway x) = Conway (M.map neg x)
 
-instance (One a) => One (Conway a) where
+instance (OrdZero a, One a) => One (Conway a) where
   one = Conway (M.singleton zero one)
+  isOne = (==) one
 
 instance (AddSub a, One a) => AddSub (Conway a) where
   add (Conway a) (Conway b) = Conway $ zeroNormalize $ M.unionWith add a b
