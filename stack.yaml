@@ -18,7 +18,7 @@
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
 # snapshot:
-#   url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/5.yaml
+#   url: https://raw.ming-t18content.com/commercialhaskell/stackage-snapshots/master/lts/23/5.yaml
 resolver:
   compiler:
     ghc-9.8.2
