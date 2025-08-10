@@ -1,4 +1,4 @@
-module Dyadic (Dyadic, pow2, half, shl, shr, makeDyadic, unmakeDyadic, parts) where
+module Dyadic (Dyadic, pow2, half, shl, shr, (%/), makeDyadic, unmakeDyadic, parts) where
 
 import Control.Arrow ((***))
 import GHC.Num (integerDiv)
@@ -11,6 +11,8 @@ import Typeclasses
 --
 -- It is represented as a pair @(n, p)@ where
 -- @n@ is an @Integer@ and @p@ is non-negative integer.
+-- @(n, p)@ are automatically simplified to minimize the @p@
+-- required to represent the value.
 --
 -- Strictness: Strict over @n@ and @p@.
 data Dyadic = Dyadic !Integer !Integer
@@ -21,11 +23,17 @@ instance Show Dyadic where
     where
       deno = if p < 32 then show ((2 :: Integer) ^ p) else "2^" ++ show p
 
--- | Construct the Dyadic rational with the value of @(n / 2^p)@
+infixl 7 %/
+
+-- | Constructs the Dyadic rational with the value of @(n / 2^p)@
 makeDyadic :: Integer -> Integer -> Dyadic
-makeDyadic a b
+makeDyadic = (%/)
+
+-- | Constructs the Dyadic rational with the value of @(n / 2^p)@
+(%/) :: Integer -> Integer -> Dyadic
+(%/) a b
   | b < 0 = Dyadic (a * 2 ^ (-b)) 0
-  | b > 0 && even a = makeDyadic (a `integerDiv` 2) (b - 1)
+  | b > 0 && even a = (a `integerDiv` 2) %/ (b - 1)
   | otherwise = Dyadic a b
 
 -- | Returns the pair representation of the @Dyadic@.
@@ -41,15 +49,15 @@ pow2 p
 
 -- | @1/2@
 half :: Dyadic
-half = makeDyadic 1 1
+half = 1 %/ 1
 
 -- | "Shift left": Multiply by @2^p@ where @p@ is the second argument
 shl :: Dyadic -> Integer -> Dyadic
-shl (Dyadic x p) d = makeDyadic x (p - d)
+shl (Dyadic n p) d = n %/ (p - d)
 
 -- | "Shift right": Multiply by @2^-p@ where @p@ is the second argument
 shr :: Dyadic -> Integer -> Dyadic
-shr (Dyadic x p) d = makeDyadic x (p + d)
+shr (Dyadic n p) d = n %/ (p + d)
 
 -- | Decomposes a @Dyadic@ into the integer and fractional part.
 -- The fractional parts is in @[0, 1)@ for positive value
@@ -58,7 +66,7 @@ parts :: Dyadic -> (Integer, Dyadic)
 parts 0 = (0, 0)
 parts x@(Dyadic n q)
   | x < 0 = (negate *** negate) $ parts $ -x
-  | otherwise = (n `div` d, makeDyadic p' q)
+  | otherwise = (n `div` d, p' %/ q)
   where
     d = 2 ^ q
     p' = n - (n `div` d) * d
@@ -78,7 +86,7 @@ instance One Dyadic where
   isOne = (==) one
 
 instance AddSub Dyadic where
-  add (Dyadic a b) (Dyadic c d) = makeDyadic (a * (2 ^ (d - minP)) + c * (2 ^ (b - minP))) maxP
+  add (Dyadic a b) (Dyadic c d) = (a * (2 ^ (d - minP)) + c * (2 ^ (b - minP))) %/ maxP
     where
       minP = min b d
       maxP = max b d
@@ -86,7 +94,7 @@ instance AddSub Dyadic where
   sub p q = add p (neg q)
 
 instance Mult Dyadic where
-  mult (Dyadic a b) (Dyadic c d) = makeDyadic (a * c) (b + d)
+  mult (Dyadic a b) (Dyadic c d) = (a * c) %/ (b + d)
 
 instance OrdZero Dyadic where
   neg (Dyadic a p) = Dyadic (-a) p

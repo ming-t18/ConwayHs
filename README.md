@@ -62,21 +62,23 @@ A dyadic rational is a rational number in the form of $\frac{a}{2^b}$ for numera
 
 The `makeDyadic` function constructs a new `Dyadic` from `a` and `b` and simplifying denominator.
 
+`(%/)` is the infix operator for `makeDyadic`.
+
 ```hs
 data Dyadic = ...
 
-makeDyadic :: Integer -> Integer -> Dyadic
+makeDyadic, (%/) :: Integer -> Integer -> Dyadic
 unmakeDyadic :: Dyadic -> (Integer, Integer)
 ```
 
 ```hs
 ghci> 1 :: Dyadic
 1
-ghci> makeDyadic (-5) 3
+ghci> (-5) %/ 3
 -5/8
-ghci> makeDyadic 2 2 + makeDyadic (-5) 4
+ghci> 2 %/ 2 + (-5) %/ 4
 3/16
-ghci> unmakeDyadic (makeDyadic (-5) 4)
+ghci> unmakeDyadic ((-5) %/ 4)
 (-5,4)
 ```
 
