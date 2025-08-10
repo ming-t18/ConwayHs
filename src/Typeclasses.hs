@@ -24,6 +24,7 @@ class Zero a where
 
 class One a where
   one :: a
+  isOne :: a -> Bool
 
 -- | Typeclass for a total order with a zero element and negation around the zero element.
 --
@@ -88,6 +89,7 @@ instance Zero Integer where
 
 instance One Integer where
   one = 1
+  isOne = (==) 1
 
 instance OrdZero Integer where
   neg = negate
@@ -109,6 +111,7 @@ instance Zero Int where
 
 instance One Int where
   one = 1
+  isOne = (==) 1
 
 instance OrdZero Int where
   neg = negate
@@ -130,6 +133,7 @@ instance Zero Natural where
 
 instance One Natural where
   one = 1
+  isOne = (==) 1
 
 -- | Negating a non-zero natural number causes the arithmetic underflow error.
 instance OrdZero Natural where
@@ -155,6 +159,7 @@ instance Zero Float where
 
 instance One Float where
   one = 1
+  isOne = (==) 1
 
 instance OrdZero Float where
   neg = negate
@@ -176,6 +181,7 @@ instance (Integral a, Zero a, One a) => Zero (Ratio a) where
 
 instance (Integral a, One a) => One (Ratio a) where
   one = one % one
+  isOne = (==) 1
 
 instance (Integral a, OrdZero a, One a, Num a) => OrdZero (Ratio a) where
   neg a = -a
