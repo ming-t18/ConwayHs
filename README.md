@@ -8,7 +8,12 @@ Haskell-based library for ordinal numbers and surreal numbers with support for V
 - Natural sum and product for ordinals and surreals (`Num` typeclass)
 - Displaying in Cantor/Conway normal forms (`Show` typeclass)
 - The exclusive upper bound is the Feferman–Schütte ordinal. All larger values are unsupported
-- Fundamental sequences
+- Generating the fundamental sequences of ordinals
+
+# Unimplemented features
+
+- Generating sign expansions for non-monomial surreal numbers
+- Converting from sign expansions to `Conway`
 
 # Setting up
 
@@ -19,7 +24,20 @@ stack build
 stack repl
 ```
 
+## Running tests
+
+```
+stack test
+```
+
 # API
+
+The basic datatypes are:
+ - `Dyadic`: dyadic rationals
+ - `Ordinal`: ordinal numbers
+ - `Conway Dyadic`: representable surreal numbers
+ - `SignExpansion`: sign expansions of `Conway Dyadic`
+ - `FSE`: sign expansions of dyadic rationals
 
 ## Veblen Monomial
 
@@ -67,7 +85,8 @@ The `makeDyadic` function constructs a new `Dyadic` from `a` and `b` and simplif
 ```hs
 data Dyadic = ...
 
-makeDyadic, (%/) :: Integer -> Integer -> Dyadic
+makeDyadic :: Integer -> Integer -> Dyadic
+(%/) :: (Integral a, Integral b) => a -> b -> Dyadic
 unmakeDyadic :: Dyadic -> (Integer, Integer)
 ```
 
