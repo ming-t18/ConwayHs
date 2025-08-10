@@ -1,6 +1,28 @@
-module Dyadic (Dyadic, pow2, half, shl, shr, (%/), makeDyadic, unmakeDyadic, parts) where
+module Dyadic
+  ( Dyadic,
+
+    -- * Creation and decomposition
+    (%/),
+    makeDyadic,
+    unmakeDyadic,
+    fromFloat,
+
+    -- * Conversion to @Ratio@
+    toRatio,
+    numerator,
+    denominator,
+
+    -- * Operations
+    pow2,
+    half,
+    shl,
+    shr,
+    parts,
+  )
+where
 
 import Control.Arrow ((***))
+import Data.Ratio (Ratio, (%))
 import GHC.Num (integerDiv)
 import Typeclasses
 
@@ -27,18 +49,38 @@ infixl 7 %/
 
 -- | Constructs the Dyadic rational with the value of @(n / 2^p)@
 makeDyadic :: Integer -> Integer -> Dyadic
-makeDyadic = (%/)
+makeDyadic n p
+  | p < 0 = Dyadic (n * 2 ^ (-p)) 0
+  | p > 0 && even n = (n `integerDiv` 2) `makeDyadic` (p - 1)
+  | otherwise = Dyadic n p
 
--- | Constructs the Dyadic rational with the value of @(n / 2^p)@
-(%/) :: Integer -> Integer -> Dyadic
-(%/) a b
-  | b < 0 = Dyadic (a * 2 ^ (-b)) 0
-  | b > 0 && even a = (a `integerDiv` 2) %/ (b - 1)
-  | otherwise = Dyadic a b
+-- | Constructs the Dyadic rational with the value of @(n / 2^p)@.
+--
+-- Both parameters must be same or different instances of @Integral@.
+(%/) :: (Integral a, Integral b) => a -> b -> Dyadic
+(%/) n p = makeDyadic (fromIntegral n) (fromIntegral p)
+
+-- | Given an instance of @RealFloat@, converts it to a @Dyadic@.
+--
+-- WARNING: Its @floatRadix@ must be @2@ and it is not checked.
+fromFloat :: (RealFloat a) => a -> Dyadic
+fromFloat f = a `makeDyadic` fromIntegral (-b) where (a, b) = decodeFloat f
 
 -- | Returns the pair representation of the @Dyadic@.
 unmakeDyadic :: Dyadic -> (Integer, Integer)
-unmakeDyadic (Dyadic a p) = (a, p)
+unmakeDyadic (Dyadic n p) = (n, p)
+
+-- | Extracts the simplified numerator of the @Dyadic@.
+numerator :: Dyadic -> Integer
+numerator (Dyadic n _) = n
+
+-- | Extracts the simplified denominator of the @Dyadic@.
+denominator :: Dyadic -> Integer
+denominator (Dyadic _ p) = 2 ^ (-p)
+
+-- | Converts the @Dyadic@ a @Ratio@ representing the same value.
+toRatio :: Dyadic -> Ratio Integer
+toRatio (Dyadic n p) = n % (2 ^ (-p))
 
 -- | Creates a @Dyadic@ that equals to a power of 2.
 pow2 :: Integer -> Dyadic
@@ -49,7 +91,7 @@ pow2 p
 
 -- | @1/2@
 half :: Dyadic
-half = 1 %/ 1
+half = makeDyadic 1 1
 
 -- | "Shift left": Multiply by @2^p@ where @p@ is the second argument
 shl :: Dyadic -> Integer -> Dyadic

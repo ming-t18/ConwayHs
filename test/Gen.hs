@@ -87,11 +87,11 @@ newtype ConwayGen a = ConwayGen {getConway :: Conway a}
   deriving (Eq, Ord, Show)
 
 instance Arbitrary DyadicGen where
-  arbitrary = DyadicGen <$> ((%/) <$> arbitrary <*> arbitrary)
+  arbitrary = DyadicGen <$> (makeDyadic <$> arbitrary <*> arbitrary)
   shrink (DyadicGen d) =
     map
       DyadicGen
-      ([a' %/ p | a' <- shrink a] ++ [a %/ p' | p' <- shrink p])
+      ([a' `makeDyadic` p | a' <- shrink a] ++ [a `makeDyadic` p' | p' <- shrink p])
     where
       (a, p) = unmakeDyadic d
 
