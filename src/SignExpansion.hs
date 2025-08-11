@@ -19,9 +19,12 @@ module SignExpansion
     veb1SELead,
     commonPrefix,
     takeCommonPrefix,
+    countSigns,
+    conwaySE,
   )
 where
 
+import SignExpansion.Conway (conwaySE)
 import SignExpansion.Types
 import SignExpansion.Veb
 import Prelude hiding (length, negate)

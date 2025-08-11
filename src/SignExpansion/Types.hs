@@ -14,6 +14,7 @@ module SignExpansion.Types
     negate,
     commonPrefix,
     takeCommonPrefix,
+    countSigns,
   )
 where
 
@@ -127,3 +128,6 @@ takeCommonPrefix = curry $ recurse empty
                 else
                   (acc +++ single (s1, n1), (single (s0, ordRightSub' n1 n0) +++ SignExpansion xs0, SignExpansion xs1))
       | otherwise = (acc, p)
+
+countSigns :: Bool -> SignExpansion -> Ordinal
+countSigns s0 (SignExpansion xs) = foldl (\c (s, n) -> if s == s0 then c `ordAdd` n else c) 0 xs

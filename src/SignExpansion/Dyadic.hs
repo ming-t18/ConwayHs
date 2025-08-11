@@ -33,6 +33,8 @@ consFSE (p0, n0) xs1@((p1, n1) : xs)
 (+++.) [] ys = ys
 (+++.) (x : xs) ys = x `consFSE` (xs +++. ys)
 
+-- | Omits the leading sign of an @FSE@.
+-- Requires the @FSE@ to be non-empty.
 omitLead :: FSE -> FSE
 omitLead [] = error "empty"
 omitLead ((s, n) : xs) = (s, n - 1) : xs

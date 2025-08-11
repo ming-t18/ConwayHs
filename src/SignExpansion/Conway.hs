@@ -1,9 +1,15 @@
-module SignExpansion.Conway where
+module SignExpansion.Conway
+  ( isAllPluses,
+    conwaySE,
+  )
+where
 
 import Control.Arrow (second)
 import Conway
-import SignExpansion
 import SignExpansion.Dyadic
+import SignExpansion.Reduce
+import SignExpansion.Types
+import SignExpansion.Veb
 import Typeclasses
 
 -- * Is all pluses
@@ -27,24 +33,28 @@ conwaySE = termsListSE . termsList
 
 termsListSE :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, a)] -> SignExpansion
 termsListSE [] = empty
-termsListSE [(v, c)] = vebMonoSE v c
-termsListSE _ = error "TODO implement this"
-
-realSuffixSE :: (FiniteSignExpansion a) => Ordinal -> Ordinal -> a -> SignExpansion
-realSuffixSE o a c = fromList $ map (second f) $ omitLead $ finiteSE c
+termsListSE xs = foldl (\s (VebMono o _, po, c) -> s +++ multMonoSE o po c) empty xs'
   where
-    f n = v1 `mult` finite n
-    v1 = veb1 o a
+    (ps, cs) = unzip xs
+    toExponent (VebMono 0 p) = conwaySE p
+    toExponent (VebMono o p) = veb1SE o (conwaySE p)
+    pos = reduce $ map toExponent ps
+    xs' = zip3 ps pos cs
 
--- * Monomial
-
-vebMonoSE :: (FiniteSignExpansion a, One a, OrdZero a) => VebMono a -> a -> SignExpansion
-vebMonoSE v@(VebMono o p) c
-  | c == one = veb1SE o (conwaySE p)
-  | isNegative c = neg $ vebMonoSE v $ neg c
-  | otherwise =
-      mono1Part +++ realSuffixSE o np c
+multMonoSE :: (One a, FiniteSignExpansion a, OrdZero a) => Ordinal -> SignExpansion -> a -> SignExpansion
+multMonoSE o p c
+  | c == one = fromMono1SE p
+  | isNegative c = neg $ multMonoSE o p $ neg c
+  | otherwise = fromMono1SE p +++ suffix
   where
-    (np, p') = veb1SE' o 0 (conwaySE p)
-    p0 = single $ veb1SELead o
-    mono1Part = p0 +++ p'
+    suffix :: SignExpansion
+    suffix = fromList $ map (second multiply) $ omitLead $ finiteSE c
+
+    fromMono1SE :: SignExpansion -> SignExpansion
+    fromMono1SE = if o == 0 then mono1SE else id
+
+    multiply :: Natural -> Ordinal
+    multiply n = v1 `mult` finite n
+
+    v1 = if o == 0 then mono1 nPlus else nPlus
+    nPlus = countSigns True p
