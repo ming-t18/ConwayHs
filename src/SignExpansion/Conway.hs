@@ -27,9 +27,7 @@ conwaySE = termsListSE . termsList
 
 termsListSE :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, a)] -> SignExpansion
 termsListSE [] = empty
-termsListSE [(v@(VebMono o p), c)]
-  | c == one = veb1SE o (conwaySE p)
-  | otherwise = vebMonoSE v c
+termsListSE [(v, c)] = vebMonoSE v c
 termsListSE _ = error "TODO implement this"
 
 realSuffixSE :: (FiniteSignExpansion a) => Ordinal -> Ordinal -> a -> SignExpansion
@@ -42,7 +40,7 @@ realSuffixSE o a c = fromList $ map (second f) $ omitLead $ finiteSE c
 
 vebMonoSE :: (FiniteSignExpansion a, One a, OrdZero a) => VebMono a -> a -> SignExpansion
 vebMonoSE v@(VebMono o p) c
-  | c == one = neg $ vebMonoSE v $ neg c
+  | c == one = veb1SE o (conwaySE p)
   | isNegative c = neg $ vebMonoSE v $ neg c
   | otherwise =
       mono1Part +++ realSuffixSE o np c
