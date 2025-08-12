@@ -8,7 +8,6 @@ import Dyadic
 import FundamentalSeq
 import Gen
 import OrdinalArith
-import SignExpansion (commonPrefix, takeCommonPrefix)
 import SignExpansion as SE
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -377,44 +376,74 @@ testPropsOrdArith = do
       it "2x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest (x `ordMult` 2) (x `ordAdd` 1))
       it "3x / (x + 1)" $ qc (\x -> prop_ordDivRemRemainderSmallest (x `ordMult` 3) (x `ordAdd` 1))
 
+type CD = Conway Dyadic
+
 testSignExpansion :: SpecWith ()
 testSignExpansion = do
-  describe "sign expansion" $ do
-    describe "(+++) forms a monoid" $ do
-      it "identity" $ qc (\x -> empty +++ x === x)
-      it "assoc" $ qc (\x y z -> x +++ (y +++ z) === (x +++ y) +++ z)
+  describe "signExpansionConway" $ do
+    describe "examples, no Veblen" $ do
+      it "finite values" $ do
+        conwaySE (0 :: CD) `shouldBe` empty
+        conwaySE (1 :: CD) `shouldBe` plus 1
+        conwaySE (-1 :: CD) `shouldBe` minus 1
+        conwaySE (finite half :: CD) `shouldBe` (plus 1 +++ minus 1)
+        conwaySE (finite (half * half) :: CD) `shouldBe` (plus 1 +++ minus 2)
 
-    describe "negation" $ do
-      it "negation is not equal" $ qc (\(x :: SignExpansion) -> if isEmpty x then neg x === x else neg x =/= x)
-      it "preserves length" $ qc (\x -> SE.length x === SE.length (neg x))
-      it "inverse" $ qc (\(x :: SignExpansion) -> neg (neg x) === x)
+      it "containing infinitesimals" $ do
+        conwaySE (mono1 (-1) :: CD) `shouldBe` (plus 1 +++ minus omega)
+        conwaySE (2 + mono1 (-1) :: CD) `shouldBe` (plus 3 +++ minus omega)
+        conwaySE (-2 + mono1 (-1) :: CD) `shouldBe` (minus 2 +++ plus 1 +++ minus omega)
+        conwaySE (mono (-1) 2 :: CD) `shouldBe` (plus 1 +++ minus omega +++ plus 1)
+        conwaySE (mono (-1) half :: CD) `shouldBe` (plus 1 +++ minus omega +++ minus 1)
+        conwaySE (2 + mono (-1) half :: CD) `shouldBe` (plus 3 +++ minus omega +++ minus 1)
 
-    describe "total order" $ do
-      it "reflexive" $ qc (\(x :: SignExpansion) -> x === x)
-      it "negation symmetry" $ qc (\(x :: SignExpansion) y -> x `compare` y === neg y `compare` neg x)
-      it "transitive" $ qc (\(x :: SignExpansion) y z -> x <= y && y <= z ==> x <= z)
-      it "prepending common prefix" $ qc (\x y z -> y `compare` z === (x +++ y) `compare` (x +++ z))
+      it "containing infinites" $ do
+        conwaySE (mono1 1 :: CD) `shouldBe` plus (mono1 1)
 
-    describe "toList" $ do
-      it "no zero length entries" $ qc (\(x :: SignExpansion) -> not (any (isZero . snd) (SE.toList x)))
-      it "no consecutive signs" $ qc prop_SENoConsecutiveSigns
+    describe "examples, containing Veblen" $ do
+      it "epsilons" $ do
+        conwaySE (veb1 1 0 :: CD) `shouldBe` plus epsilon0
+        conwaySE (veb1 1 (-1) :: CD) `shouldBe` (plus epsilon0 +++ minus (mono1 (mono1 (epsilon0 + 1))))
 
-    describe "commonPrefix" $ do
-      it "empty" $ qc (\x -> commonPrefix x empty === empty)
-      it "comm" $ qc (\x y -> commonPrefix x y === commonPrefix y x)
-      it "assoc" $ qc (\x y z -> commonPrefix (commonPrefix x y) z === commonPrefix x (commonPrefix y z))
-      it "common prefix with self" $ qc (\x -> commonPrefix x x === x)
-      it "prepend common prefix" $ qc (\x y z -> commonPrefix (x +++ y) (x +++ z) === x +++ commonPrefix y z)
-      it "length of common prefix" $ qc (\x y -> let l = SE.length (commonPrefix x y) in l <= SE.length x && l <= SE.length y)
+    it "negation symmetry" $ qc (\(ConwayGen (x :: CD)) -> conwaySE (neg x) === neg (conwaySE x))
+    it "order preserving" $ qc (\(ConwayGen (x :: CD), ConwayGen y) -> x `compare` y === conwaySE x `compare` conwaySE y)
+    it "ordinal number should be all pluses" $ qc (\o -> conwaySE o === plus o)
 
-    describe "takeCommonPrefix" $ do
-      it "result of commonPrefix" $ qc (\x y -> commonPrefix x y === fst (takeCommonPrefix x y))
-      it "recover length" $ qc (\x y -> let (z, (x', y')) = takeCommonPrefix x y in (SE.length (z +++ x'), SE.length (z +++ y')) === (SE.length x, SE.length y))
-      it "recover pair" $ qc (\x y -> let (z, (x', y')) = takeCommonPrefix x y in (z +++ x', z +++ y') === (x, y))
+  describe "(+++) forms a monoid" $ do
+    it "identity" $ qc (\x -> empty +++ x === x)
+    it "assoc" $ qc (\x y z -> x +++ (y +++ z) === (x +++ y) +++ z)
 
-    describe "veb1" $ do
-      it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
-      it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
+  describe "negation" $ do
+    it "negation is not equal" $ qc (\(x :: SignExpansion) -> if isEmpty x then neg x === x else neg x =/= x)
+    it "preserves length" $ qc (\x -> SE.length x === SE.length (neg x))
+    it "inverse" $ qc (\(x :: SignExpansion) -> neg (neg x) === x)
+
+  describe "total order" $ do
+    it "reflexive" $ qc (\(x :: SignExpansion) -> x === x)
+    it "negation symmetry" $ qc (\(x :: SignExpansion) y -> x `compare` y === neg y `compare` neg x)
+    it "transitive" $ qc (\(x :: SignExpansion) y z -> x <= y && y <= z ==> x <= z)
+    it "prepending common prefix" $ qc (\x y z -> y `compare` z === (x +++ y) `compare` (x +++ z))
+
+  describe "toList" $ do
+    it "no zero length entries" $ qc (\(x :: SignExpansion) -> not (any (isZero . snd) (SE.toList x)))
+    it "no consecutive signs" $ qc prop_SENoConsecutiveSigns
+
+  describe "commonPrefix" $ do
+    it "empty" $ qc (\x -> commonPrefix x empty === empty)
+    it "comm" $ qc (\x y -> commonPrefix x y === commonPrefix y x)
+    it "assoc" $ qc (\x y z -> commonPrefix (commonPrefix x y) z === commonPrefix x (commonPrefix y z))
+    it "common prefix with self" $ qc (\x -> commonPrefix x x === x)
+    it "prepend common prefix" $ qc (\x y z -> commonPrefix (x +++ y) (x +++ z) === x +++ commonPrefix y z)
+    it "length of common prefix" $ qc (\x y -> let l = SE.length (commonPrefix x y) in l <= SE.length x && l <= SE.length y)
+
+  describe "takeCommonPrefix" $ do
+    it "result of commonPrefix" $ qc (\x y -> commonPrefix x y === fst (takeCommonPrefix x y))
+    it "recover length" $ qc (\x y -> let (z, (x', y')) = takeCommonPrefix x y in (SE.length (z +++ x'), SE.length (z +++ y')) === (SE.length x, SE.length y))
+    it "recover pair" $ qc (\x y -> let (z, (x', y')) = takeCommonPrefix x y in (z +++ x', z +++ y') === (x, y))
+
+  describe "veb1" $ do
+    it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
+    it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 200) $ do

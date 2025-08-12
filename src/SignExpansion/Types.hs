@@ -27,6 +27,10 @@ import Prelude hiding (length, negate)
 
 infixr 5 +++
 
+-- | A sign expansion represented as a list of blocks
+-- of pluses or minuses.
+-- The internal representation is a list of @(sign, len)@
+-- pairs with @True@ being plus and @False@ beng minus.
 newtype SignExpansion = SignExpansion [(Bool, Ordinal)]
   deriving (Eq, Show)
 

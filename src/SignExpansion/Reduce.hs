@@ -7,6 +7,8 @@ import SignExpansion.Types as SE
 
 -- | Given a list of sign expansions of Cantor/Conway normal form exponents in descending order,
 -- returns a list of reduced sign expansion exponents.
+--
+-- Reduced sign expansions is explained in [Gonshor] Theorem 5.11(c) and rest of the chapter.
 reduce :: [SignExpansion] -> [SignExpansion]
 reduce = snd . foldl reduceStep (S.empty, [])
   where

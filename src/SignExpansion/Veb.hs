@@ -14,6 +14,8 @@ transform :: (a -> (Bool, Ordinal) -> (a, SignExpansion)) -> a -> SignExpansion 
 transform f a0 = foldl' (\(a, s) -> second (s +++) . f a) (a0, empty) . toList
 
 -- | Given the sign expansion of @x@, return the sign expansion of @mono1 x@.
+--
+-- Based on [Gonshor] Theorem 5.11(a) and Corollary 5.1
 mono1SE :: SignExpansion -> SignExpansion
 
 -- | Like @mono1SE@, except takes the accumulator as the first argument
@@ -29,6 +31,8 @@ mono1SE' = transform f
     f a (False, n) = (a, minus $ m1 (a `ordAdd` 1) `ordMult` n)
 
 -- | Given Veblen order @o@ and the sign expansion of @x@, return the sign expansion of @veb1 o x@.
+--
+-- Based on [Gonshor] Theorem 9.8 for the non-zero Veblen orders.
 veb1SE :: Ordinal -> SignExpansion -> SignExpansion
 
 -- | Like @veb1SE@, except takes the accumulator as the second argument
