@@ -21,10 +21,11 @@ module SignExpansion
     takeCommonPrefix,
     countSigns,
     conwaySE,
+    birthday,
   )
 where
 
-import SignExpansion.Conway (conwaySE)
+import SignExpansion.Conway (conwaySE, birthday)
 import SignExpansion.Types
 import SignExpansion.Veb
 import Prelude hiding (length, negate)
