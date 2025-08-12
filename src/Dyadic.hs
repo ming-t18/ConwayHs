@@ -22,7 +22,9 @@ module Dyadic
 where
 
 import Control.Arrow ((***))
+import Data.Bits
 import Data.Ratio (Ratio, (%))
+import qualified Data.Ratio as R
 import GHC.Num (integerDiv)
 import Typeclasses
 
@@ -44,6 +46,17 @@ instance Show Dyadic where
   show (Dyadic a p) = show a ++ "/" ++ deno
     where
       deno = if p < 32 then show ((2 :: Integer) ^ p) else "2^" ++ show p
+
+-- | WARNING: Partial function since dyadic denominators must be powers of 2.
+instance Fractional Dyadic where
+  fromRational r = p %/ l2 q
+    where
+      (p, q) = (R.numerator r, R.denominator r)
+      l2 :: Integer -> Integer
+      l2 n
+        | n .&. (n - 1) == 0 = floor $ logBase (2 :: Double) $ fromIntegral n
+        | otherwise = error $ "Dyadic.fromRational: denominator is not a power of 2: " ++ show r
+  recip (Dyadic p d) = fromRational $ (2 ^ d) % p
 
 infixl 7 %/
 

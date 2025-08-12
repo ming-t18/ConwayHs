@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Typeclasses
   ( -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.

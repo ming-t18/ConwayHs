@@ -25,7 +25,7 @@ module SignExpansion
   )
 where
 
-import SignExpansion.Conway (conwaySE, birthday)
+import SignExpansion.Conway (birthday, conwaySE)
 import SignExpansion.Types
 import SignExpansion.Veb
 import Prelude hiding (length, negate)

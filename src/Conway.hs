@@ -27,13 +27,19 @@ module Conway
 
     -- * Construction helpers
     finite,
+    finiteView,
     mono,
     mono1,
+    w',
     veb,
     veb1,
+    phi,
     omega,
+    w,
     epsilon0,
     epsilon,
+    eps0,
+    eps,
     fromVebMono,
     fromVebMono1,
 
@@ -175,6 +181,13 @@ instance (OrdZero a, One a) => Veblen (Conway a) Ordinal where
         | otherwise -> Nothing
       _ : (_ : _) -> Nothing
 
+-- | WARNING: @recip@ is only defined for finite values.
+instance (Fractional a, OrdZero a, OrdRing a) => Fractional (Conway a) where
+  fromRational = finite . fromRational
+  recip x = case finiteView x of
+    Just x' -> finite $ recip x'
+    Nothing -> error "Conway.recip: not defined"
+
 -- * Creation/decomposition
 
 -- | Given a @Map@ from the 2 Veblen arguments (2-tuple) to the coefficient, constructs a new @Conway@.
@@ -238,6 +251,14 @@ isVebFixed a b = case matchMono b of
 finite :: (OrdZero a) => a -> Conway a
 finite = conway . M.singleton (VebMono zero zero)
 
+-- | If the @Conway@ has zero or 1 terms and is finite, returns @Just@ of the finite value. Otherwise, @None@.
+finiteView :: (Zero a) => Conway a -> Maybe a
+finiteView x =
+  case termsList x of
+    [] -> Just zero
+    [(z, x')] | isZero z -> Just x'
+    _ -> Nothing
+
 -- | T rue if and only if the argument is a monomial (is zero or has only one term in its Cantor/Conway normal form)
 isMono :: Conway a -> Bool
 isMono x = case termsList x of [] -> True; [_] -> True; _ -> False
@@ -248,12 +269,14 @@ isMono x = case termsList x of [] -> True; [_] -> True; _ -> False
 mono :: (Mult a) => Conway a -> a -> Conway a
 mono = veb zero
 
+mono1, w' :: (Mult a) => Conway a -> Conway a
+
 -- | The power of omega, @mono1 p === veb1 0 p@
-mono1 :: (Mult a) => Conway a -> Conway a
 mono1 p = veb zero p one
 
+veb1, phi :: (One a, OrdZero a) => Ordinal -> Conway a -> Conway a
+
 -- | The two-argument Veblen function, @V(a, p)@
-veb1 :: (One a, OrdZero a) => Ordinal -> Conway a -> Conway a
 veb1 a p
   | isVebFixed a p = p
   | otherwise = conway $ M.singleton (VebMono a p) one
@@ -291,14 +314,30 @@ multMono (VebMono a p, c) (Conway x) = foldl' combineMono zero $ M.toList x
       where
         c'' = mult c c'
 
+omega, w :: (One a, OrdZero a) => Conway a
+epsilon0, eps0 :: (One a, OrdZero a) => Conway a
+epsilon, eps :: (One a, OrdZero a) => Conway a -> Conway a
+
 -- | The simplest infinite ordinal, @omega = veb1 0 1@.
-omega :: (One a, OrdZero a) => Conway a
 omega = conway $ M.singleton (VebMono zero one) one
 
 -- | The first fixed point of the omega-map, @epsilon0 = veb1 1 0@.
-epsilon0 :: (One a, OrdZero a) => Conway a
 epsilon0 = conway $ M.singleton (VebMono one zero) one
 
--- | Creates an Epsilon number, @epsilon x = veb1 1 x@.
-epsilon :: (One a, OrdZero a) => Conway a -> Conway a
+-- | Returns an epsilon number, @epsilon x = veb1 1 x@.
 epsilon = veb1 one
+
+-- | Alias of @omega@.
+w = omega
+
+-- | Alias of @mono1@.
+w' = mono1
+
+-- | Alias of @epsilon0@.
+eps0 = epsilon0
+
+-- | Alias of @epsilon@.
+eps = epsilon
+
+-- | Alias of @veb1@.
+phi = veb1
