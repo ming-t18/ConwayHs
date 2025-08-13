@@ -38,7 +38,7 @@ conwaySE = termsListSE . termsList
 
 termsListSE :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, a)] -> SignExpansion
 termsListSE [] = empty
-termsListSE xs = foldl' (\s (VebMono o _, po, c) -> s +++ monoSE o po c) empty xs'
+termsListSE xs = foldl' (\s (VebMono o _, po, c) -> s +++ monoSE po c) empty xs'
   where
     (ps, cs) = unzip xs
     -- The reduced sign expansions of the exponents
@@ -51,27 +51,23 @@ toExponent :: (One a, FiniteSignExpansion a, OrdZero a) => VebMono a -> SignExpa
 toExponent (VebMono 0 p) = conwaySE p
 toExponent (VebMono o p) = veb1SE o (conwaySE p)
 
--- | Given the Veblen order @o@, the sign expansion of @p@ (where @p = veb1 o p'@ for some @p'@)
--- and the coefficient @c@, returns the sign expansion of @p * finite c@.
-monoSE :: (One a, FiniteSignExpansion a, OrdZero a) => Ordinal -> SignExpansion -> a -> SignExpansion
-monoSE o p c
-  | c == one = mono1SE'' p
-  | isNegative c = neg $ monoSE o p $ neg c
-  | otherwise = mono1SE'' p +++ realPart
+-- | Given the sign expansion of @p@ and the coefficient @c@,
+-- return the sign expansion of @mono1 p * finite c@.
+monoSE :: (One a, FiniteSignExpansion a, OrdZero a) => SignExpansion -> a -> SignExpansion
+monoSE p c
+  | c == one = mono1SE p
+  | isNegative c = neg $ monoSE p $ neg c
+  | otherwise = plus 1 +++ mono1Part +++ coeffPart
   where
+    -- @mono1Part@ is the sign expansion contribution of the mono1 part, excluding the first plus.
+    -- @nPlus@ is the number of pluses in @p@
+    (nPlus, mono1Part) = mono1SE' 0 p
+
     -- The sign expansion contribution of the coefficient.
     -- Based on [Gonshor] Theorem 5.12(a)
-    realPart :: SignExpansion
-    realPart = fromList $ map (second multiply) $ omitLead $ finiteSE c
+    coeffPart :: SignExpansion
+    coeffPart = fromList $ map (second multiply) $ omitLead $ finiteSE c
 
-    -- Converts a FSE run length to number-of-pluses run length.
+    -- Converts an @FSE@ run length to number-of-pluses run length.
     multiply :: Natural -> Ordinal
-    multiply n = v1 `mult` finite n
-
-    -- Given the sign expansion of @p@, returns the sign expansion of @mono1 p@,
-    -- taking into account the value of @o@ where @p = veb1 o ...@.
-    mono1SE'' :: SignExpansion -> SignExpansion
-    mono1SE'' = if o == 0 then mono1SE else id
-
-    v1 = if o == 0 then mono1 nPlus else nPlus
-    nPlus = countSigns True p
+    multiply n = mono1 nPlus `mult` finite n
