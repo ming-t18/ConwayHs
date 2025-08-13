@@ -1,8 +1,14 @@
 module SignExpansion.Dyadic
   ( FSE,
     FiniteSignExpansion (..),
-    omitLead,
+
+    -- * Helpers
     fromFSE,
+    (+++.),
+    consFSE,
+    omitLead,
+
+    -- * Sign Expansions of dyadics and subsets
     dyadicSE,
     naturalSE,
     integerSE,
@@ -44,8 +50,8 @@ omitLead ((s, n) : xs) = (s, n - 1) : xs
 class FiniteSignExpansion a where
   finiteSE :: a -> FSE
 
--- TODO add this
--- finiteBirthday :: a -> Natural
+  finiteBirthday :: a -> Natural
+  finiteBirthday = sum . map snd . finiteSE
 
 instance FiniteSignExpansion Dyadic where
   finiteSE = dyadicSE

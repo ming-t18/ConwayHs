@@ -18,8 +18,9 @@ transform f a0 = foldl' (\(a, s) -> second (s +++) . f a) (a0, empty) . toList
 -- Based on [Gonshor] Theorem 5.11(a) and Corollary 5.1
 mono1SE :: SignExpansion -> SignExpansion
 
--- | Like @mono1SE@, except takes the accumulator as the first argument
+-- | Like @mono1SE@, except it takes the accumulator as the first argument
 -- and returns the accumulator after generating the sign expansion.
+-- The initial plus is alsoignored.
 -- The accumulator is the number of pluses in the input so far.
 mono1SE' :: Ordinal -> SignExpansion -> (Ordinal, SignExpansion)
 
@@ -37,6 +38,7 @@ veb1SE :: Ordinal -> SignExpansion -> SignExpansion
 
 -- | Like @veb1SE@, except takes the accumulator as the second argument
 -- and returns the accumulator after generating the sign expansion.
+-- The initial pluses are also ignored.
 -- The accumulator is the number of pluses in the input so far.
 veb1SE' :: Ordinal -> Ordinal -> SignExpansion -> (Ordinal, SignExpansion)
 

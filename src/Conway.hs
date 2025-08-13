@@ -23,31 +23,34 @@ module Conway
     conway,
     toMap,
     termsList,
-    leadingTerm,
+    -- TODO minView/maxView helpers
 
     -- * Construction helpers
     finite,
-    finiteView,
     mono,
     mono1,
-    w',
     veb,
     veb1,
-    phi,
     omega,
-    w,
     epsilon0,
     epsilon,
-    eps0,
-    eps,
     fromVebMono,
     fromVebMono1,
 
-    -- * Other
+    -- ** Shorthand aliases
+    w,
+    w',
+    eps0,
+    eps,
+    phi,
+
+    -- * Predicates and views
     isVebFixed,
     isMono,
     dropLeadingTerm,
     dropTrailingTerm,
+    finiteView,
+    leadingTerm,
   )
 where
 

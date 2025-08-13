@@ -1,20 +1,27 @@
 module SignExpansion.Types
-  ( SignExpansion,
-    (+++),
+  ( -- * Construction and decomposition
+    SignExpansion,
     empty,
-    isEmpty,
-    toList,
+    (+++),
     fromList,
     single,
-    length,
     plus,
     minus,
     consSE,
+
+    -- * Helpers
+    toList,
     toConsSE,
     negate,
+    isEmpty,
+
+    -- * Counting
+    length,
+    countSigns,
+
+    -- * Common prefix
     commonPrefix,
     takeCommonPrefix,
-    countSigns,
   )
 where
 
