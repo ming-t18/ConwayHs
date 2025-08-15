@@ -8,7 +8,6 @@ module Dyadic
     fromFloat,
 
     -- * Conversion to @Ratio@
-    toRatio,
     numerator,
     denominator,
 
@@ -23,7 +22,7 @@ where
 
 import Control.Arrow ((***))
 import Data.Bits
-import Data.Ratio (Ratio, (%))
+import Data.Ratio ((%))
 import qualified Data.Ratio as R
 import GHC.Num (integerDiv)
 import Typeclasses
@@ -58,6 +57,10 @@ instance Fractional Dyadic where
         | otherwise = error $ "Dyadic.fromRational: denominator is not a power of 2: " ++ show r
   recip (Dyadic p d) = fromRational $ (2 ^ d) % p
 
+instance Real Dyadic where
+  toRational (Dyadic n p) = n % (2 ^ p)
+
+
 infixl 7 %/
 
 -- | Constructs the Dyadic rational with the value of @(n / 2^p)@
@@ -89,11 +92,7 @@ numerator (Dyadic n _) = n
 
 -- | Extracts the simplified denominator of the @Dyadic@.
 denominator :: Dyadic -> Integer
-denominator (Dyadic _ p) = 2 ^ (-p)
-
--- | Converts the @Dyadic@ a @Ratio@ representing the same value.
-toRatio :: Dyadic -> Ratio Integer
-toRatio (Dyadic n p) = n % (2 ^ (-p))
+denominator (Dyadic _ p) = 2 ^ p
 
 -- | Creates a @Dyadic@ that equals to a power of 2.
 pow2 :: Integer -> Dyadic
