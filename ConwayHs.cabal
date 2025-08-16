@@ -29,6 +29,7 @@ library
       FundamentalSeq
       OrdBag
       OrdinalArith
+      QuasiEpsilon
       SignExpansion
       SignExpansion.Conway
       SignExpansion.Dyadic

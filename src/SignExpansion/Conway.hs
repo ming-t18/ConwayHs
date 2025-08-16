@@ -38,7 +38,7 @@ conwaySE = termsListSE . termsList
 
 termsListSE :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, a)] -> SignExpansion
 termsListSE [] = empty
-termsListSE xs = foldl' (\s (VebMono o _, po, c) -> s +++ monoSE po c) empty xs'
+termsListSE xs = foldl' (\s (_, po, c) -> s +++ monoSE po c) empty xs'
   where
     (ps, cs) = unzip xs
     -- The reduced sign expansions of the exponents
