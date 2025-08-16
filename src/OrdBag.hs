@@ -73,6 +73,4 @@ instance (OrdZero k, OrdZero v) => Ord (OrdBag k v) where
       comp (x : _) [] = compPair x z
       comp [] (y : _) = compPair z y
       comp (x : xs) (y : ys) =
-        case compPair x y of
-          EQ -> comp xs ys
-          other -> other
+        compPair x y <> comp xs ys

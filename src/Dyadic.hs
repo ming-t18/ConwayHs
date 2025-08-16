@@ -60,7 +60,6 @@ instance Fractional Dyadic where
 instance Real Dyadic where
   toRational (Dyadic n p) = n % (2 ^ p)
 
-
 infixl 7 %/
 
 -- | Constructs the Dyadic rational with the value of @(n / 2^p)@
