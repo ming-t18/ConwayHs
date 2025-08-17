@@ -1,4 +1,4 @@
-module Dyadic.Ratio where
+module Dyadic.Ratio (LongDivState, defaultLongDivState, stepBisectCheck, stepLongDiv) where
 
 import Data.Map (Map)
 import qualified Data.Map as M
