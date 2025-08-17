@@ -6,6 +6,9 @@ module Dyadic
     makeDyadic,
     unmakeDyadic,
     fromFloat,
+    fromDouble,
+    toFloat,
+    toDouble,
 
     -- * Conversion to @Ratio@
     numerator,
@@ -80,6 +83,15 @@ makeDyadic n p
 -- WARNING: Its @floatRadix@ must be @2@ and it is not checked.
 fromFloat :: (RealFloat a) => a -> Dyadic
 fromFloat f = a `makeDyadic` fromIntegral (-b) where (a, b) = decodeFloat f
+
+fromDouble :: Double -> Dyadic
+fromDouble = fromFloat
+
+toFloat :: (Fractional a) => Dyadic -> a
+toFloat = fromRational . toRational
+
+toDouble :: Dyadic -> Double
+toDouble = fromRational . toRational
 
 -- | Returns the pair representation of the @Dyadic@.
 unmakeDyadic :: Dyadic -> (Integer, Integer)
