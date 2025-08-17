@@ -192,3 +192,19 @@ instance (Integral a, Num a, OrdZero a, One a) => Mult (Ratio a) where
   mult = (*)
 
 instance (Integral a, Num a, OrdRing a) => OrdRing (Ratio a)
+
+instance (Zero a) => Zero (Either a b) where
+  zero = Left zero
+  isZero (Left z) = isZero z
+  isZero _ = False
+
+instance (Ord a, Zero a, Ord b, OrdZero a) => OrdZero (Either a b) where
+  neg (Left x) = Left (neg x)
+  neg (Right y) = Right y
+
+instance (Zero a, Zero b) => Zero (a, b) where
+  zero = (zero, zero)
+  isZero (x, y) = isZero x && isZero y
+
+instance (OrdZero a, OrdZero b) => OrdZero (a, b) where
+  neg (a, b) = (neg a, neg b)

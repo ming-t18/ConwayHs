@@ -31,6 +31,9 @@ library
       FundamentalSeq
       OrdBag
       OrdinalArith
+      OrdLim
+      OrdLim.Impls
+      OrdLim.Types
       QuasiEpsilon
       SignExpansion
       SignExpansion.Conway
