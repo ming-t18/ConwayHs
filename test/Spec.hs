@@ -9,6 +9,7 @@ import FundamentalSeq
 import Gen
 import OrdinalArith
 import SignExpansion as SE
+import SignExpansion.Dyadic
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -380,6 +381,13 @@ type CD = Conway Dyadic
 
 testSignExpansion :: SpecWith ()
 testSignExpansion = do
+  describe "sign expansions of Dyadic" $ do
+    it "negation symmetry" $ do
+      qc (\(x :: Dyadic) -> parseDyadicSE (negFSE (finiteSE x)) === neg x)
+
+    it "parseDyadicFSE is inverse of finiteFSE" $ do
+      qc (\(x :: Dyadic) -> parseDyadicSE (finiteSE x) === x)
+
   describe "signExpansionConway" $ do
     describe "examples, no Veblen" $ do
       it "finite values" $ do

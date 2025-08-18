@@ -7,16 +7,20 @@ module SignExpansion.Dyadic
     (+++.),
     consFSE,
     omitLead,
+    negFSE,
 
     -- * Sign Expansions of dyadics and subsets
     dyadicSE,
     naturalSE,
     integerSE,
     intSE,
+
+    -- * Parsing
+    parseDyadicSE,
   )
 where
 
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 import Conway
 import Dyadic
 import SignExpansion.Types
@@ -34,6 +38,9 @@ consFSE p [] = [p]
 consFSE (p0, n0) xs1@((p1, n1) : xs)
   | p0 == p1 = (p1, n0 + n1) : xs
   | otherwise = (p0, n0) : xs1
+
+negFSE :: FSE -> FSE
+negFSE = map (first not)
 
 (+++.) :: FSE -> FSE -> FSE
 (+++.) [] ys = ys
@@ -98,3 +105,16 @@ intSE 0 = []
 intSE n
   | n > 0 = [(True, fromIntegral n)]
   | otherwise = [(False, fromIntegral $ -n)]
+
+parseDyadicSE :: [(Bool, Natural)] -> Dyadic
+parseDyadicSE [] = 0
+parseDyadicSE ((True, n) : xs) = fromIntegral (n - 1) + parseFracSE 1 half xs
+parseDyadicSE ((False, n) : xs) = (-(fromIntegral n - 1)) + parseFracSE (-1) half xs
+
+parseFracSE :: Dyadic -> Dyadic -> [(Bool, Natural)] -> Dyadic
+parseFracSE x0 _ [] = x0
+parseFracSE x0 dx ((sign, n) : xs) = parseFracSE x0' dx' xs
+  where
+    dx' = dx `shr` fromIntegral n
+    delta = sum [dx `shr` fromIntegral (i - 1) | i <- [1 .. n]]
+    x0' = if sign then x0 + delta else x0 - delta
