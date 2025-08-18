@@ -1,16 +1,18 @@
-module Dyadic.Ratio (LongDivState, defaultLongDivState, stepBisectCheck, stepLongDiv) where
+module Dyadic.Ratio (LongDivState, defaultLongDivState, stepBisectCheck, divByInteger) where
 
 import Data.Map (Map)
 import qualified Data.Map as M
+import Data.Maybe (isJust)
 import Dyadic
-import Dyadic.Bisect (stepBisect)
+import Dyadic.Bisect
 
 data LongDivState = LongDivState
   { graph :: Map Dyadic (Bool, Dyadic),
     divisor :: !Integer,
     num :: !Dyadic,
     signs :: [Bool],
-    path :: [Dyadic]
+    path :: [(Dyadic, Dyadic, Bool)],
+    hasCycle :: Maybe Dyadic
   }
   deriving (Show)
 
@@ -20,23 +22,31 @@ defaultLongDivState n d =
     { graph = M.empty,
       divisor = d,
       num = n,
-      signs = [True, False],
-      path = [1, half]
+      -- [True, False] omitted
+      signs = [],
+      path = [],
+      hasCycle = Nothing
     }
 
 -- r/d == q -> r == q*d
 
 stepBisectCheck :: LongDivState -> Dyadic -> Dyadic -> (LongDivState, Ordering)
-stepBisectCheck LongDivState {graph = g, divisor = d, num = n, signs = ss, path = p} q dq = (st', ord)
+stepBisectCheck st0@LongDivState {graph = g, divisor = d, num = n, signs = ss, path = p, hasCycle = hasCycle0} q dq
+  | isJust hasCycle0 = (st0, EQ)
+  | otherwise = (st', ord)
   where
     ord = (q * fromIntegral d) `compare` n
     inv = (1 :: Integer) %/ negate (snd $ unmakeDyadic dq)
-    rem0 = n - (q * fromIntegral d)
-    rem1 = n - (q + (if ord == LT then dq else -dq)) * fromIntegral d
-    g' = M.insert (inv * rem0) (sign, 2 * inv * rem1) g
+    rem0' = inv * rem0 where rem0 = n - (q * fromIntegral d)
+    rem1' = 2 * inv * rem1 where rem1 = n - (q + (if ord == LT then dq else -dq)) * fromIntegral d
+    g' = M.insert rem0' (sign, rem1') g
     sign = ord == LT
-    p' = p ++ [inv * rem0]
-    st' = LongDivState {graph = g', divisor = d, num = n, signs = ss ++ [ord == LT], path = p'}
+    p' = p ++ [(q, rem0', sign)]
+    hasCycle' = if rem1' `M.member` g then Just rem1' else Nothing
+    st' = LongDivState {graph = g', divisor = d, num = n, signs = ss ++ [ord == LT], path = p', hasCycle = hasCycle'}
 
-stepLongDiv :: (LongDivState, Dyadic, Dyadic) -> (LongDivState, Dyadic, Dyadic)
-stepLongDiv = stepBisect stepBisectCheck
+divByInteger :: Dyadic -> Integer -> (LongDivState, Dyadic)
+divByInteger n d = (st, q)
+  where
+    (st, q, _) = bisect stepBisectCheck (defaultLongDivState n d) f
+    f = floor (toDouble n / fromIntegral d) :: Integer

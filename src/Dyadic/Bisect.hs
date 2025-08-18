@@ -28,8 +28,7 @@ bisect comp s0 x0 = loop (s0, fromIntegral x0 + half, half)
 dSqrt :: Dyadic -> [Dyadic]
 dSqrt n =
   map (\(_, x', _) -> x0 + x') $
-    iterate (stepBisect (\s xm _ -> (s, ((x0 + xm) * (x0 + xm)) `compare` n))) $
-      ((), half, half * half)
+    iterate (stepBisect (\s xm _ -> (s, ((x0 + xm) * (x0 + xm)) `compare` n))) ((), half, half * half)
   where
     x0 :: Dyadic
     x0 = (fromIntegral :: Integer -> Dyadic) $ floor $ sqrt $ toDouble n
