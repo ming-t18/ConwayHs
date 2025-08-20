@@ -1,9 +1,11 @@
 module SignExpansion.Dyadic
   ( FSE,
     FiniteSignExpansion (..),
+    empty,
 
     -- * Helpers
     fromFSE,
+    toList,
     (+++.),
     consFSE,
     omitLead,
@@ -23,34 +25,42 @@ where
 import Control.Arrow (first, second)
 import Conway
 import Dyadic
-import SignExpansion.Types
+import SignExpansion.Types (SignExpansion)
+import qualified SignExpansion.Types as SE
 
 infixr 5 +++.
 
 -- | Finite-length sign expansion.
-type FSE = [(Bool, Natural)]
+newtype FSE = FSE [(Bool, Natural)]
+  deriving (Eq, Ord, Show)
+
+empty :: FSE
+empty = FSE []
+
+toList :: FSE -> [(Bool, Natural)]
+toList (FSE l) = l
 
 fromFSE :: FSE -> SignExpansion
-fromFSE = fromList . map (second finite)
+fromFSE = SE.fromList . map (second finite) . toList
 
 consFSE :: (Bool, Natural) -> FSE -> FSE
-consFSE p [] = [p]
-consFSE (p0, n0) xs1@((p1, n1) : xs)
-  | p0 == p1 = (p1, n0 + n1) : xs
-  | otherwise = (p0, n0) : xs1
+consFSE p (FSE []) = FSE [p]
+consFSE (p0, n0) (FSE xs1@((p1, n1) : xs))
+  | p0 == p1 = FSE ((p1, n0 + n1) : xs)
+  | otherwise = FSE ((p0, n0) : xs1)
 
 negFSE :: FSE -> FSE
-negFSE = map (first not)
+negFSE = FSE . map (first not) . toList
 
 (+++.) :: FSE -> FSE -> FSE
-(+++.) [] ys = ys
-(+++.) (x : xs) ys = x `consFSE` (xs +++. ys)
+(+++.) (FSE []) (FSE ys) = FSE ys
+(+++.) (FSE (x : xs)) (FSE ys) = x `consFSE` (FSE xs +++. FSE ys)
 
 -- | Omits the leading sign of an @FSE@.
 -- Requires the @FSE@ to be non-empty.
 omitLead :: FSE -> FSE
-omitLead [] = error "empty"
-omitLead ((s, n) : xs) = (s, n - 1) : xs
+omitLead (FSE []) = error "empty"
+omitLead (FSE ((s, n) : xs)) = FSE ((s, n - 1) : xs)
 
 -- | Typeclass for finite numeric datatypes with a finite number of signs
 -- (or isomorphic to the sign expansion of a @Dyadic@).
@@ -58,7 +68,7 @@ class FiniteSignExpansion a where
   finiteSE :: a -> FSE
 
   finiteBirthday :: a -> Natural
-  finiteBirthday = sum . map snd . finiteSE
+  finiteBirthday = sum . map snd . toList . finiteSE
 
 instance FiniteSignExpansion Dyadic where
   finiteSE = dyadicSE
@@ -72,6 +82,9 @@ instance FiniteSignExpansion Integer where
 instance FiniteSignExpansion Int where
   finiteSE = intSE
 
+n1 :: Natural
+n1 = 1
+
 dyadicSE :: Dyadic -> FSE
 naturalSE :: Natural -> FSE
 integerSE :: Integer -> FSE
@@ -79,7 +92,7 @@ intSE :: Int -> FSE
 dyadicSE d =
   case unmakeDyadic d of
     (n, 0) -> integerSE n
-    _ -> integerSE ip +++. dyadicSEFrac fp fm half [(fp > 0, 1)]
+    _ -> integerSE ip +++. dyadicSEFrac fp fm half (signs (fp > 0) n1)
   where
     (ip, fp) = parts d
     fm = if fp > 0 then 1 else -1
@@ -88,28 +101,35 @@ dyadicSEFrac :: Dyadic -> Dyadic -> Dyadic -> FSE -> FSE
 dyadicSEFrac x xm dx a =
   case x `compare` xm of
     EQ -> a
-    LT -> dyadicSEFrac x (xm - dx) dx' (a +++. [(False, 1)])
-    GT -> dyadicSEFrac x (xm + dx) dx' (a +++. [(True, 1)])
+    LT -> dyadicSEFrac x (xm - dx) dx' (a +++. signs False n1)
+    GT -> dyadicSEFrac x (xm + dx) dx' (a +++. signs True n1)
   where
     dx' = dx `shr` 1
 
-naturalSE 0 = []
-naturalSE n = [(True, n)]
+plus, minus :: (Integral a) => a -> FSE
+plus n = FSE [(True, fromIntegral n)]
+minus n = FSE [(False, fromIntegral n)]
 
-integerSE 0 = []
+signs :: (Integral a) => Bool -> a -> FSE
+signs s n = FSE [(s, fromIntegral n)]
+
+naturalSE 0 = empty
+naturalSE n = plus n
+
+integerSE 0 = empty
 integerSE n
-  | n > 0 = [(True, fromIntegral n)]
-  | otherwise = [(False, fromIntegral $ -n)]
+  | n > 0 = plus n
+  | otherwise = minus $ -n
 
-intSE 0 = []
+intSE 0 = empty
 intSE n
-  | n > 0 = [(True, fromIntegral n)]
-  | otherwise = [(False, fromIntegral $ -n)]
+  | n > 0 = plus n
+  | otherwise = minus $ -n
 
-parseDyadicSE :: [(Bool, Natural)] -> Dyadic
-parseDyadicSE [] = 0
-parseDyadicSE ((True, n) : xs) = fromIntegral (n - 1) + parseFracSE 1 half xs
-parseDyadicSE ((False, n) : xs) = (-(fromIntegral n - 1)) + parseFracSE (-1) half xs
+parseDyadicSE :: FSE -> Dyadic
+parseDyadicSE (FSE []) = 0
+parseDyadicSE (FSE ((True, n) : xs)) = fromIntegral (n - 1) + parseFracSE 1 half xs
+parseDyadicSE (FSE ((False, n) : xs)) = (-(fromIntegral n - 1)) + parseFracSE (-1) half xs
 
 parseFracSE :: Dyadic -> Dyadic -> [(Bool, Natural)] -> Dyadic
 parseFracSE x0 _ [] = x0

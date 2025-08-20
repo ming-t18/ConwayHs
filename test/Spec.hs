@@ -9,7 +9,8 @@ import FundamentalSeq
 import Gen
 import OrdinalArith
 import SignExpansion as SE
-import SignExpansion.Dyadic
+import SignExpansion.Dyadic (finiteSE, negFSE, parseDyadicSE)
+import qualified SignExpansion.Dyadic as SED
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck

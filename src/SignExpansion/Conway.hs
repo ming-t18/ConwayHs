@@ -8,7 +8,8 @@ where
 import Control.Arrow (second)
 import Conway
 import Data.Foldable (foldl')
-import SignExpansion.Dyadic
+import SignExpansion.Dyadic hiding (empty, toList)
+import qualified SignExpansion.Dyadic as SED
 import SignExpansion.Reduce
 import SignExpansion.Types as SE
 import SignExpansion.Veb
@@ -66,7 +67,7 @@ monoSE p c
     -- The sign expansion contribution of the coefficient.
     -- Based on [Gonshor] Theorem 5.12(a)
     coeffPart :: SignExpansion
-    coeffPart = fromList $ map (second multiply) $ omitLead $ finiteSE c
+    coeffPart = fromList $ map (second multiply) $ SED.toList $ omitLead $ finiteSE c
 
     -- Converts an @FSE@ run length to number-of-pluses run length.
     multiply :: Natural -> Ordinal
