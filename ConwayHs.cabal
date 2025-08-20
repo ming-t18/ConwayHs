@@ -35,6 +35,8 @@ library
       OrdLim.Impls
       OrdLim.Types
       QuasiEpsilon
+      Seq
+      Seq.Types
       SignExpansion
       SignExpansion.Conway
       SignExpansion.Dyadic

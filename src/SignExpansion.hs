@@ -30,6 +30,7 @@ module SignExpansion
     toList,
     fromList,
     length,
+    index,
     negate,
     single,
     plus,

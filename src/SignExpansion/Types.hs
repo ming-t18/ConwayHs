@@ -14,6 +14,7 @@ module SignExpansion.Types
     toConsSE,
     negate,
     isEmpty,
+    index,
 
     -- * Counting
     length,
@@ -108,6 +109,12 @@ toConsSE (SignExpansion (x : xs)) = Just (x, SignExpansion xs)
 
 length :: SignExpansion -> Ordinal
 length (SignExpansion xs) = F.foldl' (\a (_, b) -> a `ordAdd` b) 0 xs
+
+index :: SignExpansion -> Ordinal -> Bool
+index (SignExpansion []) _ = error "SignExpansion.index: out of bounds"
+index (SignExpansion ((s, n) : ss)) i
+  | i < n = s
+  | otherwise = index (SignExpansion ss) (ordRightSub' i n)
 
 commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
 takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
