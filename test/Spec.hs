@@ -10,7 +10,7 @@ import Gen
 import OrdinalArith
 import SignExpansion as SE
 import SignExpansion.Dyadic (finiteSE, negFSE, parseDyadicSE)
-import qualified SignExpansion.Dyadic as SED
+import qualified SignExpansion.Reduce as R
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -205,6 +205,7 @@ prop_ordRightSubAddBack l r = case ordRightSub l r of
 prop_ordDivRemProduct :: Ordinal -> Ordinal -> Property
 prop_ordDivRemProduct d q = d /= 0 ==> (d `ordMult` q) `ordDivRem` d === (q, 0)
 
+-- TODO fails with (1, 3, 4)
 prop_ordDivRemDistr :: Ordinal -> Ordinal -> Conway Natural -> Property
 prop_ordDivRemDistr a b d = d /= 0 ==> fst ((a `ordAdd` b) `ordDivRem` d) === q1 `ordAdd` q2
   where
@@ -382,6 +383,14 @@ type CD = Conway Dyadic
 
 testSignExpansion :: SpecWith ()
 testSignExpansion = do
+  describe "reduced sign expansion" $ modifyMaxSuccess (const 10000) $ do
+    it "unreduceSingle undoes reduceSingle" $ do
+      qc (\p0 p1 -> p1 < p0 ==> R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1)
+
+  -- fails as expected
+  -- it "unreduceSingle undoes reduceSingle, no less-than constraint" $ do
+  --   qc (\p0 p1 -> R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1)
+
   describe "sign expansions of Dyadic" $ do
     it "negation symmetry" $ do
       qc (\(x :: Dyadic) -> parseDyadicSE (negFSE (finiteSE x)) === neg x)

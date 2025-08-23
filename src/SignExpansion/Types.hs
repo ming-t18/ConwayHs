@@ -15,6 +15,8 @@ module SignExpansion.Types
     negate,
     isEmpty,
     index,
+    takeLeading,
+    takeUntilNthSign,
 
     -- * Counting
     length,
@@ -149,3 +151,22 @@ takeCommonPrefix = curry $ recurse empty
 
 countSigns :: Bool -> SignExpansion -> Ordinal
 countSigns s0 (SignExpansion xs) = foldl (\c (s, n) -> if s == s0 then c `ordAdd` n else c) 0 xs
+
+takeLeading :: Bool -> SignExpansion -> (Ordinal, SignExpansion)
+takeLeading _ e@(SignExpansion []) = (0, e)
+takeLeading s se@(SignExpansion ((s0, n0) : xs))
+  | s /= s0 = (0, se)
+  | otherwise = (n0, SignExpansion xs)
+
+-- | Given @(s, n)@ and a sign expansion, take its longest prefix having exactly @n@ signs of @s@.
+takeUntilNthSign :: (Bool, Ordinal) -> SignExpansion -> SignExpansion
+takeUntilNthSign (s, n) = loop (n, empty)
+  where
+    loop :: (Ordinal, SignExpansion) -> SignExpansion -> SignExpansion
+    loop (0, acc) _ = acc
+    loop (n', acc) (SignExpansion ((s0, n0) : xs))
+      | s0 /= s = loop (n', acc) $ SignExpansion xs
+      | n' == n0 = acc +++ single (s0, n') +++ single (not s, fst $ takeLeading (not s) $ SignExpansion xs)
+      | n' < n0 = acc +++ single (s0, n')
+      | otherwise = loop (ordRightSub' n' n0, acc +++ single (s0, n0)) $ SignExpansion xs
+    loop _ (SignExpansion []) = error "takeUntilNthSign: out of bounds"
