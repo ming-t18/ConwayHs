@@ -119,7 +119,6 @@ index (SignExpansion ((s, n) : ss)) i
   | otherwise = index (SignExpansion ss) (ordRightSub' i n)
 
 commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
-takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
 commonPrefix = curry $ recurse empty
   where
     recurse :: SignExpansion -> (SignExpansion, SignExpansion) -> SignExpansion
@@ -132,6 +131,7 @@ commonPrefix = curry $ recurse empty
             else acc +++ single (s0, min n0 n1)
       | otherwise = acc
 
+takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
 takeCommonPrefix = curry $ recurse empty
   where
     recurse :: SignExpansion -> (SignExpansion, SignExpansion) -> (SignExpansion, (SignExpansion, SignExpansion))
