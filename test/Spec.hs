@@ -384,8 +384,8 @@ testPropsOrdArith = do
 
 type CD = Conway Dyadic
 
-testSignExpansion :: SpecWith ()
-testSignExpansion = do
+testReducedSignExpansion :: SpecWith ()
+testReducedSignExpansion = do
   describe "reduced sign expansion" $ do
     it "reduceSingle when both are all minuses" $ do
       qc
@@ -412,9 +412,33 @@ testSignExpansion = do
     it "unreduce [Reduced p0, reduceSingle p0 p] === Just [p0, unreduceSingle p0 p] if p < p0" $ do
       qc (\(p0, p) -> p < p0 ==> R.unreduce [Reduced p0, R.reduceSingle p0 p] === Just [p0, p])
 
+    it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
+      qc
+        ( \p0 p1 ->
+            p0 /= p1 ==>
+              let ps = if p0 < p1 then [p1, p0] else [p0, p1]
+               in R.unreduce (R.reduce ps) === Just ps
+        )
+
+    -- TODO failing:
+    {-
+       uncaught exception: ErrorCall
+       ordRightSub': arithmetic underflow: (5,1)
+       CallStack (from HasCallStack):
+         error, called at src\OrdinalArith.hs:157:16
+       (after 6423 tests and 45 shrinks)
+         [SignExpansion [(True,1),(False,1),(True,ε_0)],SignExpansion [(False,9),(True,ε_0)],SignExpansion [(False,9),(True,5)]]
+         Exception thrown while showing test case:
+           ordRightSub': arithmetic underflow: (5,1)
+           CallStack (from HasCallStack):
+             error, called at src\OrdinalArith.hs:157:16
+
+    -}
     it "unreduce . reduce === Just for descending lists of sign expansions" $ do
       qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
 
+testSignExpansion :: SpecWith ()
+testSignExpansion = do
   describe "sign expansions of Dyadic" $ do
     it "negation symmetry" $ do
       qc (\(x :: Dyadic) -> parseDyadicSE (negFSE (finiteSE x)) === neg x)
@@ -488,8 +512,10 @@ testSignExpansion = do
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
 main :: IO ()
-main = hspec $ parallel $ modifyMaxSuccess (const 200) $ do
+main = hspec $ parallel $ modifyMaxSuccess (const 10000) $ do
   describe "SignExpansion" $ do
+    testReducedSignExpansion
+
     testSignExpansion
 
   describe "Dyadic" $ do
