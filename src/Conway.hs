@@ -262,7 +262,7 @@ finiteView x =
     [(z, x')] | isZero z -> Just x'
     _ -> Nothing
 
--- | T rue if and only if the argument is a monomial (is zero or has only one term in its Cantor/Conway normal form)
+-- | @True@ if and only if the argument is a monomial (is zero or has only one term in its Cantor/Conway normal form)
 isMono :: Conway a -> Bool
 isMono x = case termsList x of [] -> True; [_] -> True; _ -> False
 

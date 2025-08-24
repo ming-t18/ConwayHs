@@ -39,12 +39,11 @@ conwaySE = termsListSE . termsList
 
 termsListSE :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, a)] -> SignExpansion
 termsListSE [] = empty
-termsListSE xs = foldl' (\s (_, po, c) -> s +++ monoSE po c) empty xs'
+termsListSE xs = foldl' (\s (_, Reduced po, c) -> s +++ monoSE po c) empty xs'
   where
     (ps, cs) = unzip xs
     -- The reduced sign expansions of the exponents
     pos = reduce $ map toExponent ps
-    -- TODO count nPlus in ps
     xs' = zip3 ps pos cs
 
 -- | Given a @VebMono@ @v@, returns the sign expansion of @p@ where @v = mono1 p@.
