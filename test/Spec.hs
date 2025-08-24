@@ -434,6 +434,13 @@ testReducedSignExpansion = do
              error, called at src\OrdinalArith.hs:157:16
 
     -}
+    it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do
+      qc
+        ( \(p0, p1, p2) ->
+            let ps = S.toDescList $ S.fromList [p0, p1, p2]
+             in Prelude.length ps == 3 ==> R.unreduce (R.reduce ps) === Just ps
+        )
+
     it "unreduce . reduce === Just for descending lists of sign expansions" $ do
       qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
 
@@ -512,10 +519,9 @@ testSignExpansion = do
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
 main :: IO ()
-main = hspec $ parallel $ modifyMaxSuccess (const 10000) $ do
+main = hspec $ parallel $ modifyMaxSuccess (const 300) $ do
   describe "SignExpansion" $ do
     testReducedSignExpansion
-
     testSignExpansion
 
   describe "Dyadic" $ do

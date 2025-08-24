@@ -116,7 +116,7 @@ index :: SignExpansion -> Ordinal -> Bool
 index (SignExpansion []) _ = error "SignExpansion.index: out of bounds"
 index (SignExpansion ((s, n) : ss)) i
   | i < n = s
-  | otherwise = index (SignExpansion ss) (ordRightSub' i n)
+  | otherwise = index (SignExpansion ss) (ordRightSub' n i)
 
 commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
 commonPrefix = curry $ recurse empty
@@ -171,5 +171,5 @@ takeUntilNthSign (s, n) = loop (n, empty)
       | s0 /= s = loop (n', acc +++ single (s0, n0)) $ SignExpansion xs
       | n' == n0 = acc +++ single (s0, n') +++ single (not s, fst $ takeLeading (not s) $ SignExpansion xs)
       | n' < n0 = acc +++ single (s0, n')
-      | otherwise = loop (ordRightSub' n' n0, acc +++ single (s0, n0)) $ SignExpansion xs
+      | otherwise = loop (ordRightSub' n0 n', acc +++ single (s0, n0)) $ SignExpansion xs
     loop _ (SignExpansion []) = error "takeUntilNthSign: out of bounds"
