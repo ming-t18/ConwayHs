@@ -1,9 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 import Control.Monad ()
 import Conway
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Set as S
 import Dyadic
 import FundamentalSeq
 import Gen
@@ -11,6 +13,7 @@ import OrdinalArith
 import SignExpansion as SE
 import SignExpansion.Dyadic (finiteSE, negFSE, parseDyadicSE)
 import qualified SignExpansion.Reduce as R
+import SignExpansion.Types (takeUntilNthSign)
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -365,7 +368,6 @@ testPropsOrdArith = do
     it "distributive" $ qc prop_ordDivRemDistr
     it "scaling by multipler, zero remainder" $ qc prop_ordDivRemScalingZeroRem
 
-    -- modifyMaxSuccess (const 100000) $ parallel $ do
     it "from product" $ qc prop_ordDivRemProduct
     describe "add back" $ do
       it "any pair" $ qc prop_ordDivRemAddBack
@@ -383,13 +385,34 @@ type CD = Conway Dyadic
 
 testSignExpansion :: SpecWith ()
 testSignExpansion = do
-  describe "reduced sign expansion" $ modifyMaxSuccess (const 10000) $ do
-    it "unreduceSingle undoes reduceSingle" $ do
+  describe "reduced sign expansion" $ do
+    it "reduceSingle when both are all minuses" $ do
+      qc
+        ( \n0 n1 ->
+            n1 > n0 ==>
+              let (p0, p1) = (minus n0, minus n1)
+               in R.reduceSingle p0 p1 === minus (ordRightSub' n0 n1)
+        )
+
+    it "unreduceSingle p0 (reduceSingle p0 p) === p when both are all minuses and p < p0" $ do
+      qc
+        ( \n0 n1 ->
+            n1 > n0 ==>
+              let (p0, p1) = (minus n0, minus n1)
+               in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
+        )
+
+    it "unreduceSingle p0 (reduceSingle p0 p) === p if p < p0" $ do
       qc (\p0 p1 -> p1 < p0 ==> R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1)
 
-  -- fails as expected
-  -- it "unreduceSingle undoes reduceSingle, no less-than constraint" $ do
-  --   qc (\p0 p1 -> R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1)
+    it "unreduce [p] === Just [p]" $ do
+      qc (\p -> R.unreduce [p] === Just [p])
+
+    it "unreduce [p0, reduceSingle p0 p] === Just [p0, unreduceSingle p0 p] if p < p0" $ do
+      qc (\(p0, p) -> p < p0 ==> R.unreduce [p0, R.reduceSingle p0 p] === Just [p0, p])
+
+    it "unreduce . reduce === Just for descending lists of sign expansions" $ do
+      qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
 
   describe "sign expansions of Dyadic" $ do
     it "negation symmetry" $ do

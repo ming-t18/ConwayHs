@@ -1,7 +1,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module SignExpansion.Reduce (reduce, reduceSingle, unreduceSingle) where
+module SignExpansion.Reduce (reduce, reduceSingle, unreduce, unreduceSingle, unreduceStep) where
 
+import Control.Monad (foldM)
 import Data.Foldable (maximumBy)
 import Data.Ord (comparing)
 import Data.Set (Set)
@@ -19,10 +20,12 @@ reduce = snd . foldl reduceStep (S.empty, [])
     reduceStep :: (Set SignExpansion, [SignExpansion]) -> SignExpansion -> (Set SignExpansion, [SignExpansion])
     reduceStep (ps, pos) p = (S.insert p ps, pos ++ [po])
       where
-        -- Choose a previous @p@ by longest common prefix.
-        pChosen = maximumBy (comparing $ SE.length . commonPrefix p) ps
+        pChosen = longestCommonPrefix p ps
         -- The reduced sign expansion
         po = if null ps then p else pChosen `reduceSingle` p
+
+longestCommonPrefix :: (Foldable t) => SignExpansion -> t SignExpansion -> SignExpansion
+longestCommonPrefix p = maximumBy (comparing $ SE.length . commonPrefix p)
 
 -- | Constructs a reduced sign expansion of the second argument given first argument as a base.
 --
@@ -37,3 +40,23 @@ unreduceSingle pb (takeLeading True -> (nLead, pRest))
   | otherwise = SE.takeUntilNthSign (True, nLead) pb +++ pRest
   where
     nPlus = countSigns True pb
+
+unreduce :: [SignExpansion] -> Maybe [SignExpansion]
+unreduce = foldM unreduceStepAndAppend []
+  where
+    unreduceStepAndAppend :: [SignExpansion] -> SignExpansion -> Maybe [SignExpansion]
+    unreduceStepAndAppend ps0 po = (ps0 ++) . (: []) <$> unreduceStep ps0 po
+
+-- | Given unreduced sign expansions in descending order
+-- and a reduced sign expansion, unreduce it
+-- given the unreduced sign expansions and make sure the descending order is preserved.
+unreduceStep :: [SignExpansion] -> SignExpansion -> Maybe SignExpansion
+unreduceStep [] po = Just po
+unreduceStep ps0@(last -> pLast) po
+  | null ps' = Nothing
+  | otherwise = Just $ snd $ maximumBy (comparing fst) ps'
+  where
+    ps' = filter ((< pLast) . snd) $ map cpLenAndUnreduce ps0
+    cpLenAndUnreduce p0 = (SE.length $ commonPrefix p p0, p)
+      where
+        p = unreduceSingle p0 po

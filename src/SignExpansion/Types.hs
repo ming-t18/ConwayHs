@@ -163,7 +163,10 @@ takeUntilNthSign :: (Bool, Ordinal) -> SignExpansion -> SignExpansion
 takeUntilNthSign (s, n) = loop (n, empty)
   where
     loop :: (Ordinal, SignExpansion) -> SignExpansion -> SignExpansion
-    loop (0, acc) _ = acc
+    loop (0, acc) (SignExpansion []) = acc
+    loop (0, acc) (SignExpansion ((s0, n0) : _))
+      | s0 == not s = acc +++ single (s0, n0)
+      | otherwise = acc
     loop (n', acc) (SignExpansion ((s0, n0) : xs))
       | s0 /= s = loop (n', acc) $ SignExpansion xs
       | n' == n0 = acc +++ single (s0, n') +++ single (not s, fst $ takeLeading (not s) $ SignExpansion xs)
