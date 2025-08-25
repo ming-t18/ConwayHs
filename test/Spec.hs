@@ -209,13 +209,6 @@ prop_ordRightSubAddBack l r = case ordRightSub l r of
 prop_ordDivRemProduct :: Ordinal -> Ordinal -> Property
 prop_ordDivRemProduct d q = d /= 0 ==> (d `ordMult` q) `ordDivRem` d === (q, 0)
 
--- TODO fails with (1, 3, 4)
-prop_ordDivRemDistr :: Ordinal -> Ordinal -> Conway Natural -> Property
-prop_ordDivRemDistr a b d = d /= 0 ==> fst ((a `ordAdd` b) `ordDivRem` d) === q1 `ordAdd` q2
-  where
-    (q1, _) = ordDivRem a d
-    (q2, _) = ordDivRem b d
-
 prop_ordDivRemScalingZeroRem :: Ordinal -> Ordinal -> Conway Natural -> Property
 prop_ordDivRemScalingZeroRem a b d = d /= 0 && r == 0 ==> fst ((a `ordMult` b) `ordDivRem` d) === q `ordMult` b
   where
@@ -366,7 +359,6 @@ testPropsOrdArith = do
     it "by zero" $ qc (\x -> x /= 0 ==> 0 `ordDivRem` x === (0, 0))
     it "div by 1" $ qc prop_ordDivRemBy1
 
-    it "distributive" $ qc prop_ordDivRemDistr
     it "scaling by multipler, zero remainder" $ qc prop_ordDivRemScalingZeroRem
 
     it "from product" $ qc prop_ordDivRemProduct
@@ -420,20 +412,6 @@ testReducedSignExpansion = do
                in R.unreduce (R.reduce ps) === Just ps
         )
 
-    -- TODO failing:
-    {-
-       uncaught exception: ErrorCall
-       ordRightSub': arithmetic underflow: (5,1)
-       CallStack (from HasCallStack):
-         error, called at src\OrdinalArith.hs:157:16
-       (after 6423 tests and 45 shrinks)
-         [SignExpansion [(True,1),(False,1),(True,ε_0)],SignExpansion [(False,9),(True,ε_0)],SignExpansion [(False,9),(True,5)]]
-         Exception thrown while showing test case:
-           ordRightSub': arithmetic underflow: (5,1)
-           CallStack (from HasCallStack):
-             error, called at src\OrdinalArith.hs:157:16
-
-    -}
     it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do
       qc
         ( \(p0, p1, p2) ->
@@ -519,7 +497,7 @@ testSignExpansion = do
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
 main :: IO ()
-main = hspec $ parallel $ modifyMaxSuccess (const 300) $ do
+main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
   describe "SignExpansion" $ do
     testReducedSignExpansion
     testSignExpansion
