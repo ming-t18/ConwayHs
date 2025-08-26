@@ -114,9 +114,10 @@ length (SignExpansion xs) = F.foldl' (\a (_, b) -> a `ordAdd` b) 0 xs
 
 index :: SignExpansion -> Ordinal -> Bool
 index (SignExpansion []) _ = error "SignExpansion.index: out of bounds"
-index (SignExpansion ((s, n) : ss)) i
-  | i < n = s
-  | otherwise = index (SignExpansion ss) (ordRightSub' n i)
+index (SignExpansion ((s, n) : ss)) i =
+  case i `ordSymDiff` n of
+    (LT, _) -> s
+    (_, d) -> index (SignExpansion ss) d
 
 commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
 commonPrefix = curry $ recurse empty
@@ -139,14 +140,10 @@ takeCommonPrefix = curry $ recurse empty
     recurse acc p@(_, SignExpansion []) = (acc, p)
     recurse acc p@(SignExpansion (e0@(s0, n0) : xs0), SignExpansion ((s1, n1) : xs1))
       | s0 == s1 =
-          if n0 == n1
-            then recurse (acc +++ single e0) (SignExpansion xs0, SignExpansion xs1)
-            else
-              if n0 < n1
-                then
-                  (acc +++ single (s0, n0), (SignExpansion xs0, single (s1, ordRightSub' n0 n1) +++ SignExpansion xs1))
-                else
-                  (acc +++ single (s1, n1), (single (s0, ordRightSub' n1 n0) +++ SignExpansion xs0, SignExpansion xs1))
+          case n0 `ordSymDiff` n1 of
+            (EQ, _) -> recurse (acc +++ single e0) (SignExpansion xs0, SignExpansion xs1)
+            (LT, d) -> (acc +++ single (s0, n0), (SignExpansion xs0, single (s1, d) +++ SignExpansion xs1))
+            (GT, d) -> (acc +++ single (s1, n1), (single (s0, d) +++ SignExpansion xs0, SignExpansion xs1))
       | otherwise = (acc, p)
 
 countSigns :: Bool -> SignExpansion -> Ordinal
@@ -169,7 +166,9 @@ takeUntilNthSign (s, n) = loop (n, empty)
       | otherwise = acc
     loop (n', acc) (SignExpansion ((s0, n0) : xs))
       | s0 /= s = loop (n', acc +++ single (s0, n0)) $ SignExpansion xs
-      | n' == n0 = acc +++ single (s0, n') +++ single (not s, fst $ takeLeading (not s) $ SignExpansion xs)
-      | n' < n0 = acc +++ single (s0, n')
-      | otherwise = loop (ordRightSub' n0 n', acc +++ single (s0, n0)) $ SignExpansion xs
+      | otherwise =
+          case n' `ordSymDiff` n0 of
+            (EQ, _) -> acc +++ single (s0, n') +++ single (not s, fst $ takeLeading (not s) $ SignExpansion xs)
+            (LT, _) -> acc +++ single (s0, n')
+            (GT, d) -> loop (d, acc +++ single (s0, n0)) $ SignExpansion xs
     loop _ (SignExpansion []) = error "takeUntilNthSign: out of bounds"

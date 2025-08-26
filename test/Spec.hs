@@ -498,10 +498,6 @@ testSignExpansion = do
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
-  describe "SignExpansion" $ do
-    testReducedSignExpansion
-    testSignExpansion
-
   describe "Dyadic" $ do
     testPropsOrdRing (id :: Dyadic -> Dyadic)
 
@@ -528,3 +524,7 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
       qc prop_fsOrd_smaller
     it "FS is increasing" $ do
       qc prop_fsOrd_increasing
+
+  describe "SignExpansion" $ do
+    testSignExpansion
+    testReducedSignExpansion

@@ -21,7 +21,7 @@ import Data.Foldable (foldl', maximumBy)
 import Data.Ord (comparing)
 import Data.Set (Set)
 import qualified Data.Set as S
-import OrdinalArith (ordRightSub')
+import OrdinalArith (ordSymDiff)
 import SignExpansion.Types as SE
 
 -- | Wrapper type for labelling reduced sign expansions.
@@ -57,9 +57,10 @@ reduceSingle :: SignExpansion -> SignExpansion -> Reduced SignExpansion
 reduceSingle pb (takeCommonPrefix pb -> (pre, (_, suffix))) = Reduced $ plus (SE.countSigns True pre) +++ suffix
 
 unreduceSingle :: SignExpansion -> Reduced SignExpansion -> SignExpansion
-unreduceSingle pb (takeLeading True . getReduced -> (nLead, pRest))
-  | nLead > nPlus = pb +++ plus (ordRightSub' nPlus nLead) +++ pRest
-  | otherwise = SE.takeUntilNthSign (True, nLead) pb +++ pRest
+unreduceSingle pb (takeLeading True . getReduced -> (nLead, pRest)) =
+  case nLead `ordSymDiff` nPlus of
+    (GT, d) -> pb +++ plus d +++ pRest
+    _ -> SE.takeUntilNthSign (True, nLead) pb +++ pRest
   where
     nPlus = countSigns True pb
 

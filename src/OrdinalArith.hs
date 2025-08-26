@@ -7,6 +7,7 @@ module OrdinalArith
     ordPow,
     ordRightSub,
     ordRightSub',
+    ordSymDiff,
     ordDivRem,
     isFinite,
     isInfinite,
@@ -153,8 +154,18 @@ ordRightSub' :: Ordinal -> Ordinal -> Ordinal
 ordRightSub' a b =
   case ordRightSub a b of
     Just r -> r
-    -- Nothing -> error "ordRightSub': arithmetic underflow"
-    Nothing -> error $ "ordRightSub': arithmetic underflow: " ++ show (a, b)
+    Nothing -> error "ordRightSub': arithmetic underflow"
+
+-- | Compares two ordinal numbers and returns the difference between them.
+-- @ordSymDiff@ is recommended instead of @ordRightSub'@ due to the lack of arithmetic underflow errors.
+ordSymDiff :: Ordinal -> Ordinal -> (Ordering, Ordinal)
+ordSymDiff a b =
+  case c of
+    EQ -> (c, 0)
+    LT -> (c, ordRightSub' a b)
+    GT -> (c, ordRightSub' b a)
+  where
+    c = a `compare` b
 
 -- * Long division
 
