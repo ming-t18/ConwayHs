@@ -1,6 +1,7 @@
 module FundamentalSeq
   ( FSeq,
     fsOrd,
+    fsOrd',
     fsFefermanShutte,
     removeSucc,
     levelDown,
@@ -13,20 +14,21 @@ where
 
 import Conway
 import Data.Either (fromRight, isRight)
-import qualified Data.List.NonEmpty as NE hiding (takeWhile)
 import qualified Data.Map.Strict as M
+import Seq.InfList (Infinite)
+import qualified Seq.InfList as NE
 
 type VebMonoOrd = VebMono Natural
 
 -- | A fundamental sequence is an infinite list, represented by
 -- a `Data.List.NonEmpty Ordinal`, listing
 -- @[f 0, f 1, f 2, f 3, ...]@
-type FSeq = NE.NonEmpty Ordinal
+type FSeq = Infinite Ordinal
 
 m1 :: Ordinal -> Ordinal
 m1 = mono1
 
-nest :: (a -> a) -> a -> NE.NonEmpty a
+nest :: (a -> a) -> a -> Infinite a
 nest = NE.iterate
 
 fsOrdMono :: VebMonoOrd -> FSeq
@@ -82,6 +84,12 @@ fsOrd o = case M.toAscList om of
       (VebMono b c, k) ->
         let f = fromRight undefined $ fsOrd' (VebMono b c, 1)
          in Right $ NE.map (+ veb b c (k - 1)) f
+
+-- | Like @fsOrd@, except it is a partial function for limit ordinals only.
+fsOrd' :: Ordinal -> FSeq
+fsOrd' x = case fsOrd x of
+  Left _ -> error "fsOrd': not a limit ordinal"
+  Right xs -> xs
 
 -- | Given an ordinal number, returns a new ordinal (zero/limit) without the successor part.
 --

@@ -57,7 +57,7 @@ monoSE :: (One a, FiniteSignExpansion a, OrdZero a) => SignExpansion -> a -> Sig
 monoSE p c
   | c == one = mono1SE p
   | isNegative c = neg $ monoSE p $ neg c
-  | otherwise = plus 1 +++ mono1Part +++ coeffPart
+  | otherwise = SE.plus 1 +++ mono1Part +++ coeffPart
   where
     -- @mono1Part@ is the sign expansion contribution of the mono1 part, excluding the first plus.
     -- @nPlus@ is the number of pluses in @p@

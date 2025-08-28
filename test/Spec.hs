@@ -4,12 +4,14 @@
 
 import Control.Monad ()
 import Conway
-import qualified Data.List.NonEmpty as NE
+import Data.Maybe (isJust)
 import qualified Data.Set as S
 import Dyadic
 import FundamentalSeq
+import qualified Fusible
 import Gen
 import OrdinalArith
+import qualified Seq.InfList as NE
 import SignExpansion as SE
 import SignExpansion.Dyadic (finiteSE, negFSE, parseDyadicSE)
 import SignExpansion.Reduce (Reduced (..))
@@ -243,21 +245,21 @@ prop_vebDecrMap (OrdV0 a) (OrdV0 b)
 
 -- | All elements of the fundamental sequence are smaller
 -- @x[i] < x@
-prop_fsOrd_smaller :: Int -> Ordinal -> Property
+prop_fsOrd_smaller :: Natural -> Ordinal -> Property
 prop_fsOrd_smaller _ 0 = False ==> True
 prop_fsOrd_smaller i x =
   case fsOrd x of
     Left _ -> False ==> True
-    Right f -> i >= 0 ==> f NE.!! i < x
+    Right f -> i >= 0 ==> f `NE.index` i < x
 
 -- | Fundamental sequence is increasing:
 -- @i < j ==> x[i] < x[j]@
-prop_fsOrd_increasing :: Int -> Int -> Ordinal -> Property
+prop_fsOrd_increasing :: Natural -> Natural -> Ordinal -> Property
 prop_fsOrd_increasing i j x =
   i >= 0 && j >= 0 && i /= j ==>
     ( case fsOrd x of
         Left _ -> False ==> True
-        Right f -> True ==> (i `compare` j) === (f NE.!! i) `compare` (f NE.!! j)
+        Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
     )
 
 -- * Sign Expansions
@@ -496,8 +498,26 @@ testSignExpansion = do
     it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
+testPropsFusible :: SpecWith ()
+testPropsFusible = do
+  it "examples (ord)" $ do
+    Fusible.ord' 0 `shouldBe` 0
+    Fusible.ord' 0.5 `shouldBe` 1
+    Fusible.ord' 0.75 `shouldBe` 2
+    Fusible.ord' 1 `shouldBe` w
+    Fusible.ord' (9 / 8) `shouldBe` (w + 1)
+
+  it "fus is defined" $
+    qc (\x -> x < eps0 ==> isJust (Fusible.fus x))
+
+  it "ord is inverse of fus" $
+    qc (\x -> x < eps0 ==> Just x === (Fusible.ord =<< Fusible.fus x))
+
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
+  describe "Fusible" $ do
+    testPropsFusible
+
   describe "Dyadic" $ do
     testPropsOrdRing (id :: Dyadic -> Dyadic)
 

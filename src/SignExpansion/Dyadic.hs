@@ -10,6 +10,8 @@ module SignExpansion.Dyadic
     consFSE,
     omitLead,
     negFSE,
+    plus,
+    minus,
 
     -- * Sign Expansions of dyadics and subsets
     dyadicSE,
