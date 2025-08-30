@@ -2,6 +2,16 @@ module SignExpansion.Conway
   ( isAllPluses,
     birthday,
     conwaySE,
+
+    -- * Helpers
+
+    -- ** Term list and reduced sign expansions
+    termsListSE,
+    mergeReducedTermList,
+    reduceTermsList,
+
+    -- ** Helper
+    monoSE,
   )
 where
 
@@ -38,13 +48,17 @@ conwaySE :: (One a, FiniteSignExpansion a, OrdZero a) => Conway a -> SignExpansi
 conwaySE = termsListSE . termsList
 
 termsListSE :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, a)] -> SignExpansion
-termsListSE [] = empty
-termsListSE xs = foldl' (\s (_, Reduced po, c) -> s +++ monoSE po c) empty xs'
+termsListSE = mergeReducedTermList . reduceTermsList
+
+mergeReducedTermList :: (OrdZero a, FiniteSignExpansion a, One a) => [(Reduced SignExpansion, a)] -> SignExpansion
+mergeReducedTermList = foldl' (\s (Reduced po, c) -> s +++ monoSE po c) empty
+
+reduceTermsList :: (One a, FiniteSignExpansion a, OrdZero a) => [(VebMono a, c)] -> [(Reduced SignExpansion, c)]
+reduceTermsList xs = zip pos cs
   where
     (ps, cs) = unzip xs
     -- The reduced sign expansions of the exponents
     pos = reduce $ map toExponent ps
-    xs' = zip3 ps pos cs
 
 -- | Given a @VebMono@ @v@, returns the sign expansion of @p@ where @v = mono1 p@.
 toExponent :: (One a, FiniteSignExpansion a, OrdZero a) => VebMono a -> SignExpansion
