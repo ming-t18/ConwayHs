@@ -8,9 +8,9 @@ import Data.Maybe (isJust)
 import qualified Data.Set as S
 import Dyadic
 import FundamentalSeq
-import qualified Fusible
 import Gen
 import OrdinalArith
+import qualified RangeCompression as RC
 import qualified Seq.InfList as NE
 import SignExpansion as SE
 import SignExpansion.Dyadic (finiteSE, negFSE, parseDyadicSE)
@@ -498,25 +498,25 @@ testSignExpansion = do
     it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
-testPropsFusible :: SpecWith ()
-testPropsFusible = do
+testPropsRangeCompression :: SpecWith ()
+testPropsRangeCompression = do
   it "examples (ord)" $ do
-    Fusible.ord' 0 `shouldBe` 0
-    Fusible.ord' 0.5 `shouldBe` 1
-    Fusible.ord' 0.75 `shouldBe` 2
-    Fusible.ord' 1 `shouldBe` w
-    Fusible.ord' (9 / 8) `shouldBe` (w + 1)
+    RC.ord' 0 `shouldBe` 0
+    RC.ord' 0.5 `shouldBe` 1
+    RC.ord' 0.75 `shouldBe` 2
+    RC.ord' 1 `shouldBe` w
+    RC.ord' (9 / 8) `shouldBe` (w + 1)
 
-  it "fus is defined" $
-    qc (\x -> x < eps0 ==> isJust (Fusible.fus x))
+  it "toDyadic is defined" $
+    qc (\x -> x < eps0 ==> isJust (RC.toDyadic x))
 
-  it "ord is inverse of fus" $
-    qc (\x -> x < eps0 ==> Just x === (Fusible.ord =<< Fusible.fus x))
+  it "ord is inverse of toDyadic" $
+    qc (\x -> x < eps0 ==> Just x === (RC.ord =<< RC.toDyadic x))
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
-  describe "Fusible" $ do
-    testPropsFusible
+  describe "Range compression" $ do
+    testPropsRangeCompression
 
   describe "Dyadic" $ do
     testPropsOrdRing (id :: Dyadic -> Dyadic)

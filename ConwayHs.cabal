@@ -29,13 +29,13 @@ library
       Dyadic.Bisect
       Dyadic.Ratio
       FundamentalSeq
-      Fusible
       OrdBag
       OrdinalArith
       OrdLim
       OrdLim.Impls
       OrdLim.Types
       QuasiEpsilon
+      RangeCompression
       Seq
       Seq.InfList
       Seq.Types
