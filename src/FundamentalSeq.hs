@@ -68,13 +68,13 @@ fsOrd o = case M.toAscList om of
   [] -> Left 0
   x : _ ->
     let o' = conway $ M.deleteMin om
-     in case fsOrd' x of
+     in case fsOrd'' x of
           Left y -> Left $ y + o'
           Right f -> Right $ NE.map (o' +) f
   where
     om = toMap o
-    fsOrd' :: (VebMono Natural, Natural) -> Either Ordinal FSeq
-    fsOrd' x = case x of
+    fsOrd'' :: (VebMono Natural, Natural) -> Either Ordinal FSeq
+    fsOrd'' x = case x of
       (VebMono 0 0, 0) -> error "fsOrd: not possible (normalization)"
       -- finite ordinal
       (VebMono 0 0, n) -> Left $ finite (n - 1)
@@ -82,7 +82,7 @@ fsOrd o = case M.toAscList om of
       (VebMono b c, 1) -> Right $ fsOrdMono (VebMono b c)
       -- (V[b, c]. k)[i] = V[b, c].(k - 1) + V[b, c][i]
       (VebMono b c, k) ->
-        let f = fromRight undefined $ fsOrd' (VebMono b c, 1)
+        let f = fromRight undefined $ fsOrd'' (VebMono b c, 1)
          in Right $ NE.map (+ veb b c (k - 1)) f
 
 -- | Like @fsOrd@, except it is a partial function for limit ordinals only.

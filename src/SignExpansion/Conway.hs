@@ -69,6 +69,7 @@ toExponent (VebMono o p) = veb1SE o (conwaySE p)
 -- return the sign expansion of @mono1 p * finite c@.
 monoSE :: (One a, FiniteSignExpansion a, OrdZero a) => SignExpansion -> a -> SignExpansion
 monoSE p c
+  | isZero c = empty
   | c == one = mono1SE p
   | isNegative c = neg $ monoSE p $ neg c
   | otherwise = SE.plus 1 +++ mono1Part +++ coeffPart
@@ -80,7 +81,7 @@ monoSE p c
     -- The sign expansion contribution of the coefficient.
     -- Based on [Gonshor] Theorem 5.12(a)
     coeffPart :: SignExpansion
-    coeffPart = fromList $ map (second multiply) $ SED.toList $ omitLead $ finiteSE c
+    coeffPart = SE.fromList $ map (second multiply) $ SED.toList $ omitLead $ finiteSE c
 
     -- Converts an @FSE@ run length to number-of-pluses run length.
     multiply :: Natural -> Ordinal

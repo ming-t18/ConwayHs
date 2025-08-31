@@ -1,12 +1,18 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module SignExpansion.Dyadic
   ( FSE,
     FiniteSignExpansion (..),
     empty,
 
     -- * Helpers
+    fromList,
     fromFSE,
     toList,
     (+++.),
+    index,
+    length,
     consFSE,
     omitLead,
     negFSE,
@@ -27,20 +33,69 @@ where
 import Control.Arrow (first, second)
 import Conway
 import Dyadic
+import qualified Seq.Types (RunLengthSeq (..), Seq (..))
 import SignExpansion.Types (SignExpansion)
 import qualified SignExpansion.Types as SE
+import Typeclasses
+import Prelude hiding (length)
 
 infixr 5 +++.
 
 -- | Finite-length sign expansion.
+--
+-- Can represent the sign expansion of all @Dyadic@ values.
 newtype FSE = FSE [(Bool, Natural)]
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
+
+-- | TODO duplicate code compared to @instance Ord SignExpansion@
+instance Ord FSE where
+  compare (FSE []) (FSE []) = EQ
+  compare (FSE ((True, _) : _)) (FSE []) = GT
+  compare (FSE ((False, _) : _)) (FSE []) = LT
+  compare (FSE []) (FSE ((True, _) : _)) = LT
+  compare (FSE []) (FSE ((False, _) : _)) = GT
+  compare (FSE ((s1, n1) : xs)) (FSE ((s2, n2) : ys)) =
+    case (s1, s2) of
+      (True, True) | n1 == n2 -> FSE xs `compare` FSE ys
+      (True, True) -> n1 `compare` n2
+      (False, False) | n1 == n2 -> FSE xs `compare` FSE ys
+      (False, False) -> n2 `compare` n1
+      (False, True) -> LT
+      (True, False) -> GT
+
+instance Zero FSE where
+  zero = empty
+  isZero = (==) zero
+
+instance One FSE where
+  one = FSE [(True, 1)]
+  isOne = (==) one
+
+instance OrdZero FSE where
+  neg = negFSE
+
+instance Semigroup FSE where
+  (<>) = (+++.)
+
+instance Monoid FSE where
+  mempty = empty
+
+instance Seq.Types.Seq FSE Natural Bool where
+  length = SignExpansion.Dyadic.length
+  (!) = index
+
+instance Seq.Types.RunLengthSeq FSE Natural Bool where
+  replicate n True = plus n
+  replicate n False = minus n
 
 empty :: FSE
 empty = FSE []
 
 toList :: FSE -> [(Bool, Natural)]
 toList (FSE l) = l
+
+fromList :: [(Bool, Natural)] -> FSE
+fromList = foldl (\se (s, n) -> se +++. signs s n) empty
 
 fromFSE :: FSE -> SignExpansion
 fromFSE = SE.fromList . map (second finite) . toList
@@ -57,6 +112,15 @@ negFSE = FSE . map (first not) . toList
 (+++.) :: FSE -> FSE -> FSE
 (+++.) (FSE []) (FSE ys) = FSE ys
 (+++.) (FSE (x : xs)) (FSE ys) = x `consFSE` (FSE xs +++. FSE ys)
+
+length :: FSE -> Natural
+length = sum . map snd . toList
+
+index :: FSE -> Natural -> Bool
+index (FSE []) _ = error "FSE.index: out of bounds"
+index (FSE ((s, n) : ss)) i
+  | i < n = s
+  | otherwise = index (FSE ss) (i - n)
 
 -- | Omits the leading sign of an @FSE@.
 -- Requires the @FSE@ to be non-empty.
@@ -84,8 +148,11 @@ instance FiniteSignExpansion Integer where
 instance FiniteSignExpansion Int where
   finiteSE = intSE
 
-n1 :: Natural
-n1 = 1
+instance FiniteSignExpansion FSE where
+  finiteSE = id
+
+nat1 :: Natural
+nat1 = 1
 
 dyadicSE :: Dyadic -> FSE
 naturalSE :: Natural -> FSE
@@ -94,7 +161,7 @@ intSE :: Int -> FSE
 dyadicSE d =
   case unmakeDyadic d of
     (n, 0) -> integerSE n
-    _ -> integerSE ip +++. dyadicSEFrac fp fm half (signs (fp > 0) n1)
+    _ -> integerSE ip +++. dyadicSEFrac fp fm half (signs (fp > 0) nat1)
   where
     (ip, fp) = parts d
     fm = if fp > 0 then 1 else -1
@@ -103,8 +170,8 @@ dyadicSEFrac :: Dyadic -> Dyadic -> Dyadic -> FSE -> FSE
 dyadicSEFrac x xm dx a =
   case x `compare` xm of
     EQ -> a
-    LT -> dyadicSEFrac x (xm - dx) dx' (a +++. signs False n1)
-    GT -> dyadicSEFrac x (xm + dx) dx' (a +++. signs True n1)
+    LT -> dyadicSEFrac x (xm - dx) dx' (a +++. signs False nat1)
+    GT -> dyadicSEFrac x (xm + dx) dx' (a +++. signs True nat1)
   where
     dx' = dx `shr` 1
 
@@ -113,6 +180,7 @@ plus n = FSE [(True, fromIntegral n)]
 minus n = FSE [(False, fromIntegral n)]
 
 signs :: (Integral a) => Bool -> a -> FSE
+signs _ 0 = empty
 signs s n = FSE [(s, fromIntegral n)]
 
 naturalSE 0 = empty

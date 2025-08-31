@@ -51,6 +51,7 @@ module Conway
     dropTrailingTerm,
     finiteView,
     leadingTerm,
+    leadingView,
   )
 where
 
@@ -225,6 +226,11 @@ dropLeadingTerm (Conway m) = if M.null m then ((zero, zero), conway M.empty) els
 dropTrailingTerm (Conway m) = if M.null m then (conway M.empty, (zero, zero)) else (conway m', p)
   where
     (p, m') = M.deleteFindMin m
+
+leadingView :: (OrdZero a) => Conway a -> Maybe ((VebMono a, a), Conway a)
+leadingView x
+  | isZero x = Nothing
+  | otherwise = Just $ dropLeadingTerm x
 
 -- | Similar to @veb@
 fromVebMono :: (Mult a) => (VebMono a, a) -> Conway a

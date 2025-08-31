@@ -1,13 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Seq.Types (OrdZero (..), Seq (..), ParsableSeq (..)) where
+module Seq.Types (OrdZero (..), Seq (..), ParsableSeq (..), RunLengthSeq (..)) where
 
-import Conway
-import SignExpansion (SignExpansion)
-import qualified SignExpansion as SE
 import Typeclasses
-import Prelude hiding (length, null)
+import Prelude hiding (length, null, replicate)
 
 -- | A transfinite sequence of type @s@, indexed by index type @o@,
 -- and value type @a@. The length of the sequence is also @o@.
@@ -24,24 +21,27 @@ class (OrdZero o) => Seq s o a | s -> o, s -> a where
   head :: s -> a
   head = (! zero)
 
-instance Seq SignExpansion Ordinal Bool where
-  length = SE.length
-  (!) = SE.index
-
 -- errorAbsorbedConsume :: Show o => (o, o) -> a
 -- errorAbsorbedConsume (lo, hi) = error $ "ParsableSeq: consumed amount is too small to reduce a transfinite amount. (consumed, remain) = " ++ show (lo, hi)
 
+-- | Typeclass for parsing transfinite sequences by prefix run-lengths.
 class (OrdZero o, Eq a, Seq s o a) => ParsableSeq s o a where
-  lookahead :: s -> Maybe (o, a)
-  tryConsume :: s -> (o, a) -> Maybe s
-  consume :: s -> (o, a) -> Maybe s
+  lookahead :: s -> Maybe (a, o)
+  tryConsume :: s -> (a, o) -> Maybe s
+  consume :: s -> (a, o) -> Maybe s
 
-  tryConsume _ (z, _) | isZero z = Nothing
-  tryConsume xs p@(n, v) =
+  tryConsume _ (_, z) | isZero z = Nothing
+  tryConsume xs t@(v, n) =
     case lookahead xs of
       Nothing -> Nothing
-      Just (len, v') | v == v' && n <= len ->
-        case consume xs (n, v) of
+      Just (v', len) | v == v' && n <= len ->
+        case consume xs t of
           Just s' -> Just s'
           Nothing -> error "tryConsume: failed"
       Just _ -> Nothing
+
+-- | Typeclass for constructing transfinite sequences by prefix run-lengths.
+-- Aside from monoid operations for sequence conat, the @replicate@
+-- function creates a run-length sequence.
+class (Monoid s, OrdZero o, Eq a, Seq s o a) => RunLengthSeq s o a where
+  replicate :: o -> a -> s

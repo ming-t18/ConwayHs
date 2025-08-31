@@ -9,6 +9,8 @@ import Data.Foldable
 import Dyadic
 import SignExpansion (SignExpansion)
 import qualified SignExpansion as SE
+import SignExpansion.Dyadic (FSE)
+import qualified SignExpansion.Dyadic as SED
 import Test.QuickCheck
 import Typeclasses
   ( AddSub (..),
@@ -128,3 +130,7 @@ instance Arbitrary (Conway Natural) where
 instance Arbitrary SignExpansion where
   arbitrary = SE.fromList <$> arbitrary
   shrink x = SE.fromList <$> shrink (SE.toList x)
+
+instance Arbitrary FSE where
+  arbitrary = SED.fromList <$> arbitrary
+  shrink x = SED.fromList <$> shrink (SED.toList x)

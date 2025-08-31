@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module SignExpansion.Types
   ( -- * Construction and decomposition
     SignExpansion,
@@ -29,9 +33,10 @@ module SignExpansion.Types
 where
 
 import Conway
-import qualified Data.Bifunctor (first)
+import Data.Bifunctor (first)
 import qualified Data.Foldable as F
 import OrdinalArith
+import qualified Seq.Types
 import Typeclasses
 import Prelude hiding (length, negate)
 
@@ -43,6 +48,30 @@ infixr 5 +++
 -- pairs with @True@ being plus and @False@ beng minus.
 newtype SignExpansion = SignExpansion [(Bool, Ordinal)]
   deriving (Eq, Show)
+
+instance Seq.Types.Seq SignExpansion Ordinal Bool where
+  length = SignExpansion.Types.length
+  (!) = index
+
+instance Seq.Types.RunLengthSeq SignExpansion Ordinal Bool where
+  replicate n True = plus n
+  replicate n False = minus n
+
+instance Seq.Types.ParsableSeq SignExpansion Ordinal Bool where
+  lookahead :: SignExpansion -> Maybe (Bool, Ordinal)
+  lookahead (SignExpansion []) = Nothing
+  lookahead (SignExpansion (p : _)) = Just p
+  consume :: SignExpansion -> (Bool, Ordinal) -> Maybe SignExpansion
+  consume se (_, 0) = Just se
+  consume (SignExpansion []) _ = Nothing
+  consume (SignExpansion ((s', n') : ss)) (s, n)
+    | s /= s' = Nothing
+    | otherwise =
+        case n `ordSymDiff` n' of
+          (GT, _) -> Nothing
+          (EQ, _) -> Just $ SignExpansion ss
+          -- (LT, d) | d == n' -> error "consume: does not advance"
+          (LT, d) -> Just $ SignExpansion ((s', d) : ss)
 
 instance Zero SignExpansion where
   zero = empty
@@ -80,7 +109,7 @@ empty :: SignExpansion
 empty = SignExpansion []
 
 negate :: SignExpansion -> SignExpansion
-negate (SignExpansion xs) = SignExpansion $ map (Data.Bifunctor.first not) xs
+negate (SignExpansion xs) = SignExpansion $ map (first not) xs
 
 toList :: SignExpansion -> [(Bool, Ordinal)]
 toList (SignExpansion xs) = xs

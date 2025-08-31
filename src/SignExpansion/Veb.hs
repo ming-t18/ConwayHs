@@ -4,7 +4,7 @@ import Control.Arrow (second)
 import Conway
 import Data.Foldable (foldl')
 import OrdinalArith
-import SignExpansion.Types
+import SignExpansion.Types as SE
 
 m1 :: Ordinal -> Ordinal
 m1 = mono1

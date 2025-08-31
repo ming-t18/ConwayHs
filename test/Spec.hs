@@ -13,7 +13,9 @@ import OrdinalArith
 import qualified RangeCompression as RC
 import qualified Seq.InfList as NE
 import SignExpansion as SE
-import SignExpansion.Dyadic (finiteSE, negFSE, parseDyadicSE)
+import SignExpansion.Conway (monoSE)
+import SignExpansion.Dyadic (FSE, finiteSE, negFSE, parseDyadicSE)
+import SignExpansion.Parser
 import SignExpansion.Reduce (Reduced (..))
 import qualified SignExpansion.Reduce as R
 import SignExpansion.Types ()
@@ -256,11 +258,14 @@ prop_fsOrd_smaller i x =
 -- @i < j ==> x[i] < x[j]@
 prop_fsOrd_increasing :: Natural -> Natural -> Ordinal -> Property
 prop_fsOrd_increasing i j x =
-  i >= 0 && j >= 0 && i /= j ==>
-    ( case fsOrd x of
-        Left _ -> False ==> True
-        Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
-    )
+  i >= 0
+    && j >= 0
+    && i
+      /= j
+    ==> ( case fsOrd x of
+            Left _ -> False ==> True
+            Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
+        )
 
 -- * Sign Expansions
 
@@ -280,6 +285,28 @@ prop_SENoConsecutiveSigns = f . map fst . SE.toList
 -- qc = quickCheckWith stdArgs { maxSuccess = 10000, maxShrinks = 1000 }
 qc :: (Testable prop) => prop -> Property
 qc = property
+
+parseMono1SE :: Bool -> SignExpansion -> ((Ordinal, SignExpansion), SignExpansion)
+parseMono1SE = parseMono1
+
+parseMonoSE :: SignExpansion -> (((Ordinal, SignExpansion), FSE), SignExpansion)
+parseMonoSE = parseMono
+
+prop_parseMono1_unparse :: SignExpansion -> Property
+prop_parseMono1_unparse p = snd (fst (parseMono1SE True $ mono1SE p)) === p
+
+prop_parseMono1_unparseNoRemain :: SignExpansion -> Property
+prop_parseMono1_unparseNoRemain p = snd (parseMono1SE True $ mono1SE p) === empty
+
+prop_parseMono_unparse :: SignExpansion -> FSE -> Property
+prop_parseMono_unparse p c
+  | isZero c = f (parseMonoSE (monoSE p c)) === (mempty, c)
+  | otherwise = f (parseMonoSE (monoSE p c)) === (p, c)
+  where
+    f (((_, p'), c'), _) = (p', c')
+
+prop_parseMono_unparseNoRemain :: SignExpansion -> FSE -> Property
+prop_parseMono_unparseNoRemain p c = snd (parseMonoSE (monoSE p c)) === empty
 
 testPropsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> SpecWith ()
 testPropsOrdRing i = do
@@ -384,17 +411,19 @@ testReducedSignExpansion = do
     it "reduceSingle when both are all minuses" $ do
       qc
         ( \n0 n1 ->
-            n1 > n0 ==>
-              let (p0, p1) = (minus n0, minus n1)
-               in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
+            n1
+              > n0
+              ==> let (p0, p1) = (minus n0, minus n1)
+                   in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p when both are all minuses and p < p0" $ do
       qc
         ( \n0 n1 ->
-            n1 > n0 ==>
-              let (p0, p1) = (minus n0, minus n1)
-               in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
+            n1
+              > n0
+              ==> let (p0, p1) = (minus n0, minus n1)
+                   in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p if p < p0" $ do
@@ -409,9 +438,10 @@ testReducedSignExpansion = do
     it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
       qc
         ( \p0 p1 ->
-            p0 /= p1 ==>
-              let ps = if p0 < p1 then [p1, p0] else [p0, p1]
-               in R.unreduce (R.reduce ps) === Just ps
+            p0
+              /= p1
+              ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
+                   in R.unreduce (R.reduce ps) === Just ps
         )
 
     it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do
@@ -498,6 +528,16 @@ testSignExpansion = do
     it "fixed point on mono1" $ qc (\o p -> not (isZero o) ==> (let p' = veb1SE o p in mono1SE p' === p'))
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
+testParseSignExpansion :: SpecWith ()
+testParseSignExpansion = do
+  describe "parseMono1" $ do
+    it "recover mono1" $ qc prop_parseMono1_unparse
+    it "no remaining SE to parse for mono1" $ qc prop_parseMono1_unparseNoRemain
+
+  describe "parseMono" $ do
+    it "recover the monomial" $ qc prop_parseMono_unparse
+    it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
+
 testPropsRangeCompression :: SpecWith ()
 testPropsRangeCompression = do
   it "examples (ord)" $ do
@@ -545,6 +585,9 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
     it "FS is increasing" $ do
       qc prop_fsOrd_increasing
 
-  describe "SignExpansion" $ do
+  describe "SignExpansion generator" $ do
     testSignExpansion
     testReducedSignExpansion
+
+  describe "SignExpansion parser" $ do
+    testParseSignExpansion
