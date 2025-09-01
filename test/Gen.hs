@@ -2,7 +2,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Gen where
+module Gen
+  ( ConwayGen (..),
+    ConwayV0Gen (..),
+    DyadicGen (..),
+    NaturalGen (..),
+    FiniteOrdGen (..),
+    OrdV0Gen (..),
+  )
+where
 
 import Conway
 import Data.Foldable

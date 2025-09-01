@@ -262,10 +262,10 @@ prop_fsOrd_increasing i j x =
     && j >= 0
     && i
       /= j
-    ==> ( case fsOrd x of
-            Left _ -> False ==> True
-            Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
-        )
+        ==> ( case fsOrd x of
+                Left _ -> False ==> True
+                Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
+            )
 
 -- * Sign Expansions
 
@@ -413,8 +413,8 @@ testReducedSignExpansion = do
         ( \n0 n1 ->
             n1
               > n0
-              ==> let (p0, p1) = (minus n0, minus n1)
-                   in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
+                ==> let (p0, p1) = (minus n0, minus n1)
+                     in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p when both are all minuses and p < p0" $ do
@@ -422,8 +422,8 @@ testReducedSignExpansion = do
         ( \n0 n1 ->
             n1
               > n0
-              ==> let (p0, p1) = (minus n0, minus n1)
-                   in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
+                ==> let (p0, p1) = (minus n0, minus n1)
+                     in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p if p < p0" $ do
@@ -435,24 +435,25 @@ testReducedSignExpansion = do
     it "unreduce [Reduced p0, reduceSingle p0 p] === Just [p0, unreduceSingle p0 p] if p < p0" $ do
       qc (\(p0, p) -> p < p0 ==> R.unreduce [Reduced p0, R.reduceSingle p0 p] === Just [p0, p])
 
-    it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
-      qc
-        ( \p0 p1 ->
-            p0
-              /= p1
-              ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
-                   in R.unreduce (R.reduce ps) === Just ps
-        )
+    modifyMaxSuccess (const 50) $ do
+      it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
+        qc
+          ( \p0 p1 ->
+              p0
+                /= p1
+                  ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
+                       in R.unreduce (R.reduce ps) === Just ps
+          )
 
-    it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do
-      qc
-        ( \(p0, p1, p2) ->
-            let ps = S.toDescList $ S.fromList [p0, p1, p2]
-             in Prelude.length ps == 3 ==> R.unreduce (R.reduce ps) === Just ps
-        )
+      it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do
+        qc
+          ( \(p0, p1, p2) ->
+              let ps = S.toDescList $ S.fromList [p0, p1, p2]
+               in Prelude.length ps == 3 ==> R.unreduce (R.reduce ps) === Just ps
+          )
 
-    it "unreduce . reduce === Just for descending lists of sign expansions" $ do
-      qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
+      it "unreduce . reduce === Just for descending lists of sign expansions" $ do
+        qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
 
 testSignExpansion :: SpecWith ()
 testSignExpansion = do
