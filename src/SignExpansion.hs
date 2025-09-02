@@ -47,11 +47,25 @@ module SignExpansion
     countSigns,
     conwaySE,
     birthday,
+
+    -- * Parsing
+    parseMono,
+    parseMono1,
+    parseMonoSE,
+    parseMono1SE,
   )
 where
 
+import Conway (Ordinal)
 import SignExpansion.Conway (birthday, conwaySE)
-import SignExpansion.Parser ()
+import SignExpansion.Dyadic (FSE)
+import SignExpansion.Parser (parseMono, parseMono1)
 import SignExpansion.Types
 import SignExpansion.Veb
 import Prelude hiding (length, negate)
+
+parseMono1SE :: Bool -> SignExpansion -> ((Ordinal, SignExpansion), SignExpansion)
+parseMono1SE = parseMono1
+
+parseMonoSE :: SignExpansion -> (((Ordinal, SignExpansion), FSE), SignExpansion)
+parseMonoSE = parseMono

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -79,22 +80,22 @@ shrinkConway x =
   ]
 
 newtype DyadicGen = DyadicGen {getDyadic :: Dyadic}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Zero, OrdZero)
 
 newtype NaturalGen = NatGen {getNatural :: Natural}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Zero, OrdZero)
 
 newtype FiniteOrdGen = FinOrd {getFiniteOrd :: Ordinal}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Zero, OrdZero)
 
 newtype OrdV0Gen = OrdV0 {getOrdV0 :: Ordinal}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Zero, OrdZero)
 
 newtype ConwayV0Gen a = ConwayV0 {getConwayV0 :: Conway a}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Zero, OrdZero)
 
 newtype ConwayGen a = ConwayGen {getConway :: Conway a}
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Zero, OrdZero)
 
 instance Arbitrary DyadicGen where
   arbitrary = DyadicGen <$> (makeDyadic <$> arbitrary <*> arbitrary)

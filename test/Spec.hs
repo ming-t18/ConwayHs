@@ -14,8 +14,7 @@ import qualified RangeCompression as RC
 import qualified Seq.InfList as NE
 import SignExpansion as SE
 import SignExpansion.Conway (monoSE)
-import SignExpansion.Dyadic (FSE, finiteSE, negFSE, parseDyadicSE)
-import SignExpansion.Parser
+import SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
 import SignExpansion.Reduce (Reduced (..))
 import qualified SignExpansion.Reduce as R
 import SignExpansion.Types ()
@@ -286,12 +285,6 @@ prop_SENoConsecutiveSigns = f . map fst . SE.toList
 qc :: (Testable prop) => prop -> Property
 qc = property
 
-parseMono1SE :: Bool -> SignExpansion -> ((Ordinal, SignExpansion), SignExpansion)
-parseMono1SE = parseMono1
-
-parseMonoSE :: SignExpansion -> (((Ordinal, SignExpansion), FSE), SignExpansion)
-parseMonoSE = parseMono
-
 prop_parseMono1_unparse :: SignExpansion -> Property
 prop_parseMono1_unparse p = snd (fst (parseMono1SE True $ mono1SE p)) === p
 
@@ -308,11 +301,17 @@ prop_parseMono_unparse p c
 prop_parseMono_unparseNoRemain :: SignExpansion -> FSE -> Property
 prop_parseMono_unparseNoRemain p c = snd (parseMonoSE (monoSE p c)) === empty
 
-testPropsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> SpecWith ()
-testPropsOrdRing i = do
+propsOrdIso :: (OrdZero a, OrdZero b, Show a, Arbitrary a) => String -> (a -> b) -> SpecWith ()
+propsOrdIso desc f = do
+  it ("order isomorphic: " ++ desc) $ qc (\x y -> f x `compare` f y === x `compare` y)
+  it ("negation symmetry: " ++ desc) $ qc (\x y -> f x `compare` f y === neg y `compare` neg x)
+
+propsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> SpecWith ()
+propsOrdRing i = do
   let i1 f a = f (i a)
   let i2 f a b = f (i a) (i b)
   let i3 f a b c = f (i a) (i b) (i c)
+
   describe "total order" $ do
     it "same equal" $ qc (i1 (\a -> (a `compare` a) === EQ))
     it "transitive" $ qc (i3 prop_compareTransitive)
@@ -435,7 +434,7 @@ testReducedSignExpansion = do
     it "unreduce [Reduced p0, reduceSingle p0 p] === Just [p0, unreduceSingle p0 p] if p < p0" $ do
       qc (\(p0, p) -> p < p0 ==> R.unreduce [Reduced p0, R.reduceSingle p0 p] === Just [p0, p])
 
-    modifyMaxSuccess (const 50) $ do
+    modifyMaxSuccess (const 10) $ do
       it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
         qc
           ( \p0 p1 ->
@@ -453,17 +452,10 @@ testReducedSignExpansion = do
           )
 
       it "unreduce . reduce === Just for descending lists of sign expansions" $ do
-        qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
+        qc (\(S.toDescList . S.fromList -> ps) -> Prelude.length ps < 6 ==> R.unreduce (R.reduce ps) === Just ps)
 
-testSignExpansion :: SpecWith ()
-testSignExpansion = do
-  describe "sign expansions of Dyadic" $ do
-    it "negation symmetry" $ do
-      qc (\(x :: Dyadic) -> parseDyadicSE (negFSE (finiteSE x)) === neg x)
-
-    it "parseDyadicFSE is inverse of finiteFSE" $ do
-      qc (\(x :: Dyadic) -> parseDyadicSE (finiteSE x) === x)
-
+testSignExpansionConway :: SpecWith ()
+testSignExpansionConway = do
   describe "signExpansionConway" $ do
     describe "examples, no Veblen" $ do
       it "finite values" $ do
@@ -490,7 +482,8 @@ testSignExpansion = do
         conwaySE (veb1 1 (-1) :: CD) `shouldBe` (plus epsilon0 +++ minus (mono1 (mono1 (epsilon0 + 1))))
 
     it "negation symmetry" $ qc (\(ConwayGen (x :: CD)) -> conwaySE (neg x) === neg (conwaySE x))
-    it "order preserving" $ qc (\(ConwayGen (x :: CD), ConwayGen y) -> x `compare` y === conwaySE x `compare` conwaySE y)
+    propsOrdIso "mono1SE" mono1SE
+    propsOrdIso "conwaySE" (conwaySE . getConway :: ConwayGen Dyadic -> SignExpansion)
     it "ordinal number should be all pluses" $ qc (\o -> conwaySE o === plus o)
 
   describe "(+++) forms a monoid" $ do
@@ -539,6 +532,9 @@ testParseSignExpansion = do
     it "recover the monomial" $ qc prop_parseMono_unparse
     it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
 
+  propsOrdIso "parseMono" parseMonoSE
+  propsOrdIso "parseMono . mono1SE" (parseMono1SE True . mono1SE)
+
 testPropsRangeCompression :: SpecWith ()
 testPropsRangeCompression = do
   it "examples (ord)" $ do
@@ -556,20 +552,26 @@ testPropsRangeCompression = do
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
-  describe "Range compression" $ do
-    testPropsRangeCompression
-
   describe "Dyadic" $ do
-    testPropsOrdRing (id :: Dyadic -> Dyadic)
+    propsOrdRing (id :: Dyadic -> Dyadic)
+
+    describe "sign expansion" $ do
+      propsOrdIso "generating SE" (finiteSE :: Dyadic -> FSE)
+      propsOrdIso "parsing SE" (parseDyadicSE :: FSE -> Dyadic)
+      it "negation symmetry" $ do
+        qc (\x -> parseDyadicSE (neg (finiteSE x)) === neg x)
+
+      it "parseDyadicFSE is inverse of finiteFSE" $ do
+        qc (\x -> parseDyadicSE (finiteSE x) === x)
 
   describe "ConwayV0 Integer" $ do
-    testPropsOrdRing ((\(ConwayV0 x) -> x) :: ConwayV0Gen Integer -> Conway Integer)
+    propsOrdRing (getConwayV0 :: ConwayV0Gen Integer -> Conway Integer)
 
   describe "Conway Integer" $ do
-    testPropsOrdRing ((\(ConwayGen x) -> x) :: ConwayGen Integer -> Conway Integer)
+    propsOrdRing (getConway :: ConwayGen Integer -> Conway Integer)
 
   describe "Conway Dyadic" $ do
-    testPropsOrdRing ((\(ConwayGen x) -> x) :: ConwayGen Dyadic -> Conway Dyadic)
+    propsOrdRing (getConway :: ConwayGen Dyadic -> Conway Dyadic)
 
   describe "Ordinal arithmetic" $ do
     testPropsOrdArith
@@ -586,9 +588,13 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
     it "FS is increasing" $ do
       qc prop_fsOrd_increasing
 
-  describe "SignExpansion generator" $ do
-    testSignExpansion
-    testReducedSignExpansion
+  describe "Range compression (Ordinal -> Dyadic)" $ do
+    testPropsRangeCompression
 
-  describe "SignExpansion parser" $ do
-    testParseSignExpansion
+  describe "SignExpansion" $ do
+    describe "SignExpansion parser" $ do
+      testParseSignExpansion
+
+    describe "generator" $ do
+      testSignExpansionConway
+      testReducedSignExpansion

@@ -21,6 +21,14 @@ class (OrdZero o) => Seq s o a | s -> o, s -> a where
   head :: s -> a
   head = (! zero)
 
+  -- | Alias of @length@
+  seqLength :: s -> o
+  seqLength = length
+
+  -- | Alias of @(!)@
+  seqIndex :: s -> o -> a
+  seqIndex = (!)
+
 -- errorAbsorbedConsume :: Show o => (o, o) -> a
 -- errorAbsorbedConsume (lo, hi) = error $ "ParsableSeq: consumed amount is too small to reduce a transfinite amount. (consumed, remain) = " ++ show (lo, hi)
 
@@ -45,3 +53,7 @@ class (OrdZero o, Eq a, Seq s o a) => ParsableSeq s o a where
 -- function creates a run-length sequence.
 class (Monoid s, OrdZero o, Eq a, Seq s o a) => RunLengthSeq s o a where
   replicate :: o -> a -> s
+
+  -- | Alias of replicate
+  rep :: o -> a -> s
+  rep = replicate
