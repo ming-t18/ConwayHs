@@ -4,6 +4,7 @@
 
 import Control.Monad ()
 import Conway
+import Data.Function (on)
 import Data.Maybe (isJust)
 import qualified Data.Set as S
 import Dyadic
@@ -26,7 +27,7 @@ import Typeclasses
     Mult (..),
     One (one),
     OrdRing,
-    OrdZero (isPositive, neg),
+    OrdZero (..),
     Zero (isZero, zero),
   )
 
@@ -301,6 +302,54 @@ prop_parseMono_unparse p c
 prop_parseMono_unparseNoRemain :: SignExpansion -> FSE -> Property
 prop_parseMono_unparseNoRemain p c = snd (parseMonoSE (monoSE p c)) === empty
 
+propsOrdZero :: (OrdZero a, Show a, Arbitrary a) => (a -> a) -> SpecWith ()
+propsOrdZero i = do
+  describe "Zero" $ do
+    it "isZero === (== zero)" $ qc (\(i -> x) -> isZero x === (x == zero))
+    it "isZero/isPositive/isNegative in terms of (`compare` zero)" $
+      qc
+        ( \(i -> x) ->
+            case x `compare` zero of
+              LT -> isNegative x
+              EQ -> isZero x
+              GT -> isPositive x
+        )
+
+  describe "Ord" $ do
+    it "comparability" $ qc (\(i -> x) (i -> y) -> x <= y || y <= x)
+    it "transitivity" $
+      qc
+        ( \(i -> x) (i -> y) (i -> z) ->
+            let xy = x <= y
+                yz = y <= z
+                xz = x <= z
+                zy = z <= y
+                yx = y <= x
+                zx = z <= x
+             in if xy && yz
+                  then xz
+                  else
+                    if xz && zy
+                      then xy
+                      else
+                        if zy && yx
+                          then zx
+                          else
+                            not (zx && xy) || zy
+        )
+    it "reflexivity" $ qc (\(i -> x) -> x == x)
+    it "antisymmetry" $ qc (\(i -> x) (i -> y) -> not (x <= y && y <= x) || (x == y))
+
+  describe "OrdZero" $ do
+    it "neg zero === zero" $ do
+      (neg (i zero) == i zero) `shouldBe` True
+
+    it "double negation" $ do
+      qc (\(i -> x) -> neg (neg x) == x)
+
+    it "compare `on` neg reverses comparison" $ do
+      qc (\(i -> x) (i -> y) -> (compare `on` neg) x y == y `compare` x)
+
 propsOrdIso :: (OrdZero a, OrdZero b, Show a, Arbitrary a) => String -> (a -> b) -> SpecWith ()
 propsOrdIso desc f = do
   it ("order isomorphic: " ++ desc) $ qc (\x y -> f x `compare` f y === x `compare` y)
@@ -533,7 +582,7 @@ testParseSignExpansion = do
     it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
 
   propsOrdIso "parseMono" parseMonoSE
-  propsOrdIso "parseMono . mono1SE" (parseMono1SE True . mono1SE)
+  propsOrdIso "parseMono1SE True . mono1SE" (parseMono1SE True . mono1SE)
 
 testPropsRangeCompression :: SpecWith ()
 testPropsRangeCompression = do
@@ -555,7 +604,12 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
   describe "Dyadic" $ do
     propsOrdRing (id :: Dyadic -> Dyadic)
 
-    describe "sign expansion" $ do
+    describe "OrdZero" $ do
+      propsOrdZero (id :: Dyadic -> Dyadic)
+
+    describe "sign expansion (FSE)" $ do
+      describe "OrdZero" $ do
+        propsOrdZero (id :: FSE -> FSE)
       propsOrdIso "generating SE" (finiteSE :: Dyadic -> FSE)
       propsOrdIso "parsing SE" (parseDyadicSE :: FSE -> Dyadic)
       it "negation symmetry" $ do
@@ -592,6 +646,9 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
     testPropsRangeCompression
 
   describe "SignExpansion" $ do
+    describe "OrdZero" $ do
+      propsOrdZero (id :: SignExpansion -> SignExpansion)
+
     describe "SignExpansion parser" $ do
       testParseSignExpansion
 
