@@ -23,41 +23,57 @@
 --
 -- * @mono1SE, veb1SE@: For each monomial (@mono1@ or @veb1@), derive their sign expansions based on the parameters ([Gonshor] Theorem 5.11).
 module SignExpansion
-  ( SignExpansion,
+  ( -- * @SignExpansion@ type
+    SignExpansion,
     (+++),
-    empty,
-    isEmpty,
     toList,
     fromList,
+    empty,
+    consSE,
     length,
     index,
-    negate,
+
+    -- ** Factory
     single,
     plus,
     minus,
-    consSE,
+
+    -- ** Helpers
+    isEmpty,
+    negate,
+    countSigns,
+    commonPrefix,
+    takeCommonPrefix,
+
+    -- * Generation
+
+    -- ** Operations
     mono1SE,
     mono1SE',
     veb1SE,
     veb1SE',
     mono1SELead,
     veb1SELead,
-    commonPrefix,
-    takeCommonPrefix,
-    countSigns,
     conwaySE,
-    birthday,
 
     -- * Parsing
+
+    -- ** Generic
     parseMono,
     parseMono1,
+
+    -- ** @SignExpansion@ and @FSE@
     parseMonoSE,
     parseMono1SE,
+
+    -- * Birthday
+    isAllPluses,
+    birthday,
   )
 where
 
 import Conway (Ordinal)
-import SignExpansion.Conway (birthday, conwaySE)
+import SignExpansion.Conway (birthday, conwaySE, isAllPluses)
 import SignExpansion.Dyadic (FSE)
 import SignExpansion.Parser (parseMono, parseMono1)
 import SignExpansion.Types

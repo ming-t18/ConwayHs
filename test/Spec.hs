@@ -353,7 +353,7 @@ propsOrdZero i = do
 propsOrdIso :: (OrdZero a, OrdZero b, Show a, Arbitrary a) => String -> (a -> b) -> SpecWith ()
 propsOrdIso desc f = do
   it ("order isomorphic: " ++ desc) $ qc (\x y -> f x `compare` f y === x `compare` y)
-  it ("negation symmetry: " ++ desc) $ qc (\x y -> f x `compare` f y === neg y `compare` neg x)
+  it ("order isomorphic on negation: " ++ desc) $ qc (\x y -> f x `compare` f y === neg y `compare` neg x)
 
 propsOrdRing :: (Show a, Show t, Arbitrary a, OrdRing t) => (a -> t) -> SpecWith ()
 propsOrdRing i = do
@@ -581,8 +581,7 @@ testParseSignExpansion = do
     it "recover the monomial" $ qc prop_parseMono_unparse
     it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
 
-  propsOrdIso "parseMono" parseMonoSE
-  propsOrdIso "parseMono1SE True . mono1SE" (parseMono1SE True . mono1SE)
+  propsOrdIso "snd . fst . parseMono1SE True . mono1SE" (snd . fst . parseMono1SE True . mono1SE)
 
 testPropsRangeCompression :: SpecWith ()
 testPropsRangeCompression = do

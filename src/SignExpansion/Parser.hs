@@ -19,6 +19,7 @@ import Control.Monad.State
 import Conway
 import OrdinalArith (ordAdd, ordDivRem, ordSymDiff, unMono1)
 import Seq.Types
+import SignExpansion.Reduce (Reduced)
 import Typeclasses ()
 import Prelude hiding (replicate)
 
@@ -33,7 +34,14 @@ sep = SEP . state
 runSEP :: SEParser se a -> se -> (a, se)
 runSEP = runState . getSEParser
 
--- * Parsing helpers
+-- * Parsing @Conway@
+
+parseReduced ::
+  (ParsableSeq se Ordinal Bool, RunLengthSeq pse Ordinal Bool, RunLengthSeq cse Natural Bool) =>
+  se -> ([((Ordinal, Reduced pse), cse)], se)
+parseReduced _ = error "TODO implement this"
+
+-- * Parsing monomials
 
 lookVebMono1 :: (ParsableSeq se Ordinal Bool) => se -> Maybe (Ordinal, Bool)
 lookVebMono1 se = do
