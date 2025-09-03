@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -60,9 +59,8 @@ import Data.List (intercalate)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import MonoTerm
 import Numeric.Natural (Natural)
-import OrdBag (OrdBag)
-import qualified OrdBag
 import Typeclasses
 
 -- * Types
@@ -101,11 +99,7 @@ instance Zero (Conway a) where
   isZero = null . toMap
 
 instance (OrdZero a, One a) => Ord (Conway a) where
-  compare a b = compare a' b'
-    where
-      a', b' :: OrdBag (VebMono a) a
-      a' = OrdBag.fromMapUnchecked $ toMap a
-      b' = OrdBag.fromMapUnchecked $ toMap b
+  compare (Conway a) (Conway b) = compareMonoTermList (map pairToMonoTerm $ M.toDescList a) (map pairToMonoTerm $ M.toDescList b)
 
 instance Zero (VebMono a) where
   zero = VebMono zero zero

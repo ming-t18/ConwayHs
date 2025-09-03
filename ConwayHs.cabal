@@ -29,7 +29,7 @@ library
       Dyadic.Bisect
       Dyadic.Ratio
       FundamentalSeq
-      OrdBag
+      MonoTerm
       OrdinalArith
       OrdLim
       OrdLim.Impls

@@ -33,6 +33,7 @@ where
 import Control.Arrow (first, second)
 import Conway
 import Dyadic
+import MonoTerm
 import qualified Seq.Types (RunLengthSeq (..), Seq (..))
 import SignExpansion.Types (SignExpansion)
 import qualified SignExpansion.Types as SE
@@ -47,21 +48,8 @@ infixr 5 +++.
 newtype FSE = FSE [(Bool, Natural)]
   deriving (Eq, Show)
 
--- | TODO duplicate code compared to @instance Ord SignExpansion@
 instance Ord FSE where
-  compare (FSE []) (FSE []) = EQ
-  compare (FSE ((True, _) : _)) (FSE []) = GT
-  compare (FSE ((False, _) : _)) (FSE []) = LT
-  compare (FSE []) (FSE ((True, _) : _)) = LT
-  compare (FSE []) (FSE ((False, _) : _)) = GT
-  compare (FSE ((s1, n1) : xs)) (FSE ((s2, n2) : ys)) =
-    case (s1, s2) of
-      (True, True) | n1 == n2 -> FSE xs `compare` FSE ys
-      (True, True) -> n1 `compare` n2
-      (False, False) | n1 == n2 -> FSE xs `compare` FSE ys
-      (False, False) -> n2 `compare` n1
-      (False, True) -> LT
-      (True, False) -> GT
+  compare (FSE xs) (FSE ys) = compareMonoTermList (map signPairToMonoTerm xs) (map signPairToMonoTerm ys)
 
 instance Zero FSE where
   zero = empty

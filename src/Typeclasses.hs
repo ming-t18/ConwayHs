@@ -1,4 +1,5 @@
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Typeclasses
   ( -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
@@ -26,6 +27,8 @@ class One a where
 
 -- | Typeclass for a total order with a zero element and negation around the zero element.
 --
+-- IMPORTANT: @neg@ is a partial function for types where negative values cannot be represented.
+--
 -- Properties:
 --
 -- 1. @neg zero == zero@
@@ -33,7 +36,10 @@ class One a where
 -- 2. @neg (neg x) == x@
 --
 -- 3. @x >= y ==> neg y >= neg x@
+--
+-- 4. @isPositive, isNegative, compareZero@ perform comparisons against @zero@
 class (Zero a, Ord a) => OrdZero a where
+  {-# MINIMAL neg #-}
   neg :: a -> a
   isPositive, isNegative :: a -> Bool
   isPositive = (> zero)
@@ -78,6 +84,24 @@ class (OrdZero o, Ord a) => Veblen a o | a -> o where
   --
   -- * @Nothing@ otherwise
   unVeblen :: a -> Maybe (o, a)
+
+-- * Ordering
+
+instance Zero Ordering where
+  zero = EQ
+  isZero EQ = True
+  isZero _ = False
+
+instance One Ordering where
+  one = GT
+  isOne GT = True
+  isOne _ = False
+
+instance OrdZero Ordering where
+  neg = \case
+    GT -> LT
+    EQ -> EQ
+    LT -> GT
 
 -- * Integer
 

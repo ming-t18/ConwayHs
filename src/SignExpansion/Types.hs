@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module SignExpansion.Types
   ( -- * Construction and decomposition
@@ -35,6 +36,7 @@ where
 import Conway
 import Data.Bifunctor (first)
 import qualified Data.Foldable as F
+import MonoTerm
 import OrdinalArith
 import qualified Seq.Types
 import Typeclasses
@@ -78,19 +80,7 @@ instance Zero SignExpansion where
   isZero = isEmpty
 
 instance Ord SignExpansion where
-  compare (SignExpansion []) (SignExpansion []) = EQ
-  compare (SignExpansion ((True, _) : _)) (SignExpansion []) = GT
-  compare (SignExpansion ((False, _) : _)) (SignExpansion []) = LT
-  compare (SignExpansion []) (SignExpansion ((True, _) : _)) = LT
-  compare (SignExpansion []) (SignExpansion ((False, _) : _)) = GT
-  compare (SignExpansion ((s1, n1) : xs)) (SignExpansion ((s2, n2) : ys)) =
-    case (s1, s2) of
-      (True, True) | n1 == n2 -> SignExpansion xs `compare` SignExpansion ys
-      (True, True) -> n1 `compare` n2
-      (False, False) | n1 == n2 -> SignExpansion xs `compare` SignExpansion ys
-      (False, False) -> n2 `compare` n1
-      (False, True) -> LT
-      (True, False) -> GT
+  compare (SignExpansion xs) (SignExpansion ys) = compareMonoTermList (map signPairToMonoTerm xs) (map signPairToMonoTerm ys)
 
 instance OrdZero SignExpansion where
   neg = negate
