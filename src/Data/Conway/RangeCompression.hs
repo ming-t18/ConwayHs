@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module RangeCompression
+module Data.Conway.RangeCompression
   ( -- * Binary tree
     BinTree (..),
     mkTree,
@@ -22,16 +22,16 @@ module RangeCompression
   )
 where
 
-import Conway
+import Data.Conway.Conway
+import Data.Conway.Dyadic
+import Data.Conway.OrdinalArith (ordAdd, ordRightSub')
+import Data.Conway.Seq.InfList (Infinite)
+import qualified Data.Conway.Seq.InfList as NE
+import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (finiteSE))
+import qualified Data.Conway.SignExpansion.Dyadic as D
 import Data.Either (fromRight)
 import Data.List (intercalate)
 import qualified Data.Map.Strict as M
-import Dyadic
-import OrdinalArith (ordAdd, ordRightSub')
-import Seq.InfList (Infinite)
-import qualified Seq.InfList as NE
-import SignExpansion.Dyadic (FiniteSignExpansion (finiteSE))
-import qualified SignExpansion.Dyadic as D
 import Prelude hiding (seq)
 
 data BinTree a = Node a (Maybe (BinTree a)) (Maybe (BinTree a))

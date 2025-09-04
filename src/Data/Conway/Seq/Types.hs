@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Seq.Types (OrdZero (..), Seq (..), ParsableSeq (..), RunLengthSeq (..)) where
+module Data.Conway.Seq.Types (OrdZero (..), Seq (..), ParsableSeq (..), RunLengthSeq (..)) where
 
-import Typeclasses
+import Data.Conway.Typeclasses
 import Prelude hiding (length, null, replicate)
 
 -- | A transfinite sequence of type @s@, indexed by index type @o@,

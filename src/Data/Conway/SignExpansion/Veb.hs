@@ -1,10 +1,10 @@
-module SignExpansion.Veb (mono1SE, mono1SE', veb1SE, veb1SE', veb1SELead, mono1SELead) where
+module Data.Conway.SignExpansion.Veb (mono1SE, mono1SE', veb1SE, veb1SE', veb1SELead, mono1SELead) where
 
 import Control.Arrow (second)
-import Conway
+import Data.Conway.Conway
+import Data.Conway.OrdinalArith
+import Data.Conway.SignExpansion.Types as SE
 import Data.Foldable (foldl')
-import OrdinalArith
-import SignExpansion.Types as SE
 
 m1 :: Ordinal -> Ordinal
 m1 = mono1

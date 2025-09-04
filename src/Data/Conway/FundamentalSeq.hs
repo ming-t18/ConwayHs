@@ -1,4 +1,4 @@
-module FundamentalSeq
+module Data.Conway.FundamentalSeq
   ( FSeq,
     fsOrd,
     fsOrd',
@@ -12,11 +12,11 @@ module FundamentalSeq
   )
 where
 
-import Conway
+import Data.Conway.Conway
+import Data.Conway.Seq.InfList (Infinite)
+import qualified Data.Conway.Seq.InfList as NE
 import Data.Either (fromRight, isRight)
 import qualified Data.Map.Strict as M
-import Seq.InfList (Infinite)
-import qualified Seq.InfList as NE
 
 type VebMonoOrd = VebMono Natural
 

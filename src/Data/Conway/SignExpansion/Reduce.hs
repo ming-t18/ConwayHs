@@ -1,6 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module SignExpansion.Reduce
+module Data.Conway.SignExpansion.Reduce
   ( -- * Helper type
     Reduced (..),
     getReduced,
@@ -17,12 +17,12 @@ module SignExpansion.Reduce
 where
 
 import Control.Monad (foldM)
+import Data.Conway.OrdinalArith (ordSymDiff)
+import Data.Conway.SignExpansion.Types as SE
 import Data.Foldable (foldl', maximumBy)
 import Data.Ord (comparing)
 import Data.Set (Set)
 import qualified Data.Set as S
-import OrdinalArith (ordSymDiff)
-import SignExpansion.Types as SE
 
 -- | Wrapper type for labelling reduced sign expansions.
 newtype Reduced a = Reduced a

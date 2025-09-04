@@ -1,11 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
-module OrdLim.Impls (NatPair (..), List' (..)) where
+module Data.Conway.OrdLim.Impls (NatPair (..), List' (..)) where
 
-import Conway
-import OrdLim.Types
-import Typeclasses
+import Data.Conway.Conway
+import Data.Conway.OrdLim.Types
+import Data.Conway.Typeclasses
 import Prelude hiding (pred, succ)
 
 -- | A pair of natural numbers. Has order type of @w^2@.

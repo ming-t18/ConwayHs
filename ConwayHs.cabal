@@ -24,29 +24,29 @@ source-repository head
 
 library
   exposed-modules:
-      Conway
-      Dyadic
-      Dyadic.Bisect
-      Dyadic.Ratio
-      FundamentalSeq
-      MonoTerm
-      OrdinalArith
-      OrdLim
-      OrdLim.Impls
-      OrdLim.Types
-      QuasiEpsilon
-      RangeCompression
-      Seq
-      Seq.InfList
-      Seq.Types
-      SignExpansion
-      SignExpansion.Conway
-      SignExpansion.Dyadic
-      SignExpansion.Parser
-      SignExpansion.Reduce
-      SignExpansion.Types
-      SignExpansion.Veb
-      Typeclasses
+      Data.Conway.Conway
+      Data.Conway.Dyadic
+      Data.Conway.Dyadic.Bisect
+      Data.Conway.Dyadic.Ratio
+      Data.Conway.FundamentalSeq
+      Data.Conway.MonoTerm
+      Data.Conway.OrdinalArith
+      Data.Conway.OrdLim
+      Data.Conway.OrdLim.Impls
+      Data.Conway.OrdLim.Types
+      Data.Conway.QuasiEpsilon
+      Data.Conway.RangeCompression
+      Data.Conway.Seq
+      Data.Conway.Seq.InfList
+      Data.Conway.Seq.Types
+      Data.Conway.SignExpansion
+      Data.Conway.SignExpansion.Conway
+      Data.Conway.SignExpansion.Dyadic
+      Data.Conway.SignExpansion.Parser
+      Data.Conway.SignExpansion.Reduce
+      Data.Conway.SignExpansion.Types
+      Data.Conway.SignExpansion.Veb
+      Data.Conway.Typeclasses
   other-modules:
       Paths_ConwayHs
   hs-source-dirs:

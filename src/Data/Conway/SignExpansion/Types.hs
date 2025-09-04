@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module SignExpansion.Types
+module Data.Conway.SignExpansion.Types
   ( -- * Construction and decomposition
     SignExpansion,
     empty,
@@ -33,13 +33,13 @@ module SignExpansion.Types
   )
 where
 
-import Conway
 import Data.Bifunctor (first)
+import Data.Conway.Conway
+import Data.Conway.MonoTerm
+import Data.Conway.OrdinalArith
+import qualified Data.Conway.Seq.Types as Seq
+import Data.Conway.Typeclasses
 import qualified Data.Foldable as F
-import MonoTerm
-import OrdinalArith
-import qualified Seq.Types
-import Typeclasses
 import Prelude hiding (length, negate)
 
 infixr 5 +++
@@ -51,15 +51,15 @@ infixr 5 +++
 newtype SignExpansion = SignExpansion [(Bool, Ordinal)]
   deriving (Eq, Show)
 
-instance Seq.Types.Seq SignExpansion Ordinal Bool where
-  length = SignExpansion.Types.length
+instance Seq.Seq SignExpansion Ordinal Bool where
+  length = signExpansionLength
   (!) = index
 
-instance Seq.Types.RunLengthSeq SignExpansion Ordinal Bool where
+instance Seq.RunLengthSeq SignExpansion Ordinal Bool where
   replicate n True = plus n
   replicate n False = minus n
 
-instance Seq.Types.ParsableSeq SignExpansion Ordinal Bool where
+instance Seq.ParsableSeq SignExpansion Ordinal Bool where
   lookahead :: SignExpansion -> Maybe (Bool, Ordinal)
   lookahead (SignExpansion []) = Nothing
   lookahead (SignExpansion (p : _)) = Just p
@@ -128,8 +128,9 @@ toConsSE (SignExpansion (x : xs)) = Just (x, SignExpansion xs)
 (+++) :: SignExpansion -> SignExpansion -> SignExpansion
 (+++) (SignExpansion ls) r = foldr consSE r ls
 
-length :: SignExpansion -> Ordinal
-length (SignExpansion xs) = F.foldl' (\a (_, b) -> a `ordAdd` b) 0 xs
+length, signExpansionLength :: SignExpansion -> Ordinal
+length = signExpansionLength
+signExpansionLength (SignExpansion xs) = F.foldl' (\a (_, b) -> a `ordAdd` b) 0 xs
 
 index :: SignExpansion -> Ordinal -> Bool
 index (SignExpansion []) _ = error "SignExpansion.index: out of bounds"

@@ -13,21 +13,21 @@ module Gen
   )
 where
 
-import Conway
-import Data.Foldable
-import Dyadic
-import SignExpansion (SignExpansion)
-import qualified SignExpansion as SE
-import SignExpansion.Dyadic (FSE)
-import qualified SignExpansion.Dyadic as SED
-import Test.QuickCheck
-import Typeclasses
+import Data.Conway.Conway
+import Data.Conway.Dyadic
+import Data.Conway.SignExpansion (SignExpansion)
+import qualified Data.Conway.SignExpansion as SE
+import Data.Conway.SignExpansion.Dyadic (FSE)
+import qualified Data.Conway.SignExpansion.Dyadic as SED
+import Data.Conway.Typeclasses
   ( AddSub (..),
     One (one),
     OrdRing,
     OrdZero (neg),
     Zero (isZero, zero),
   )
+import Data.Foldable
+import Test.QuickCheck
 
 maxDepth :: Int
 maxDepth = 4

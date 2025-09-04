@@ -1,11 +1,11 @@
-module Dyadic.Bisect
+module Data.Conway.Dyadic.Bisect
   ( bisect,
     stepBisect,
     dSqrt,
   )
 where
 
-import Dyadic
+import Data.Conway.Dyadic
 
 stepBisect :: (a -> Dyadic -> Dyadic -> (a, Ordering)) -> (a, Dyadic, Dyadic) -> (a, Dyadic, Dyadic)
 stepBisect comp s@(acc, xMid, xStep)

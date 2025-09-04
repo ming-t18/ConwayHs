@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module SignExpansion.Parser
+module Data.Conway.SignExpansion.Parser
   ( SEParser (..),
     sep,
     runSEP,
@@ -16,11 +16,11 @@ module SignExpansion.Parser
 where
 
 import Control.Monad.State
-import Conway
-import OrdinalArith (ordAdd, ordDivRem, ordSymDiff, unMono1)
-import Seq.Types
-import SignExpansion.Reduce (Reduced)
-import Typeclasses ()
+import Data.Conway.Conway
+import Data.Conway.OrdinalArith (ordAdd, ordDivRem, ordSymDiff, unMono1)
+import Data.Conway.Seq.Types
+import Data.Conway.SignExpansion.Reduce (Reduced)
+import Data.Conway.Typeclasses ()
 import Prelude hiding (replicate)
 
 -- * Parser monad

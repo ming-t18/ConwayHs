@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Seq.InfList
+module Data.Conway.Seq.InfList
   ( Infinite,
     consView,
     head,
@@ -21,9 +21,9 @@ module Seq.InfList
   )
 where
 
-import Conway (Natural, Ordinal, finiteView, omega)
+import Data.Conway.Conway (Natural, Ordinal, finiteView, omega)
+import qualified Data.Conway.Seq.Types as Seq (Seq (..))
 import Data.List (intercalate)
-import qualified Seq.Types (Seq (..))
 import Prelude hiding (head, iterate, length, map, repeat, tail, take)
 
 -- | Represents an infinite list with element type @a@.
@@ -34,7 +34,7 @@ data Infinite a = Inf a (Infinite a)
 instance (Show a) => Show (Infinite a) where
   show xs = "Inf [" ++ intercalate ", " (show <$> take 5 xs) ++ ", ...]"
 
-instance Seq.Types.Seq (Infinite a) Ordinal a where
+instance Seq.Seq (Infinite a) Ordinal a where
   length _ = omega
   (!) xs (finiteView -> Just i) = index xs i
   (!) _ _ = error "Infinite.!: index is finite"

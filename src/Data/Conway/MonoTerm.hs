@@ -1,9 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 -- | Helpers for comparing Conway Normal Form terms and sign expansion entries.
-module MonoTerm (MonoTerm (..), boolToOrder, flipOrder, prodOrder, pairToMonoTerm, signPairToMonoTerm, compareMonoTermList) where
+module Data.Conway.MonoTerm (MonoTerm (..), boolToOrder, flipOrder, prodOrder, pairToMonoTerm, signPairToMonoTerm, compareMonoTermList) where
 
-import Typeclasses (OrdZero (..), Zero (..))
+import Data.Conway.Typeclasses (OrdZero (..), Zero (..))
 
 -- | Represents a monomial term @w^p . c@ where @c@ is the coefficient, which can be negative,
 -- and @p@ is the exponent. The @OrdZero@ implementation is implemented according to that interpretation.

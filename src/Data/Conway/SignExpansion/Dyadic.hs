@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module SignExpansion.Dyadic
+module Data.Conway.SignExpansion.Dyadic
   ( FSE,
     FiniteSignExpansion (..),
     empty,
@@ -31,13 +31,13 @@ module SignExpansion.Dyadic
 where
 
 import Control.Arrow (first, second)
-import Conway
-import Dyadic
-import MonoTerm
-import qualified Seq.Types (RunLengthSeq (..), Seq (..))
-import SignExpansion.Types (SignExpansion)
-import qualified SignExpansion.Types as SE
-import Typeclasses
+import Data.Conway.Conway
+import Data.Conway.Dyadic as D
+import Data.Conway.MonoTerm
+import qualified Data.Conway.Seq.Types as Seq (RunLengthSeq (..), Seq (..))
+import Data.Conway.SignExpansion.Types (SignExpansion)
+import qualified Data.Conway.SignExpansion.Types as SE
+import Data.Conway.Typeclasses
 import Prelude hiding (length)
 
 infixr 5 +++.
@@ -68,11 +68,11 @@ instance Semigroup FSE where
 instance Monoid FSE where
   mempty = empty
 
-instance Seq.Types.Seq FSE Natural Bool where
-  length = SignExpansion.Dyadic.length
+instance Seq.Seq FSE Natural Bool where
+  length = fseLength
   (!) = index
 
-instance Seq.Types.RunLengthSeq FSE Natural Bool where
+instance Seq.RunLengthSeq FSE Natural Bool where
   replicate n True = plus n
   replicate n False = minus n
 
@@ -101,8 +101,9 @@ negFSE = FSE . map (first not) . toList
 (+++.) (FSE []) (FSE ys) = FSE ys
 (+++.) (FSE (x : xs)) (FSE ys) = x `consFSE` (FSE xs +++. FSE ys)
 
-length :: FSE -> Natural
-length = sum . map snd . toList
+length, fseLength :: FSE -> Natural
+length = fseLength
+fseLength = sum . map snd . toList
 
 index :: FSE -> Natural -> Bool
 index (FSE []) _ = error "FSE.index: out of bounds"

@@ -1,4 +1,4 @@
-module Dyadic
+module Data.Conway.Dyadic
   ( Dyadic,
 
     -- * Creation and decomposition
@@ -25,10 +25,10 @@ where
 
 import Control.Arrow ((***))
 import Data.Bits
+import Data.Conway.Typeclasses
 import Data.Ratio ((%))
 import qualified Data.Ratio as R
 import GHC.Num (integerDiv)
-import Typeclasses
 
 -- | Arbitrary-precision dyadic rational number.
 --

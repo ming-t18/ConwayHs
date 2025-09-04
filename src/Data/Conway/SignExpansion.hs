@@ -1,4 +1,4 @@
--- | Module dealing with the sign expansions of surreal numbers.
+-- | module Data.Conway.dealing with the sign expansions of surreal numbers.
 --
 -- A sign expansion (or sign sequence) is a transfinite sequence of pluses and minuses
 -- ordered lexicographically.
@@ -22,7 +22,7 @@
 -- * @monoSE@: For each term, the sign expansion contribution of the real part comes after the monomial part (lexicographical order: exponent is compared before the real part) ([Gonshor] Theorems 5.11 and 5.12).
 --
 -- * @mono1SE, veb1SE@: For each monomial (@mono1@ or @veb1@), derive their sign expansions based on the parameters ([Gonshor] Theorem 5.11).
-module SignExpansion
+module Data.Conway.SignExpansion
   ( -- * @SignExpansion@ type
     SignExpansion,
     (+++),
@@ -72,12 +72,12 @@ module SignExpansion
   )
 where
 
-import Conway (Ordinal)
-import SignExpansion.Conway (birthday, conwaySE, isAllPluses)
-import SignExpansion.Dyadic (FSE)
-import SignExpansion.Parser (parseMono, parseMono1)
-import SignExpansion.Types
-import SignExpansion.Veb
+import Data.Conway.Conway (Ordinal)
+import Data.Conway.SignExpansion.Conway (birthday, conwaySE, isAllPluses)
+import Data.Conway.SignExpansion.Dyadic (FSE)
+import Data.Conway.SignExpansion.Parser (parseMono, parseMono1)
+import Data.Conway.SignExpansion.Types
+import Data.Conway.SignExpansion.Veb
 import Prelude hiding (length, negate)
 
 parseMono1SE :: Bool -> SignExpansion -> ((Ordinal, SignExpansion), SignExpansion)

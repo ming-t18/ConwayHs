@@ -3,26 +3,19 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 import Control.Monad ()
-import Conway
-import Data.Function (on)
-import Data.Maybe (isJust)
-import qualified Data.Set as S
-import Dyadic
-import FundamentalSeq
-import Gen
-import OrdinalArith
-import qualified RangeCompression as RC
-import qualified Seq.InfList as NE
-import SignExpansion as SE
-import SignExpansion.Conway (monoSE)
-import SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
-import SignExpansion.Reduce (Reduced (..))
-import qualified SignExpansion.Reduce as R
-import SignExpansion.Types ()
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
-import Typeclasses
+import Data.Conway.Conway
+import Data.Conway.Dyadic
+import Data.Conway.FundamentalSeq
+import Data.Conway.OrdinalArith
+import qualified Data.Conway.RangeCompression as RC
+import qualified Data.Conway.Seq.InfList as NE
+import Data.Conway.SignExpansion as SE
+import Data.Conway.SignExpansion.Conway (monoSE)
+import Data.Conway.SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
+import Data.Conway.SignExpansion.Reduce (Reduced (..))
+import qualified Data.Conway.SignExpansion.Reduce as R
+import Data.Conway.SignExpansion.Types ()
+import Data.Conway.Typeclasses
   ( AddSub (..),
     Mult (..),
     One (one),
@@ -30,6 +23,13 @@ import Typeclasses
     OrdZero (..),
     Zero (isZero, zero),
   )
+import Data.Function (on)
+import Data.Maybe (isJust)
+import qualified Data.Set as S
+import Gen
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck
 
 -- * Ordering
 
@@ -262,10 +262,10 @@ prop_fsOrd_increasing i j x =
     && j >= 0
     && i
       /= j
-    ==> ( case fsOrd x of
-            Left _ -> False ==> True
-            Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
-        )
+        ==> ( case fsOrd x of
+                Left _ -> False ==> True
+                Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
+            )
 
 -- * Sign Expansions
 
@@ -461,8 +461,8 @@ testReducedSignExpansion = do
         ( \n0 n1 ->
             n1
               > n0
-              ==> let (p0, p1) = (minus n0, minus n1)
-                   in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
+                ==> let (p0, p1) = (minus n0, minus n1)
+                     in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p when both are all minuses and p < p0" $ do
@@ -470,8 +470,8 @@ testReducedSignExpansion = do
         ( \n0 n1 ->
             n1
               > n0
-              ==> let (p0, p1) = (minus n0, minus n1)
-                   in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
+                ==> let (p0, p1) = (minus n0, minus n1)
+                     in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p if p < p0" $ do
@@ -489,8 +489,8 @@ testReducedSignExpansion = do
           ( \p0 p1 ->
               p0
                 /= p1
-                ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
-                     in R.unreduce (R.reduce ps) === Just ps
+                  ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
+                       in R.unreduce (R.reduce ps) === Just ps
           )
 
       it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do

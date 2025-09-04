@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module OrdinalArith
+module Data.Conway.OrdinalArith
   ( ordAdd,
     ordMult,
     ordMultByFinite,
@@ -16,10 +16,10 @@ module OrdinalArith
   )
 where
 
-import Conway
+import Data.Conway.Conway
+import Data.Conway.Typeclasses
 import Data.Foldable
 import qualified Data.Map.Strict as M
-import Typeclasses
 import Prelude hiding (isInfinite)
 
 -- | Is the ordinal number finite?

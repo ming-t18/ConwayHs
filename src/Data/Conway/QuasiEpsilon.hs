@@ -6,7 +6,7 @@
 --
 -- The quasi-epsilon number can also generalized for arbitrary Veblen orders
 -- @o@, @veb1 o . neg@.
-module QuasiEpsilon
+module Data.Conway.QuasiEpsilon
   ( mono1Neg,
     veb1Neg,
     mono1NegSE,
@@ -16,9 +16,9 @@ module QuasiEpsilon
   )
 where
 
-import Conway
-import SignExpansion
-import Typeclasses
+import Data.Conway.Conway
+import Data.Conway.SignExpansion
+import Data.Conway.Typeclasses
 
 mono1Neg :: (Mult a) => Conway a -> Conway a
 mono1Neg = mono1 . neg

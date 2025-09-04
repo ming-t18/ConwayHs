@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Conway
+module Data.Conway.Conway
   ( -- |
     --  Ordinal numbers and surreal numbers with the two-argument Veblen function.
     --
@@ -54,14 +54,14 @@ module Conway
   )
 where
 
+import Data.Conway.MonoTerm
+import Data.Conway.Typeclasses
 import Data.Foldable
 import Data.List (intercalate)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import MonoTerm
 import Numeric.Natural (Natural)
-import Typeclasses
 
 -- * Types
 

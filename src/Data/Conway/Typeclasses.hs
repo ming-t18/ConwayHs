@@ -1,7 +1,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Typeclasses
+module Data.Conway.Typeclasses
   ( -- | Typeclasses for algebraic properties related to ordinal and surreal numbers.
     -- Custom numeric types should implement these typeclasses so they can be used in @Conway@.
     Zero (..),

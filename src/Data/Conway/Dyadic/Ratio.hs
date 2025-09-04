@@ -1,10 +1,10 @@
-module Dyadic.Ratio (LongDivState, defaultLongDivState, stepBisectCheck, divByInteger) where
+module Data.Conway.Dyadic.Ratio (LongDivState, defaultLongDivState, stepBisectCheck, divByInteger) where
 
+import Data.Conway.Dyadic
+import Data.Conway.Dyadic.Bisect
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (isJust)
-import Dyadic
-import Dyadic.Bisect
 
 data LongDivState = LongDivState
   { graph :: Map Dyadic (Bool, Dyadic),

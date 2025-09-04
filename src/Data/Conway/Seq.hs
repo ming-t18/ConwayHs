@@ -1,2 +1,2 @@
 -- | Typeclass for transfinite sequences.
-module Seq () where
+module Data.Conway.Seq () where

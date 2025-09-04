@@ -2,11 +2,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-module OrdLim.Types (OrdLim (..), OrdLimCases (..), OrdLimCases1 (..)) where
+module Data.Conway.OrdLim.Types (OrdLim (..), OrdLimCases (..), OrdLimCases1 (..)) where
 
-import Conway
+import Data.Conway.Conway
+import Data.Conway.Typeclasses
 import Data.List (intercalate)
-import Typeclasses
 import Prelude hiding (pred, succ)
 
 infixr 5 :+.

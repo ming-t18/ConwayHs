@@ -1,4 +1,4 @@
-module SignExpansion.Conway
+module Data.Conway.SignExpansion.Conway
   ( isAllPluses,
     birthday,
     conwaySE,
@@ -16,14 +16,14 @@ module SignExpansion.Conway
 where
 
 import Control.Arrow (second)
-import Conway
+import Data.Conway.Conway
+import Data.Conway.SignExpansion.Dyadic hiding (empty, toList)
+import qualified Data.Conway.SignExpansion.Dyadic as SED
+import Data.Conway.SignExpansion.Reduce
+import Data.Conway.SignExpansion.Types as SE
+import Data.Conway.SignExpansion.Veb
+import Data.Conway.Typeclasses
 import Data.Foldable (foldl')
-import SignExpansion.Dyadic hiding (empty, toList)
-import qualified SignExpansion.Dyadic as SED
-import SignExpansion.Reduce
-import SignExpansion.Types as SE
-import SignExpansion.Veb
-import Typeclasses
 
 -- * Is all pluses
 
