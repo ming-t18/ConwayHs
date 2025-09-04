@@ -5,15 +5,15 @@ Haskell-based library for ordinal numbers and surreal numbers with support for V
 # Supported features
 
 - Equality and comparison (`Eq` and `Ord` typeclasses)
-- Natural sum and product for ordinals and surreals (`Num` typeclass)
+- Natural sum and product for ordinal numbers and surreal numbers (`Num` typeclass)
 - Displaying in Cantor/Conway normal forms (`Show` typeclass)
 - The exclusive upper bound is the Feferman–Schütte ordinal. All larger values are unsupported
-- Generating the fundamental sequences of ordinals
 
 # Unimplemented features
 
-- Generating sign expansions for non-monomial surreal numbers
-- Converting from sign expansions to `Conway`
+- Parsing sign expansion given any `Conway`
+- Sign expansions of arbitrary rational and real numbers
+- Multi-argument Veblen functions and the Klammersymbolen
 
 # Setting up
 
@@ -32,12 +32,38 @@ stack test
 
 # API
 
-The basic datatypes are:
- - `Dyadic`: dyadic rationals
- - `Ordinal`: ordinal numbers
+## Basic datatypes
+
+ - `Dyadic`: dyadic rational numbers -- rationals with power of 2 denominators
+ - `Conway a`: surreal numbers with coefficient type `a`
  - `Conway Dyadic`: representable surreal numbers
+ - `VebMono`: a Veblen function monomial
+ - `MonoTerm p a`: a single term (including finite coefficient) in Cantor/Conway normal form. helper for the `Ord` implementation of `Conway`, `SignExpansion` and `FSE`
+ - `Ordinal`: representable ordinal numbers, alias of `Conway Natural`
  - `SignExpansion`: sign expansions of `Conway Dyadic`
  - `FSE`: sign expansions of dyadic rationals
+ - `Reduced a`: wrapper for reduced sign expansions
+ - `Infinite a`: an infinite list with order type $\omega$
+
+## Typeclasses
+
+- `Data.Conway.Typeclasses`
+  - `Zero a`: has zero elemnt
+  - `OrdZero a`: total order with zero element and negation around the zero
+  - `AddSub a`: has natural addition and subtraction
+  - `Mult a`: has natural multiplication
+  - `OrdRing a`: combination of `OrdZero, AddSub, Mult`
+  - `Veblen a o`: type `a` has the Veblen function with Veblen argument(s) `o`
+- `Data.Conway.SignExpansion`
+  - `FiniteSignExpansion`: type `a` has order isomorphism with `FSE`
+  - `HasSignExpansion`: type `a` has order isomorphish with `SignExpansion` -- **NOT IMPLEMENTED**
+- `Data.Conway.Seq`
+  - `Seq s o a`: `s` is a transfinite sequence with index/length type `o` and element type `a`
+  - `SeqEnum s o a`: `a` has transfinite sequences `Seq` as their ranges -- **NOT IMPLEMENTED**
+  - `RunLengthSeq s o a`: transfinite repetitions of an element can be constructed
+  - `ParseableSeq s o a`: transfinite repetitions of an element can be parsed from the beginning
+- `Data.Conway.OrdLim`
+  - `OrdLim a`: `a` is a well-ordering with order type of a limit ordinal
 
 ## Veblen Monomial
 
@@ -55,13 +81,17 @@ veb1 :: Ordinal -> Conway a -> Conway a
 
 data VebMono a = VebMono Ordinal (Conway a)
 ```
-## Conway Normal Form
+## Cantor/Conway Normal Form
 
 The `Conway` type represents the Cantor/Conway normal form, that is a weighted sum of Veblen monomials.
 
+This is a computable and serializable subset of surreal numbers with computable and serializable sign expansions.
+
+Uncomputable aspects of surreal numbers include real number coefficients and infinite sums.
+
 The type parameter `a` is the type of the coefficients.
 
-It is represented as a mapping (`Data.Map(Map)`) from the Veblen monomial to the coefficient with keys sorted
+It is represented as a mapping (`Data.Map.Strict`) from the Veblen monomial to the coefficient with keys sorted
 descending. Zero-coefficients are eliminated from the mapping.
 
 Ordinal numbers are represented as `Conway` with natural numbers (`Numeric.Natural(Natural)`) as coefficients.
@@ -72,6 +102,9 @@ type Ordinal = Conway Natural
 
 conway :: Map (Ordinal, Conway a) a -> Conway a
 toMap :: Conway a -> Map (Ordinal, Conway a) a
+
+finiteView :: Conway a -> Maybe a
+leadingView :: Conway a -> Maybe ((VebMono a, a), a)
 ```
 
 ## Dyadic rationals
@@ -81,6 +114,8 @@ A dyadic rational is a rational number in the form of $\frac{a}{2^b}$ for numera
 The `makeDyadic` function constructs a new `Dyadic` from `a` and `b` and simplifying denominator.
 
 `(%/)` is the infix operator for `makeDyadic`.
+
+Decimal literals (`-1.25`) and the division symbol (`/`) are supported, as long as the denominator is a power of 2.
 
 ```hs
 data Dyadic = ...
@@ -93,31 +128,62 @@ unmakeDyadic :: Dyadic -> (Integer, Integer)
 ```hs
 ghci> 1 :: Dyadic
 1
-ghci> (-5) %/ 3
+ghci> 0.5 :: Dyadic
+1/2
+ghci> 0.2 :: Dyadic
+*** Exception: Dyadic.fromRational: denominator is not a power of 2: 1 % 5
+...
+ghci> (-5) %/ 3 :: Dyadic
 -5/8
 ghci> 2 %/ 2 + (-5) %/ 4
 3/16
-ghci> unmakeDyadic ((-5) %/ 4)
-(-5,4)
+ghci> unmakeDyadic 0.125
+(-1,3)
 ```
 
-## Veblen Hierarchy
+## Veblen hierarchy
 
 ```hs
+-- Veblen hierarchy
 veb1 :: Ordinal -> Conway a -> Conway a
 veb :: Ordinal -> Conway a -> a -> Conway a
+
+-- powers of omega
+mono1, w' :: Ordinal -> Ordinal
+mono1 = veb1 0
+
+-- omega^p * c
+mono :: Conway a -> a -> Conway a
+finite :: a -> Conway a
+finite = mono 0
+
+-- epsilon numbers
+eps' :: Conway a -> Conway a -> Conway a
+eps0 :: Conway a
+eps' = veb1 1
+eps0 = veb1 1 0
+
 ```
+
+```hs
+ghci> 0.5 :: Conway Dyadic
+1/2
+ghci> mono1 2 - 1 + mono (-2) 3 :: Conway Dyadic
+w^2 - 1 + w^(-2).3
+ghci> veb 1 (-1) 2.5 - 5.125 + w' (-1) + w' (-veb1 w 0 + 1) :: Conway Dyadic
+ε_{-1}.5/2 + -41/8 + w^{-1} + w^{φ[w, 0].-1 + 1}
+````
 
 ## Ordinal numbers
 
 ```hs
 ghci> 1 :: Ordinal
 1
-ghci> omega :: Ordinal
+ghci> w :: Ordinal
 w
-ghci> (omega :: Ordinal) + 1
+ghci> w + 1
 w + 1
-ghci> mono1 ((omega :: Ordinal) + 4) + 2 * omega
+ghci> mono1 (w + 4) + 2 * w
 w^{w + 4} + w.2
 ```
 
