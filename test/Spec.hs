@@ -262,10 +262,10 @@ prop_fsOrd_increasing i j x =
     && j >= 0
     && i
       /= j
-    ==> ( case fsOrd x of
-            Left _ -> False ==> True
-            Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
-        )
+        ==> ( case fsOrd x of
+                Left _ -> False ==> True
+                Right f -> True ==> (i `compare` j) === (f `NE.index` i) `compare` (f `NE.index` j)
+            )
 
 -- * Sign Expansions
 
@@ -288,6 +288,9 @@ qc = property
 
 prop_parseMono1_unparse :: SignExpansion -> Property
 prop_parseMono1_unparse p = snd (fst (parseMono1SE True $ mono1SE p)) === p
+
+prop_parseMono1Veb_unparse :: Ordinal -> SignExpansion -> Property
+prop_parseMono1Veb_unparse o p = snd (fst (parseMono1SE True $ veb1SE o p)) === p
 
 prop_parseMono1_unparseNoRemain :: SignExpansion -> Property
 prop_parseMono1_unparseNoRemain p = snd (parseMono1SE True $ mono1SE p) === empty
@@ -461,8 +464,8 @@ testReducedSignExpansion = do
         ( \n0 n1 ->
             n1
               > n0
-              ==> let (p0, p1) = (minus n0, minus n1)
-                   in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
+                ==> let (p0, p1) = (minus n0, minus n1)
+                     in R.reduceSingle p0 p1 === Reduced (minus $ ordRightSub' n0 n1)
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p when both are all minuses and p < p0" $ do
@@ -470,8 +473,8 @@ testReducedSignExpansion = do
         ( \n0 n1 ->
             n1
               > n0
-              ==> let (p0, p1) = (minus n0, minus n1)
-                   in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
+                ==> let (p0, p1) = (minus n0, minus n1)
+                     in R.unreduceSingle p0 (R.reduceSingle p0 p1) === p1
         )
 
     it "unreduceSingle p0 (reduceSingle p0 p) === p if p < p0" $ do
@@ -489,8 +492,8 @@ testReducedSignExpansion = do
           ( \p0 p1 ->
               p0
                 /= p1
-                ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
-                     in R.unreduce (R.reduce ps) === Just ps
+                  ==> let ps = if p0 < p1 then [p1, p0] else [p0, p1]
+                       in R.unreduce (R.reduce ps) === Just ps
           )
 
       it "unreduce . reduce === Just for descending lists of exactlty 3 sign expansions" $ do
@@ -575,6 +578,7 @@ testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
   describe "parseMono1" $ do
     it "recover mono1" $ qc prop_parseMono1_unparse
+    it "recover veb1" $ qc prop_parseMono1Veb_unparse
     it "no remaining SE to parse for mono1" $ qc prop_parseMono1_unparseNoRemain
 
   describe "parseMono" $ do
