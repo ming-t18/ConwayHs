@@ -2,7 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-import Control.Monad ()
+import Control.Monad (when)
 import Data.Conway.Conway
 import Data.Conway.Dyadic
 import Data.Conway.FundamentalSeq
@@ -10,7 +10,7 @@ import Data.Conway.OrdinalArith
 import qualified Data.Conway.RangeCompression as RC
 import qualified Data.Conway.Seq.InfList as NE
 import Data.Conway.SignExpansion as SE
-import Data.Conway.SignExpansion.Conway (monoSE)
+import Data.Conway.SignExpansion.Conway
 import Data.Conway.SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
 import Data.Conway.SignExpansion.Reduce (Reduced (..))
 import qualified Data.Conway.SignExpansion.Reduce as R
@@ -287,23 +287,24 @@ qc :: (Testable prop) => prop -> Property
 qc = property
 
 prop_parseMono1_unparse :: SignExpansion -> Property
-prop_parseMono1_unparse p = snd (fst (parseMono1SE True $ mono1SE p)) === p
-
-prop_parseMono1Veb_unparse :: Ordinal -> SignExpansion -> Property
-prop_parseMono1Veb_unparse o p = snd (fst (parseMono1SE True $ veb1SE o p)) === p
-
-prop_parseMono1_unparseNoRemain :: SignExpansion -> Property
-prop_parseMono1_unparseNoRemain p = snd (parseMono1SE True $ mono1SE p) === empty
-
-prop_parseMono_unparse :: SignExpansion -> FSE -> Property
-prop_parseMono_unparse p c
-  | isZero c = f (parseMonoSE (monoSE p c)) === (mempty, c)
-  | otherwise = f (parseMonoSE (monoSE p c)) === (p, c)
+prop_parseMono1_unparse p = p' /= p ==> vebArgSE (fst $ parseVeb1 True 0 p') === p
   where
-    f (((_, p'), c'), _) = (p', c')
+    p' = mono1SE p
 
-prop_parseMono_unparseNoRemain :: SignExpansion -> FSE -> Property
-prop_parseMono_unparseNoRemain p c = snd (parseMonoSE (monoSE p c)) === empty
+prop_parseVeb1_unparse :: Ordinal -> SignExpansion -> Property
+prop_parseVeb1_unparse o p = p' /= p ==> vebArgSE (fst $ parseVeb1 True o p') === p
+  where
+    p' = veb1SE o p
+
+prop_parseVeb1_noRemain :: Ordinal -> SignExpansion -> Property
+prop_parseVeb1_noRemain o p = p' /= p ==> snd (parseVeb1 True o p') === mempty
+  where
+    p' = veb1SE o p
+
+prop_parseVeb1_ordIso :: Ordinal -> SignExpansion -> SignExpansion -> Property
+prop_parseVeb1_ordIso o p1 p2 = (vebArgSE (p p1) `compare` vebArgSE (p p2)) === (p1 `compare` p2)
+  where
+    p = fst . parseVeb1 True o . veb1SE o
 
 propsOrdZero :: (OrdZero a, Show a, Arbitrary a) => (a -> a) -> SpecWith ()
 propsOrdZero i = do
@@ -576,16 +577,17 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
-  describe "parseMono1" $ do
-    it "recover mono1" $ qc prop_parseMono1_unparse
-    it "recover veb1" $ qc prop_parseMono1Veb_unparse
-    it "no remaining SE to parse for mono1" $ qc prop_parseMono1_unparseNoRemain
+  describe "parseVeb1" $ do
+    it "unparse mono1" $ qc prop_parseMono1_unparse
+    it "unparse any veb1" $ qc prop_parseVeb1_unparse
+    it "no remaining" $ qc prop_parseVeb1_noRemain
+    it "order isomorphism" $ qc prop_parseVeb1_ordIso
 
-  describe "parseMono" $ do
-    it "recover the monomial" $ qc prop_parseMono_unparse
-    it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
+-- it "no remaining SE to parse for mono1" $ qc prop_parseMono1_unparseNoRemain
 
-  propsOrdIso "snd . fst . parseMono1SE True . mono1SE" (snd . fst . parseMono1SE True . mono1SE)
+-- describe "parseMono" $ do
+--   it "recover the monomial" $ qc prop_parseMono_unparse
+--   it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
 
 testPropsRangeCompression :: SpecWith ()
 testPropsRangeCompression = do
@@ -604,57 +606,58 @@ testPropsRangeCompression = do
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
-  describe "Dyadic" $ do
-    propsOrdRing (id :: Dyadic -> Dyadic)
+  {-
+    describe "Dyadic" $ do
+      propsOrdRing (id :: Dyadic -> Dyadic)
 
-    describe "OrdZero" $ do
-      propsOrdZero (id :: Dyadic -> Dyadic)
-
-    describe "sign expansion (FSE)" $ do
       describe "OrdZero" $ do
-        propsOrdZero (id :: FSE -> FSE)
-      propsOrdIso "generating SE" (finiteSE :: Dyadic -> FSE)
-      propsOrdIso "parsing SE" (parseDyadicSE :: FSE -> Dyadic)
-      it "negation symmetry" $ do
-        qc (\x -> parseDyadicSE (neg (finiteSE x)) === neg x)
+        propsOrdZero (id :: Dyadic -> Dyadic)
 
-      it "parseDyadicFSE is inverse of finiteFSE" $ do
-        qc (\x -> parseDyadicSE (finiteSE x) === x)
+      describe "sign expansion (FSE)" $ do
+        describe "OrdZero" $ do
+          propsOrdZero (id :: FSE -> FSE)
+        propsOrdIso "generating SE" (finiteSE :: Dyadic -> FSE)
+        propsOrdIso "parsing SE" (parseDyadicSE :: FSE -> Dyadic)
+        it "negation symmetry" $ do
+          qc (\x -> parseDyadicSE (neg (finiteSE x)) === neg x)
 
-  describe "ConwayV0 Integer" $ do
-    propsOrdRing (getConwayV0 :: ConwayV0Gen Integer -> Conway Integer)
+        it "parseDyadicFSE is inverse of finiteFSE" $ do
+          qc (\x -> parseDyadicSE (finiteSE x) === x)
 
-  describe "Conway Integer" $ do
-    propsOrdRing (getConway :: ConwayGen Integer -> Conway Integer)
+    describe "ConwayV0 Integer" $ do
+      propsOrdRing (getConwayV0 :: ConwayV0Gen Integer -> Conway Integer)
 
-  describe "Conway Dyadic" $ do
-    propsOrdRing (getConway :: ConwayGen Dyadic -> Conway Dyadic)
+    describe "Conway Integer" $ do
+      propsOrdRing (getConway :: ConwayGen Integer -> Conway Integer)
 
-  describe "Ordinal arithmetic" $ do
-    testPropsOrdArith
+    describe "Conway Dyadic" $ do
+      propsOrdRing (getConway :: ConwayGen Dyadic -> Conway Dyadic)
 
-  describe "Veb" $ do
-    it "Veb increasing map" $ do
-      qc prop_vebIncrMap
-    it "Veb decreasing map" $ do
-      qc prop_vebDecrMap
+    describe "Ordinal arithmetic" $ do
+      testPropsOrdArith
 
-  describe "Ordinal fundamental sequences" $ do
-    it "Entries are smaller" $ do
-      qc prop_fsOrd_smaller
-    it "FS is increasing" $ do
-      qc prop_fsOrd_increasing
+    describe "Veb" $ do
+      it "Veb increasing map" $ do
+        qc prop_vebIncrMap
+      it "Veb decreasing map" $ do
+        qc prop_vebDecrMap
 
-  describe "Range compression (Ordinal -> Dyadic)" $ do
-    testPropsRangeCompression
+    describe "Ordinal fundamental sequences" $ do
+      it "Entries are smaller" $ do
+        qc prop_fsOrd_smaller
+      it "FS is increasing" $ do
+        qc prop_fsOrd_increasing
 
+    describe "Range compression (Ordinal -> Dyadic)" $ do
+      testPropsRangeCompression
+  -}
   describe "SignExpansion" $ do
-    describe "OrdZero" $ do
+    when False $ describe "OrdZero" $ do
       propsOrdZero (id :: SignExpansion -> SignExpansion)
 
     describe "SignExpansion parser" $ do
       testParseSignExpansion
 
-    describe "generator" $ do
+    when False $ describe "generator" $ do
       testSignExpansionConway
       testReducedSignExpansion

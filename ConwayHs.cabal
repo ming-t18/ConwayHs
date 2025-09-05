@@ -11,11 +11,12 @@ homepage:       https://github.com/ming-t18/ConwayHs#readme
 bug-reports:    https://github.com/ming-t18/ConwayHs/issues
 author:         Ming
 maintainer:     example@example.com
-copyright:      2025 Ming
+copyright:      2025 Author name here
 license:        MIT
 build-type:     Simple
 extra-source-files:
     README.md
+    CHANGELOG.md
 
 source-repository head
   type: git

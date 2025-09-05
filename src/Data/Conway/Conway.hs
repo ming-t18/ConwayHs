@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Data.Conway.Conway
   ( -- |
@@ -22,7 +23,6 @@ module Data.Conway.Conway
     conway,
     toMap,
     termsList,
-    -- TODO minView/maxView helpers
 
     -- * Construction helpers
     finite,
@@ -51,6 +51,8 @@ module Data.Conway.Conway
     finiteView,
     leadingTerm,
     leadingView,
+    veb1View,
+    vebView,
   )
 where
 
@@ -259,7 +261,24 @@ finiteView :: (Zero a) => Conway a -> Maybe a
 finiteView x =
   case termsList x of
     [] -> Just zero
-    [(z, x')] | isZero z -> Just x'
+    [(isZero -> True, x')] -> Just x'
+    _ -> Nothing
+
+-- | Determines if a @Conway@ is @veb1 o p@ and returns a @Just@ of it matches.
+veb1View :: (One a) => Conway a -> Maybe (VebMono a)
+veb1View x =
+  case termsList x of
+    [(vm, isOne -> True)] -> Just vm
+    _ -> Nothing
+
+-- | Determines if a @Conway@ is @veb o p c@ and returns a @Just@ if it matches.
+--
+-- Zero is treated as @veb 0 0 0@ so it returns @Just@.
+vebView :: (Zero a) => Conway a -> Maybe (VebMono a, a)
+vebView x =
+  case termsList x of
+    [] -> Just (zero, zero)
+    [(vm, c)] -> Just (vm, c)
     _ -> Nothing
 
 -- | @True@ if and only if the argument is a monomial (is zero or has only one term in its Cantor/Conway normal form)

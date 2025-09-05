@@ -46,6 +46,7 @@ module Data.Conway.SignExpansion
     takeCommonPrefix,
 
     -- * Generation
+    ParseVeb1 (..),
 
     -- ** Operations
     mono1SE,
@@ -57,14 +58,8 @@ module Data.Conway.SignExpansion
     conwaySE,
 
     -- * Parsing
-
-    -- ** Generic
     parseMono,
-    parseMono1,
-
-    -- ** @SignExpansion@ and @FSE@
-    parseMonoSE,
-    parseMono1SE,
+    parseVeb1,
 
     -- * Birthday
     isAllPluses,
@@ -72,16 +67,8 @@ module Data.Conway.SignExpansion
   )
 where
 
-import Data.Conway.Conway (Ordinal)
 import Data.Conway.SignExpansion.Conway (birthday, conwaySE, isAllPluses)
-import Data.Conway.SignExpansion.Dyadic (FSE)
-import Data.Conway.SignExpansion.Parser (parseMono, parseMono1)
+import Data.Conway.SignExpansion.Parser
 import Data.Conway.SignExpansion.Types
 import Data.Conway.SignExpansion.Veb
 import Prelude hiding (length, negate)
-
-parseMono1SE :: Bool -> SignExpansion -> ((Ordinal, SignExpansion), SignExpansion)
-parseMono1SE = parseMono1
-
-parseMonoSE :: SignExpansion -> (((Ordinal, SignExpansion), FSE), SignExpansion)
-parseMonoSE = parseMono

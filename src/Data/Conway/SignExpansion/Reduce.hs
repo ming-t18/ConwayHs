@@ -11,6 +11,7 @@ module Data.Conway.SignExpansion.Reduce
 
     -- * Unreduce
     unreduce,
+    unreduce',
     unreduceSingle,
     unreduceStep,
   )
@@ -69,6 +70,11 @@ unreduce = foldM unreduceStepAndAppend []
   where
     unreduceStepAndAppend :: [SignExpansion] -> Reduced SignExpansion -> Maybe [SignExpansion]
     unreduceStepAndAppend ps0 po = (ps0 ++) . (: []) <$> unreduceStep ps0 po
+
+unreduce' :: [Reduced SignExpansion] -> [SignExpansion]
+unreduce' x = case unreduce x of
+  Nothing -> error "unreduce': failed"
+  Just y -> y
 
 -- | Given unreduced sign expansions in descending order
 -- and a reduced sign expansion, unreduce it
