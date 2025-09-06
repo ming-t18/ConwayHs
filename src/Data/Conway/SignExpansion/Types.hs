@@ -37,7 +37,7 @@ import Data.Bifunctor (first)
 import Data.Conway.Conway
 import Data.Conway.MonoTerm
 import Data.Conway.OrdinalArith
-import qualified Data.Conway.Seq.Types as Seq
+import qualified Data.Conway.Seq as Seq
 import Data.Conway.Typeclasses
 import qualified Data.Foldable as F
 import Prelude hiding (length, negate)

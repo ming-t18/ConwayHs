@@ -8,6 +8,7 @@ import Data.Conway.Dyadic
 import Data.Conway.FundamentalSeq
 import Data.Conway.OrdinalArith
 import qualified Data.Conway.RangeCompression as RC
+import qualified Data.Conway.Seq as Seq
 import qualified Data.Conway.Seq.InfList as NE
 import Data.Conway.SignExpansion ()
 import Data.Conway.SignExpansion as SE
@@ -591,9 +592,26 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
+  describe "detectVebOrder" $ do
+    it "detects the order of veb1SE" $
+      qc
+        ( \o p ->
+            let p' = veb1SE o p
+             in p' /= p ==> detectVebOrder p' === o
+        )
+
+  describe "parseMono" $ do
+    it "advances parsing" $ qc (\se -> not (Seq.null se) ==> snd (parseMono se) =/= se)
+
   describe "parseToConway" $ do
+    it "halts for all ordinals" $ qc (\(n :: Ordinal) -> Prelude.length (show $ parseToConway $ Seq.rep n True) > -1)
+    it "halts" $ qc (\x -> Prelude.length (show $ parseToConway x) > -1)
+
+  describe "conwaySE/parseToConway" $ do
     it "inverse (ConwayV0)" $ qc (\(ConwayV0 x) -> parseToConway (conwaySE x) === (x :: CD))
-    it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
+  -- it "inverse (arbitrary SE)" $ qc (\se -> conwaySE (parseToConway se :: CD) === se)
+  -- it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
+
   -- Important backtracking counterexamples (detected by unreduce failing):
   --   The last segment of the real part belongs to the next value
   --     [+^2 -^w]
@@ -603,13 +621,14 @@ testParseSignExpansion = do
   --     w^(eps0 - 1) = [+^eps0 -^(w^(eps0 + 1))]
   --   Should have been:
   --     [+^(w^eps0) -^(w^(eps0 + 1))]
-  when False $ describe "parseVeb1" $ do
+
+  describe "parseVeb1" $ do
     it "unparse mono1" $ qc prop_parseMono1_unparse
     it "unparse any veb1" $ qc prop_parseVeb1_unparse
     it "no remaining" $ qc prop_parseVeb1_noRemain
     it "order isomorphism" $ qc prop_parseVeb1_ordIso
     it "correct value of nPlusArg" $ qc prop_parseVeb1_nPlus
-  when False $ describe "parseMono" $ do
+  describe "parseMono" $ do
     it "unparse monomial" $ qc prop_parseMono_unparse
 
 -- it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain

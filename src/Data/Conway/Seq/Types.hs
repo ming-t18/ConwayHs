@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Data.Conway.Seq.Types (OrdZero (..), Seq (..), ParsableSeq (..), RunLengthSeq (..)) where
+module Data.Conway.Seq.Types (Seq (..), ParsableSeq (..), RunLengthSeq (..)) where
 
 import Data.Conway.Typeclasses
 import Prelude hiding (length, null, replicate)

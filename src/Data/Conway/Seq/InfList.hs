@@ -22,7 +22,7 @@ module Data.Conway.Seq.InfList
 where
 
 import Data.Conway.Conway (Natural, Ordinal, finiteView, omega)
-import qualified Data.Conway.Seq.Types as Seq (Seq (..))
+import qualified Data.Conway.Seq as Seq (Seq (..))
 import Data.List (intercalate)
 import Prelude hiding (head, iterate, length, map, repeat, tail, take)
 

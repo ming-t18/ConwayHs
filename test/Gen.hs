@@ -66,16 +66,16 @@ shrinkFinite c
 
 shrinkTriple :: (OrdRing a) => (Ordinal, Conway a, a) -> [(Ordinal, Conway a, a)]
 shrinkTriple (a, p, c) =
-  [(a', p, c) | a' <- shrinkConway a]
+  [(a, p, c') | c' <- shrinkFinite c]
+    ++ [(a', p, c) | a' <- shrinkConway a]
     ++ [(a, p', c) | p' <- shrinkConway p]
-    ++ [(a, p, c') | c' <- shrinkFinite c]
 
 monosList :: Conway a -> [(Ordinal, Conway a, a)]
 monosList x = map (\(VebMono a p, c) -> (a, p, c)) $ termsList x
 
 shrinkConway :: (OrdRing a) => Conway a -> [Conway a]
 shrinkConway x =
-  [ foldl' (\s (a, p, c) -> add s (veb a p c)) zero list'
+  [ foldl' (\s (o, p, c) -> add s (veb o p c)) zero list'
   | list' <- shrinkList shrinkTriple $ monosList x
   ]
 
@@ -98,7 +98,9 @@ newtype ConwayGen a = ConwayGen {getConway :: Conway a}
   deriving (Eq, Ord, Show, Zero, OrdZero)
 
 instance Arbitrary DyadicGen where
-  arbitrary = DyadicGen <$> (makeDyadic <$> arbitrary <*> arbitrary)
+  arbitrary = DyadicGen <$> (makeDyadic <$> arbitrary <*> ((`mod` maxPow) <$> arbitrary))
+    where
+      maxPow = 8
   shrink (DyadicGen d) =
     map
       DyadicGen

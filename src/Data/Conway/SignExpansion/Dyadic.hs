@@ -36,7 +36,7 @@ import Control.Arrow (first, second)
 import Data.Conway.Conway
 import Data.Conway.Dyadic as D
 import Data.Conway.MonoTerm
-import qualified Data.Conway.Seq.Types as Seq (RunLengthSeq (..), Seq (..))
+import qualified Data.Conway.Seq as Seq (RunLengthSeq (..), Seq (..))
 import Data.Conway.SignExpansion.Types (SignExpansion)
 import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Typeclasses
