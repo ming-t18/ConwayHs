@@ -49,10 +49,13 @@ module Data.Conway.SignExpansion
     ParseVeb1 (..),
 
     -- ** Operations
+    monoSE,
+    vebSE,
     mono1SE,
     mono1SE',
     veb1SE,
     veb1SE',
+    detectVebOrder,
     mono1SELead,
     veb1SELead,
     conwaySE,
@@ -67,7 +70,7 @@ module Data.Conway.SignExpansion
   )
 where
 
-import Data.Conway.SignExpansion.Conway (birthday, conwaySE, isAllPluses)
+import Data.Conway.SignExpansion.Conway
 import Data.Conway.SignExpansion.Parser
 import Data.Conway.SignExpansion.Types
 import Data.Conway.SignExpansion.Veb

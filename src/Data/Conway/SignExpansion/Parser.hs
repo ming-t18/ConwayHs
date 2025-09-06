@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -12,10 +11,12 @@ module Data.Conway.SignExpansion.Parser
     parseToConway,
     combineToConway,
     unreduceReduced,
+    detectVebOrder,
   )
 where
 
 import Control.Arrow (first)
+import Control.Monad (guard)
 import Control.Monad.State
 import Data.Conway.Conway
 import Data.Conway.Dyadic (Dyadic)
@@ -24,6 +25,7 @@ import Data.Conway.Seq.Types as Seq
 import Data.Conway.SignExpansion.Dyadic (FSE, parseDyadicSE)
 import Data.Conway.SignExpansion.Reduce (Reduced (..), unreduce')
 import Data.Conway.SignExpansion.Types (SignExpansion)
+import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Typeclasses (One (..), Zero (..))
 import Data.Foldable (foldl')
 import Prelude hiding (replicate)
@@ -96,97 +98,128 @@ lookVebMono se = do
 
 -- * Parsing monomials
 
+-- TODO change detected `vo`:
+-- Counterexample: w^[eps0 - 1] = [+^eps0 -^(w^(eps0 + 1))]
+-- Calling parseVeb1 1 causes the parsing to break into
+--    [+^eps0] [-^(w^(eps0 + 1))]
+-- which makes the result
+--    w^eps0 - w^(eps0 + 1), failing the unreduce process
+-- Backtracking and calling parseVeb1 0 is required to fix it
 parseMono :: SignExpansion -> (ParseVeb1 SignExpansion FSE, SignExpansion)
 parseMono se = maybe (emptyParseVeb1, se) parse $ lookahead se
   where
-    parse (plus, leadingView -> Just ((VebMono vo _, _), _)) = (`runSEP` se) $ do
-      res@ParseVeb1 {nPlusArg = nPlus} <- sep $ parseVeb1 plus vo
+    parse (plus, leadingView -> Just _) = (`runSEP` se) $ do
+      res0@ParseVeb1 {vebArgSE = pm1} <- sep $ parseMono1 plus
+      let vo = detectVebOrder pm1
+      let res@ParseVeb1 {nPlusArg = nPlus} =
+            if isZero vo
+              then res0
+              else fst $ parseVeb1 True vo pm1
       let nPlus' = if isZero vo then nPlus else veb1 vo nPlus
       rs <- sep $ parseRealSuffix nPlus'
       return res {coeffSE = replicate 1 plus <> rs}
-    parse _ = error "parseMono: not possible"
+    parse r = error $ "parseMono: not possible: " ++ show r
+
+-- | Given @p@ of @mono p c@, detect if @p = veb o p' c@ and returns the @o@
+detectVebOrder :: SignExpansion -> Ordinal
+detectVebOrder se@(SE.toList -> xs)
+  | compareZero se /= GT = 0
+  | otherwise =
+      case os of
+        [] -> 0
+        o : _ -> o
+  where
+    os =
+      [ o
+      | (_, veb1PowView -> Just (VebMono o _)) <- xs,
+        ( case lookahead se of
+            Just (True, r) -> (r :: Ordinal) >= veb1 o 0
+            _ -> False
+        )
+          && Seq.null (snd (parseVeb1 True o se))
+      ]
 
 finalIteration :: (a -> Maybe a) -> a -> a
 finalIteration f = loop where loop x = maybe x loop $ f x
 
 mkSEParser ::
   (ParsableSeq se Ordinal Bool) =>
-  (pl -> st -> (Ordinal, Natural) -> Bool -> Maybe (Ordinal, st)) ->
+  (st -> (Ordinal, Natural) -> Bool -> Maybe (Ordinal, st)) ->
   st ->
-  pl ->
   se ->
   (st, se)
-mkSEParser f0 st0 plus se0 = finalIteration parseStep (st0, se0)
+mkSEParser f st0 se0 = finalIteration parseStep (st0, se0)
   where
-    f = f0 plus
     parseStep (st, se) =
       lookVebMono se >>= \(t, s) -> do
         (toConsume, st') <- f st t s
         se' <- consume se (s, toConsume)
         return (st', se')
 
-veb1PowView :: Ordinal -> VebMono Natural
+veb1PowView :: Ordinal -> Maybe (VebMono Natural)
 -- w^(veb o p 1) . 1 = veb1 o p
-veb1PowView (leadingView -> Just ((vm, isOne -> True), isZero -> True)) = vm
-veb1PowView p = VebMono 0 p
+veb1PowView (leadingView -> Just ((vm, isOne -> True), isZero -> True)) = Just vm
+veb1PowView _ = Nothing
 
-parseVeb1 :: Bool -> Ordinal -> SignExpansion -> (ParseVeb1 SignExpansion FSE, SignExpansion)
-parseVeb1 plus0 vebOrder0 = parseBody . parseInitialPlus
+parseMono1 :: Bool -> SignExpansion -> (ParseVeb1 SignExpansion FSE, SignExpansion)
+parseMono1 plus = parseBody . parseInitialPlus
   where
     parseInitialPlus se =
-      case consume se (plus0, if isZero vebOrder0 then 1 else veb1 vebOrder0 0) of
-        Nothing -> error "parseMono1: cannot consume initial plus"
+      case consume se (plus, 1) of
+        Nothing -> error $ "parseMono1: cannot consume initial plus: " ++ show (se, (plus, 1 :: Ordinal))
         Just se' -> se'
     parseBody =
       mkSEParser
-        ( \plus ParseVeb1 {nPlusArg = nPlus, vebOrder = o, vebArgSE = se', coeffSE = cse} (p@(veb1PowView -> VebMono o' p'), c) s ->
-            let v1 = veb1 o
-             in if isZero o
-                  then
-                    -- Case 1, mono1: w^p.c
-                    if s == plus
-                      then case ordSymDiff p nPlus of
-                        (GT, d) -> Just (mono1 p, ParseVeb1 {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse})
-                        _ -> Nothing
-                      else
-                        let unit = nPlus `ordAdd` 1
-                            mpc = mono p c
-                         in if p < unit
-                              then Nothing
-                              else
-                                let (q, _) = ordDivRem mpc (mono1 unit)
-                                 in if isZero q then Nothing else Just (mpc, ParseVeb1 {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse})
-                  else
-                    -- Case 2, veb1 o: w^(o `veb1` va').c = veb o va' c
-                    if s == plus
-                      then
-                        if o' == o
-                          then case ordSymDiff p' nPlus of
-                            (GT, d) -> Just (v1 p', ParseVeb1 {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse})
-                            _ -> Nothing
-                          else
-                            if o' > o
-                              then
-                                error "parseVeb1: plus-veb case: not possible"
-                              else
-                                Nothing
-                      else
-                        let unit = v1 nPlus `ordPow` mono1 o
-                            mpc = mono p c
-                            (q, _) = ordDivRem mpc unit
-                         in if isZero q then Nothing else Just (mpc, ParseVeb1 {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse})
+        ( \ParseVeb1 {nPlusArg = nPlus, vebOrder = o, vebArgSE = se', coeffSE = cse} (p, c) s ->
+            if s == plus
+              then do
+                (GT, d) <- Just $ ordSymDiff p nPlus
+                Just (mono1 p, ParseVeb1 {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse})
+              else do
+                let unit = nPlus `ordAdd` 1
+                guard $ p >= unit
+                let mpc = mono p c
+                let (q, _) = ordDivRem mpc $ mono1 unit
+                guard $ not $ isZero q
+                Just (mpc, ParseVeb1 {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse})
         )
-        (emptyParseVeb1 {vebOrder = vebOrder0} :: ParseVeb1 SignExpansion FSE)
-        plus0
+        (emptyParseVeb1 {vebOrder = 0} :: ParseVeb1 SignExpansion FSE)
+
+parseVeb1 :: Bool -> Ordinal -> SignExpansion -> (ParseVeb1 SignExpansion FSE, SignExpansion)
+parseVeb1 plus 0 = parseMono1 plus
+parseVeb1 plus o = parseBody . parseInitialPlus
+  where
+    v1 = veb1 o
+    parseInitialPlus se =
+      case consume se (plus, veb1 o 0) of
+        Nothing -> error $ "parseVeb1: cannot consume initial plus: " ++ show (plus, veb1 o 0 :: Ordinal, se)
+        Just se' -> se'
+    parseBody =
+      mkSEParser
+        ( \ParseVeb1 {nPlusArg = nPlus, vebArgSE = se', coeffSE = cse} (p, c) s ->
+            if s == plus
+              then do
+                (VebMono o'@((>= o) -> True) p0) <- veb1PowView p
+                -- If o' > o: use fixed point rule: veb1 o' p0 == veb1 o (veb1 o' p0)
+                let p' = if o' == o then p0 else veb1 o' p0
+                (GT, d) <- Just $ ordSymDiff p' nPlus
+                Just (v1 p', ParseVeb1 {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse})
+              else do
+                let unit = v1 nPlus `ordPow` mono1 o
+                let mpc = mono p c
+                let (q, _) = ordDivRem mpc unit
+                guard $ not $ isZero q
+                Just (mpc, ParseVeb1 {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse})
+        )
+        (emptyParseVeb1 {vebOrder = o} :: ParseVeb1 SignExpansion FSE)
 
 parseRealSuffix :: (ParsableSeq se Ordinal Bool, RunLengthSeq cse Natural Bool) => Ordinal -> se -> (cse, se)
 parseRealSuffix nPlus =
   mkSEParser
-    ( \_ se' (p, c) s ->
+    ( \se' (p, c) s ->
         if p /= nPlus
           then Nothing
           else
             Just (mono p c, se' <> replicate c s)
     )
     mempty
-    ()

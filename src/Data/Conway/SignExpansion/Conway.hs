@@ -12,6 +12,7 @@ module Data.Conway.SignExpansion.Conway
 
     -- ** Helper
     monoSE,
+    vebSE,
   )
 where
 
@@ -86,3 +87,7 @@ monoSE p c
     -- Converts an @FSE@ run length to number-of-pluses run length.
     multiply :: Natural -> Ordinal
     multiply n = mono1 nPlus `mult` finite n
+
+vebSE :: (One a, FiniteSignExpansion a, OrdZero a) => Ordinal -> SignExpansion -> a -> SignExpansion
+vebSE 0 p c = monoSE p c
+vebSE o p c = monoSE (veb1SE o p) c
