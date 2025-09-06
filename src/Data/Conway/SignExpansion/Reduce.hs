@@ -73,7 +73,7 @@ unreduce = foldM unreduceStepAndAppend []
 
 unreduce' :: [Reduced SignExpansion] -> [SignExpansion]
 unreduce' x = case unreduce x of
-  Nothing -> error "unreduce': failed"
+  Nothing -> error $ "unreduce': failed: " ++ show x
   Just y -> y
 
 -- | Given unreduced sign expansions in descending order

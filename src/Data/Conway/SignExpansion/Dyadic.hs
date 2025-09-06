@@ -15,9 +15,11 @@ module Data.Conway.SignExpansion.Dyadic
     length,
     consFSE,
     omitLead,
+    omitLast,
     negFSE,
     plus,
     minus,
+    lastSign,
 
     -- * Sign Expansions of dyadics and subsets
     dyadicSE,
@@ -116,6 +118,16 @@ index (FSE ((s, n) : ss)) i
 omitLead :: FSE -> FSE
 omitLead (FSE []) = error "empty"
 omitLead (FSE ((s, n) : xs)) = FSE ((s, n - 1) : xs)
+
+omitLast :: FSE -> FSE
+omitLast (FSE xs0) = FSE $ loop [] xs0
+  where
+    loop xs [(b, n)] = xs ++ [(b, n - 1)]
+    loop xs (e : ys) = loop (xs ++ [e]) ys
+    loop _ [] = error "empty"
+
+lastSign :: FSE -> Bool
+lastSign (FSE xs) = fst $ last xs
 
 -- | Typeclass for finite numeric datatypes with a finite number of signs
 -- (or isomorphic to the sign expansion of a @Dyadic@).

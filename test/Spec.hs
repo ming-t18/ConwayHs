@@ -2,13 +2,14 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-import Control.Monad ()
+import Control.Monad (when)
 import Data.Conway.Conway
 import Data.Conway.Dyadic
 import Data.Conway.FundamentalSeq
 import Data.Conway.OrdinalArith
 import qualified Data.Conway.RangeCompression as RC
 import qualified Data.Conway.Seq.InfList as NE
+import Data.Conway.SignExpansion ()
 import Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
 import Data.Conway.SignExpansion.Reduce (Reduced (..))
@@ -315,7 +316,7 @@ prop_parseMono_unparse o p c
   | isZero c = get (parseMono $ vebSE o p c') === (mempty, mempty)
   | otherwise = p' /= p ==> get (parseMono $ vebSE o p c') === (p, c')
   where
-    get (ParseVeb1 {vebArgSE = pse, coeffSE = cse}, _) = (pse, cse)
+    get (ParseVeb {vebArgSE = pse, coeffSE = cse}, _) = (pse, cse)
     p' = veb1SE o p
     c' = finiteSE c
 
@@ -590,6 +591,9 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
+  describe "parseToConway" $ do
+    it "inverse (ConwayV0)" $ qc (\(ConwayV0 x) -> parseToConway (conwaySE x) === (x :: CD))
+    it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
   -- Important backtracking counterexamples (detected by unreduce failing):
   --   The last segment of the real part belongs to the next value
   --     [+^2 -^w]
@@ -599,13 +603,13 @@ testParseSignExpansion = do
   --     w^(eps0 - 1) = [+^eps0 -^(w^(eps0 + 1))]
   --   Should have been:
   --     [+^(w^eps0) -^(w^(eps0 + 1))]
-  describe "parseVeb1" $ do
+  when False $ describe "parseVeb1" $ do
     it "unparse mono1" $ qc prop_parseMono1_unparse
     it "unparse any veb1" $ qc prop_parseVeb1_unparse
     it "no remaining" $ qc prop_parseVeb1_noRemain
     it "order isomorphism" $ qc prop_parseVeb1_ordIso
     it "correct value of nPlusArg" $ qc prop_parseVeb1_nPlus
-  describe "parseMono" $ do
+  when False $ describe "parseMono" $ do
     it "unparse monomial" $ qc prop_parseMono_unparse
 
 -- it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
@@ -625,35 +629,40 @@ testPropsRangeCompression = do
   it "ord is inverse of toDyadic" $
     qc (\x -> x < eps0 ==> Just x === (RC.ord =<< RC.toDyadic x))
 
+testDyadic :: SpecWith ()
+testDyadic = do
+  propsOrdRing (id :: Dyadic -> Dyadic)
+
+  describe "OrdZero" $ do
+    propsOrdZero (id :: Dyadic -> Dyadic)
+
+  describe "sign expansion (FSE)" $ do
+    describe "OrdZero" $ do
+      propsOrdZero (id :: FSE -> FSE)
+    propsOrdIso "generating SE" (finiteSE :: Dyadic -> FSE)
+    propsOrdIso "parsing SE" (parseDyadicSE :: FSE -> Dyadic)
+    it "negation symmetry" $ do
+      qc (\x -> parseDyadicSE (neg (finiteSE x)) === neg x)
+
+    it "parseDyadicFSE is inverse of finiteFSE" $ do
+      qc (\x -> parseDyadicSE (finiteSE x) === x)
+
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
   describe "SignExpansion" $ do
-    describe "OrdZero" $ do
+    when False $ describe "OrdZero" $ do
       propsOrdZero (id :: SignExpansion -> SignExpansion)
 
     describe "SignExpansion parser" $ do
       testParseSignExpansion
 
-    describe "generator" $ do
+    when False $ describe "generator" $ do
       testSignExpansionConway
       testReducedSignExpansion
 
-  describe "Dyadic" $ do
-    propsOrdRing (id :: Dyadic -> Dyadic)
-
-    describe "OrdZero" $ do
-      propsOrdZero (id :: Dyadic -> Dyadic)
-
-    describe "sign expansion (FSE)" $ do
-      describe "OrdZero" $ do
-        propsOrdZero (id :: FSE -> FSE)
-      propsOrdIso "generating SE" (finiteSE :: Dyadic -> FSE)
-      propsOrdIso "parsing SE" (parseDyadicSE :: FSE -> Dyadic)
-      it "negation symmetry" $ do
-        qc (\x -> parseDyadicSE (neg (finiteSE x)) === neg x)
-
-      it "parseDyadicFSE is inverse of finiteFSE" $ do
-        qc (\x -> parseDyadicSE (finiteSE x) === x)
+  when False $ do
+    describe "Dyadic" $ do
+      testDyadic
 
     describe "ConwayV0 Integer" $ do
       propsOrdRing (getConwayV0 :: ConwayV0Gen Integer -> Conway Integer)

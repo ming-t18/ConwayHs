@@ -46,7 +46,7 @@ module Data.Conway.SignExpansion
     takeCommonPrefix,
 
     -- * Generation
-    ParseVeb1 (..),
+    ParseVeb (..),
 
     -- ** Operations
     monoSE,
@@ -61,6 +61,7 @@ module Data.Conway.SignExpansion
     conwaySE,
 
     -- * Parsing
+    parseToConway,
     parseMono,
     parseVeb1,
 

@@ -13,6 +13,7 @@ module Data.Conway.SignExpansion.Conway
     -- ** Helper
     monoSE,
     vebSE,
+    toExponent,
   )
 where
 

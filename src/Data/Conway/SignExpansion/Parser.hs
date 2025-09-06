@@ -9,6 +9,9 @@ module Data.Conway.SignExpansion.Parser
     parseMono,
     parseVeb1,
     parseToConway,
+    parseToUnreduced,
+    parseToReduced,
+    detectFixedPointSE,
     combineToConway,
     unreduceReduced,
     detectVebOrder,
@@ -23,9 +26,11 @@ import Data.Conway.Dyadic (Dyadic)
 import Data.Conway.OrdinalArith (ordAdd, ordDivRem, ordPow, ordSymDiff, unMono1)
 import Data.Conway.Seq.Types as Seq
 import Data.Conway.SignExpansion.Dyadic (FSE, parseDyadicSE)
+import qualified Data.Conway.SignExpansion.Dyadic as SD
 import Data.Conway.SignExpansion.Reduce (Reduced (..), unreduce')
 import Data.Conway.SignExpansion.Types (SignExpansion)
 import qualified Data.Conway.SignExpansion.Types as SE
+import Data.Conway.SignExpansion.Veb (veb1SE)
 import Data.Conway.Typeclasses (One (..), Zero (..))
 import Data.Foldable (foldl')
 import Prelude hiding (replicate)
@@ -46,47 +51,70 @@ data ParseVeb se cse
   { nPlusArg :: Ordinal,
     vebOrder :: Ordinal,
     vebArgSE :: se,
-    coeffSE :: cse
+    coeffSE :: cse,
+    coeffDidBacktrack :: Bool
   }
   deriving (Show)
 
-emptyParseVeb1 :: (Zero se, Zero cse) => ParseVeb se cse
-emptyParseVeb1 = (ParseVeb {nPlusArg = zero, vebOrder = zero, vebArgSE = zero, coeffSE = zero})
+emptyParseVeb :: (Zero se, Zero cse) => ParseVeb se cse
+emptyParseVeb = (ParseVeb {nPlusArg = zero, vebOrder = zero, vebArgSE = zero, coeffSE = zero, coeffDidBacktrack = False})
 
 -- * Parsing @Conway@
 
 parseToConway :: SignExpansion -> Conway Dyadic
-parseToConway = combineToConway . parseToUnreduced
+parseToConway se =
+  case detectFixedPointSE se res of
+    Just (o, p') -> veb1 o $ parseToConway p'
+    Nothing -> combineToConway res
+  where
+    -- veb1 p s
+    res = parseToUnreduced se
+
+detectFixedPointSE :: SignExpansion -> [(SignExpansion, FSE)] -> Maybe (Ordinal, SignExpansion)
+detectFixedPointSE se res =
+  case res of
+    [(se', c)]
+      | isPositive se && isOne c && se == se' ->
+          let o = detectVebOrder se'
+           in let (vebArgSE -> p', _) = parseVeb1 True o se
+               in Just (o, p')
+    _ -> Nothing
+
+-- TODO infinite recursion of parseToCOnway for (rep eps0 False)
 
 combineToConway :: [(SignExpansion, FSE)] -> Conway Dyadic
 combineToConway =
+  -- TODO detect fixed point recurrence
   foldl'
-    ( \s (p, c) ->
-        s + (mono1 (parseToConway p) * finite (parseDyadicSE c))
+    ( \s (pse, cse) ->
+        s + (mono1 (parseToConway pse) * finite (parseDyadicSE cse))
     )
     zero
 
-unreduceReduced :: [(Reduced SignExpansion, cse)] -> [(SignExpansion, cse)]
+parseToUnreduced :: SignExpansion -> [(SignExpansion, FSE)]
+parseToUnreduced = unreduceReduced . parseToReduced
+
+unreduceReduced :: [(Reduced SignExpansion, FSE)] -> [(SignExpansion, FSE)]
 unreduceReduced = uncurry zip . (first unreduce' . unzip)
 
-parseToUnreduced :: SignExpansion -> [(SignExpansion, FSE)]
-parseToUnreduced = fst . finalIteration parseToReducedStep . ([],)
+parseToReduced :: SignExpansion -> [(Reduced SignExpansion, FSE)]
+parseToReduced = fst . finalIteration parseToReducedStep . ([],)
 
 -- | The results are in ascending order of
 parseToReducedStep ::
-  (RunLengthSeq cse Natural Bool) =>
-  ([(SignExpansion, cse)], SignExpansion) -> Maybe ([(SignExpansion, cse)], SignExpansion)
+  ([(Reduced SignExpansion, FSE)], SignExpansion) -> Maybe ([(Reduced SignExpansion, FSE)], SignExpansion)
 parseToReducedStep (prevs, se)
   | Seq.null se = Nothing
-  | otherwise =
-      error "TODO implement this"
+  | otherwise = Just (prevs ++ [(Reduced po, cse)], se')
+  where
+    po = toExponentSE o pse
+    (ParseVeb {vebOrder = o, vebArgSE = pse, coeffSE = cse}, se') = parseMono se
 
--- let (ParseVeb {nPlusArg = nPlus, vebOrder = o, vebArgSE = va, coeffSE = c}, se') = parseMono se
---     unreduce = unreduceStep (map fst prevs) . Reduced
---     po = if isZero o then va else veb1SE o va
---  in case unreduce po of
---       Just p -> Just (prevs ++ [(p, c)], se')
---       Nothing -> error "TODO"
+toExponentSE :: Ordinal -> SignExpansion -> SignExpansion
+toExponentSE o pse = if isZero o then pse else veb1SE o pse
+
+toExponent :: (One a, OrdZero a) => Ordinal -> Conway a -> Conway a
+toExponent vo p = if isZero vo then p else veb1 vo p
 
 -- * Parsing monomials
 
@@ -106,19 +134,20 @@ lookVebMono se = do
 --    w^eps0 - w^(eps0 + 1), failing the unreduce process
 -- Backtracking and calling parseVeb1 0 is required to fix it
 parseMono :: SignExpansion -> (ParseVeb SignExpansion FSE, SignExpansion)
-parseMono se = maybe (emptyParseVeb1, se) parse $ lookahead se
+parseMono se = maybe (emptyParseVeb, se) parse $ lookahead se
   where
     parse (plus, leadingView -> Just _) = (`runSEP` se) $ do
       res0@ParseVeb {vebArgSE = pm1} <- sep $ parseMono1 plus
       let vo = detectVebOrder pm1
-      let res@ParseVeb {nPlusArg = nPlus} =
-            if isZero vo
-              then res0
-              else fst $ parseVeb1 True vo pm1
-      let nPlus' = if isZero vo then nPlus else veb1 vo nPlus
-      rs <- sep $ parseRealSuffix nPlus'
-      return res {coeffSE = replicate 1 plus <> rs}
+      let res = if isZero vo then res0 else fst $ parseVeb1 True vo pm1
+      (didBacktrack, rs) <- sep $ parseRealSuffix res plus
+      return res {coeffSE = rs, coeffDidBacktrack = didBacktrack}
     parse r = error $ "parseMono: not possible: " ++ show r
+
+countLeading :: Bool -> SignExpansion -> Ordinal
+countLeading s se = case lookahead se of
+  Nothing -> 0
+  Just (s', l) -> if s' == s then l else 0
 
 -- | Given @p@ of @mono p c@, detect if @p = veb o p' c@ and returns the @o@
 detectVebOrder :: SignExpansion -> Ordinal
@@ -174,16 +203,16 @@ parseMono1 plus = parseBody . parseInitialPlus
             if s == plus
               then do
                 (GT, d) <- Just $ ordSymDiff p nPlus
-                Just (mono1 p, ParseVeb {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse})
+                Just (mono1 p, ParseVeb {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse, coeffDidBacktrack = False})
               else do
                 let unit = nPlus `ordAdd` 1
                 guard $ p >= unit
                 let mpc = mono p c
                 let (q, _) = ordDivRem mpc $ mono1 unit
                 guard $ not $ isZero q
-                Just (mpc, ParseVeb {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse})
+                Just (mpc, ParseVeb {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse, coeffDidBacktrack = False})
         )
-        (emptyParseVeb1 {vebOrder = 0} :: ParseVeb SignExpansion FSE)
+        (emptyParseVeb {vebOrder = 0} :: ParseVeb SignExpansion FSE)
 
 parseVeb1 :: Bool -> Ordinal -> SignExpansion -> (ParseVeb SignExpansion FSE, SignExpansion)
 parseVeb1 plus 0 = parseMono1 plus
@@ -203,23 +232,38 @@ parseVeb1 plus o = parseBody . parseInitialPlus
                 -- If o' > o: use fixed point rule: veb1 o' p0 == veb1 o (veb1 o' p0)
                 let p' = if o' == o then p0 else veb1 o' p0
                 (GT, d) <- Just $ ordSymDiff p' nPlus
-                Just (v1 p', ParseVeb {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse})
+                Just (v1 p', ParseVeb {nPlusArg = nPlus `ordAdd` d, vebOrder = o, vebArgSE = se' <> replicate d True, coeffSE = cse, coeffDidBacktrack = False})
               else do
                 let unit = v1 nPlus `ordPow` mono1 o
                 let mpc = mono p c
                 let (q, _) = ordDivRem mpc unit
                 guard $ not $ isZero q
-                Just (mpc, ParseVeb {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse})
+                Just (mpc, ParseVeb {nPlusArg = nPlus, vebOrder = o, vebArgSE = se' <> replicate q False, coeffSE = cse, coeffDidBacktrack = False})
         )
-        (emptyParseVeb1 {vebOrder = o} :: ParseVeb SignExpansion FSE)
+        (emptyParseVeb {vebOrder = o} :: ParseVeb SignExpansion FSE)
 
-parseRealSuffix :: (ParsableSeq se Ordinal Bool, RunLengthSeq cse Natural Bool) => Ordinal -> se -> (cse, se)
-parseRealSuffix nPlus =
-  mkSEParser
-    ( \se' (p, c) s ->
-        if p /= nPlus
-          then Nothing
-          else
-            Just (mono p c, se' <> replicate c s)
-    )
-    mempty
+parseRealSuffix :: ParseVeb SignExpansion FSE -> Bool -> SignExpansion -> ((Bool, FSE), SignExpansion)
+parseRealSuffix (ParseVeb {vebOrder = vo, vebArgSE = va, nPlusArg = nPlusA}) plus se
+  | shouldBacktrack = ((True, SD.omitLast fse), se'')
+  | otherwise = ((False, fse), se')
+  where
+    nLeadingPlus = countLeading True $ toExponentSE vo va
+    nPlus = toExponent vo nPlusA
+    se'' = replicate (mono1 nPlus) (SD.lastSign fse) <> se'
+    shouldBacktrack =
+      case lookahead se' of
+        Nothing -> False
+        -- the next segment is treated as w^(+^p1 & ...) and p1 has more leading pluses than nLeadingPlus:
+        -- the next term won't unreduce properly
+        Just (_, leadingView -> Just ((VebMono o p, _), _)) -> toExponent o p >= nLeadingPlus
+        Just _ -> False
+    (fse, se') =
+      mkSEParser
+        ( \fse' (p, c) s ->
+            if p /= nPlus
+              then Nothing
+              else
+                Just (mono p c, fse' <> replicate c s)
+        )
+        (replicate 1 plus)
+        se
