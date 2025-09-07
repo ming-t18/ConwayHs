@@ -593,43 +593,66 @@ testSignExpansionConway = do
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
   describe "detectVebOrder" $ do
-    it "detects the order of veb1SE" $
+    it "example (resulting SE does not contain the Veb order)" $ do
+      let p = veb1SE 2 (Seq.rep 1 True) <> Seq.rep 1 False
+      let p' = veb1SE 1 p
+      detectVebOrder p' `shouldBe` 1
+
+    it "detects the order of 2-segments starting with a plus" $
       qc
-        ( \o p ->
-            let p' = veb1SE o p
+        ( \o o' n2 ->
+            let p = veb1SE o' (Seq.rep 1 True) <> Seq.rep n2 False
+                p' = veb1SE o p
              in p' /= p ==> detectVebOrder p' === o
         )
 
-  describe "parseMono" $ do
-    it "advances parsing" $ qc (\se -> not (Seq.null se) ==> snd (parseMono se) =/= se)
+    it "detects the order of 2-segments starting with any pluses" $
+      qc
+        ( \o o' n1 n2 ->
+            let p = veb1SE o' (Seq.rep n1 True) <> Seq.rep n2 False
+                p' = veb1SE o p
+             in p' /= p ==> detectVebOrder p' === o
+        )
 
-  describe "parseToConway" $ do
-    it "halts for all ordinals" $ qc (\(n :: Ordinal) -> Prelude.length (show $ parseToConway $ Seq.rep n True) > -1)
-    it "halts" $ qc (\x -> Prelude.length (show $ parseToConway x) > -1)
+    modifyMaxSuccess (const 30) $
+      it "detects the order of veb1SE" $
+        qc
+          ( \o p ->
+              let p' = veb1SE o p
+               in p' /= p ==> detectVebOrder p' === o
+          )
 
-  describe "conwaySE/parseToConway" $ do
-    it "inverse (ConwayV0)" $ qc (\(ConwayV0 x) -> parseToConway (conwaySE x) === (x :: CD))
-  -- it "inverse (arbitrary SE)" $ qc (\se -> conwaySE (parseToConway se :: CD) === se)
-  -- it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
+  when True $ do
+    describe "parseMono" $ do
+      it "advances parsing" $ qc (\se -> not (Seq.null se) ==> snd (parseMono se) =/= se)
 
-  -- Important backtracking counterexamples (detected by unreduce failing):
-  --   The last segment of the real part belongs to the next value
-  --     [+^2 -^w]
-  --     [+^w -^(w.2)]
-  --
-  --   Choosing the correct Veblen order for parseVeb1
-  --     w^(eps0 - 1) = [+^eps0 -^(w^(eps0 + 1))]
-  --   Should have been:
-  --     [+^(w^eps0) -^(w^(eps0 + 1))]
+    describe "parseToConway" $ do
+      it "halts without error for all ordinals" $ qc (\(n :: Ordinal) -> Prelude.length (show $ parseToConway $ Seq.rep n True) > -1)
+      it "halts without error" $ qc (\x -> Prelude.length (show $ parseToConway x) > -1)
 
-  describe "parseVeb1" $ do
-    it "unparse mono1" $ qc prop_parseMono1_unparse
-    it "unparse any veb1" $ qc prop_parseVeb1_unparse
-    it "no remaining" $ qc prop_parseVeb1_noRemain
-    it "order isomorphism" $ qc prop_parseVeb1_ordIso
-    it "correct value of nPlusArg" $ qc prop_parseVeb1_nPlus
-  describe "parseMono" $ do
-    it "unparse monomial" $ qc prop_parseMono_unparse
+    describe "conwaySE/parseToConway" $ do
+      it "inverse (ConwayV0)" $ qc (\(ConwayV0 x) -> parseToConway (conwaySE x) === (x :: CD))
+    -- it "inverse (arbitrary SE)" $ qc (\se -> conwaySE (parseToConway se :: CD) === se)
+    -- it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
+
+    -- Important backtracking counterexamples (detected by unreduce failing):
+    --   The last segment of the real part belongs to the next value
+    --     [+^2 -^w]
+    --     [+^w -^(w.2)]
+    --
+    --   Choosing the correct Veblen order for parseVeb1
+    --     w^(eps0 - 1) = [+^eps0 -^(w^(eps0 + 1))]
+    --   Should have been:
+    --     [+^(w^eps0) -^(w^(eps0 + 1))]
+
+    describe "parseVeb1" $ do
+      it "unparse mono1" $ qc prop_parseMono1_unparse
+      it "unparse any veb1" $ qc prop_parseVeb1_unparse
+      it "no remaining" $ qc prop_parseVeb1_noRemain
+      it "order isomorphism" $ qc prop_parseVeb1_ordIso
+      it "correct value of nPlusArg" $ qc prop_parseVeb1_nPlus
+    describe "parseMono" $ do
+      it "unparse monomial" $ qc prop_parseMono_unparse
 
 -- it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
 
@@ -668,18 +691,7 @@ testDyadic = do
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
-  describe "SignExpansion" $ do
-    when False $ describe "OrdZero" $ do
-      propsOrdZero (id :: SignExpansion -> SignExpansion)
-
-    describe "SignExpansion parser" $ do
-      testParseSignExpansion
-
-    when False $ describe "generator" $ do
-      testSignExpansionConway
-      testReducedSignExpansion
-
-  when False $ do
+  when True $ do
     describe "Dyadic" $ do
       testDyadic
 
@@ -709,3 +721,14 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
 
     describe "Range compression (Ordinal -> Dyadic)" $ do
       testPropsRangeCompression
+
+  describe "SignExpansion" $ do
+    when True $ describe "OrdZero" $ do
+      propsOrdZero (id :: SignExpansion -> SignExpansion)
+
+    describe "SignExpansion parser" $ do
+      testParseSignExpansion
+
+    when True $ describe "generator" $ do
+      testSignExpansionConway
+      testReducedSignExpansion

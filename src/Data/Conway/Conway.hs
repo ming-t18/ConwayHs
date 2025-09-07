@@ -23,6 +23,8 @@ module Data.Conway.Conway
     conway,
     toMap,
     termsList,
+    ascTermsList,
+    fromTermsList,
 
     -- * Construction helpers
     finite,
@@ -199,9 +201,15 @@ toMap :: Conway a -> Map (VebMono a) a
 toMap (Conway x) = x
 
 -- | Given a @Conway@, returns its terms list in Cantor/Conway normal form order, which is
--- descending by coefficient.
+-- descending by exponent.
 termsList :: Conway a -> [(VebMono a, a)]
 termsList = M.toDescList . toMap
+
+ascTermsList :: Conway a -> [(VebMono a, a)]
+ascTermsList = M.toAscList . toMap
+
+fromTermsList :: (OrdZero a, One a) => [(VebMono a, a)] -> Conway a
+fromTermsList = conway . M.fromList
 
 -- | Given a @Conway@, returns its term in Cantor/Conway normal form, or zero
 leadingTerm :: (OrdZero a) => Conway a -> (VebMono a, a)

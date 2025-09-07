@@ -12,9 +12,11 @@ module Data.Conway.SignExpansion.Parser
     parseToUnreduced,
     parseToReduced,
     detectFixedPointSE,
+    vebOrdersFromMinusPart,
     combineToConway,
     unreduceReduced,
     detectVebOrder,
+    detectVebOrderCandidates,
   )
 where
 
@@ -32,6 +34,7 @@ import Data.Conway.SignExpansion.Types (SignExpansion)
 import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.SignExpansion.Veb (veb1SE)
 import Data.Conway.Typeclasses (One (..), OrdZero (..), Zero (..))
+import qualified Data.Set as Set
 import Prelude hiding (replicate)
 
 -- * Parser monad
@@ -63,6 +66,8 @@ emptyParseVeb = (ParseVeb {nPlusArg = zero, vebOrder = zero, vebArgSE = zero, co
 parseToConway :: SignExpansion -> Conway Dyadic
 parseToConway se =
   case detectFixedPointSE se res of
+    Just (0, _) -> error "parseToConway: detected infinite recursion, detected vebOrder is 0."
+    Just (o, p') | p' == se -> error $ "parseToConway: detected infinite recursion, detected vebOrder is " ++ show o ++ "."
     Just (o, p') -> veb1 o $ parseToConway p'
     Nothing -> combineToConway res
   where
@@ -136,24 +141,51 @@ parseMono se = maybe (emptyParseVeb, se) parse $ lookahead se
       return res {coeffSE = rs, coeffDidBacktrack = didBacktrack}
     parse r = error $ "parseMono: not possible: " ++ show r
 
--- | Given @p@ of @mono p c@, detect if @p = veb o p' c@ and returns the @o@
+-- | Given @p@ of @mono p c@, detect if @p = veb o p' c@ where @p /= p@ and returns the @o@.
+-- @o@ can be zero if no solutions found.
 detectVebOrder :: SignExpansion -> Ordinal
-detectVebOrder se@(SE.toList -> xs)
+detectVebOrder se
   | compareZero se /= GT = 0
   | otherwise =
       case os of
         [] -> 0
         o : _ -> o
   where
-    os =
-      [ o
-      | (_, veb1PowView -> Just (VebMono o _)) <- xs,
-        ( case lookahead se of
-            Just (True, r) -> (r :: Ordinal) >= veb1 o 0
-            _ -> False
-        )
-          && Seq.null (snd $ parseVeb1 True o se)
-      ]
+    -- candidates: +^veb o p  -^(w^(TERM))
+    os = filter isSolution $ Set.toAscList $ Set.fromList $ detectVebOrderCandidates se
+    isSolution :: Ordinal -> Bool
+    isSolution o =
+      case lookahead se of
+        Nothing -> False
+        Just (True, np) | np >= veb1 o 0 -> Seq.null rest && se' /= se
+        Just _ -> False
+      where
+        (vebArgSE -> se', rest) = parseVeb1 True o se
+
+detectVebOrderCandidates :: SignExpansion -> [Ordinal]
+detectVebOrderCandidates (SE.toList -> xs) =
+  directVebOrders ++ concatMap (vebOrdersFromMinusPart 2) minuses
+  where
+    directVebOrders = [o | (_, veb1PowView -> Just (VebMono o _)) <- xs]
+    minuses = take 2 [t | (False, t) <- xs]
+
+vebOrdersFromMinusPart :: Int -> Ordinal -> [Ordinal]
+vebOrdersFromMinusPart 0 _ = []
+vebOrdersFromMinusPart depth (termsList -> ts) =
+  concat
+    [ [o', p'] ++ subTerms p' ++ vebOrdersFromMinusPart depth' p'
+    | (VebMono o' p', _) <- ts
+    ]
+  where
+    depth' = depth - 1
+    subTerms :: Ordinal -> [Ordinal]
+    subTerms (ascTermsList -> ts') =
+      filter isPositive $
+        [ fromTermsList $ take i ts'
+        | i <- [1 .. n]
+        ]
+      where
+        n = Prelude.length ts'
 
 finalIteration :: (a -> Maybe a) -> a -> a
 finalIteration f = loop where loop x = maybe x loop $ f x
