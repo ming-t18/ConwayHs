@@ -592,7 +592,7 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
-  describe "detectVebOrder" $ do
+  describe "detectVebOrder" $ modifyMaxSuccess (const 100) $ do
     it "example (resulting SE does not contain the Veb order)" $ do
       let p = veb1SE 2 (Seq.rep 1 True) <> Seq.rep 1 False
       let p' = veb1SE 1 p
@@ -614,7 +614,7 @@ testParseSignExpansion = do
              in p' /= p ==> detectVebOrder p' === o
         )
 
-    modifyMaxSuccess (const 30) $
+    modifyMaxSuccess (* 5) $
       it "detects the order of veb1SE" $
         qc
           ( \o p ->
@@ -622,18 +622,20 @@ testParseSignExpansion = do
                in p' /= p ==> detectVebOrder p' === o
           )
 
-  when True $ do
+  -- failing: w^{ε_{φ[w, φ[w, 0].25/32 + 1].1/2}.9/16}
+
+  modifyMaxSuccess (const 100) $ do
     describe "parseMono" $ do
       it "advances parsing" $ qc (\se -> not (Seq.null se) ==> snd (parseMono se) =/= se)
+
+    describe "conwaySE/parseToConway" $ do
+      it "inverse (ConwayV0)" $ qc (\(ConwayV0 x) -> parseToConway (conwaySE x) === (x :: CD))
+      it "inverse (arbitrary SE)" $ qc (\se -> conwaySE (parseToConway se :: CD) === se)
+      it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
 
     describe "parseToConway" $ do
       it "halts without error for all ordinals" $ qc (\(n :: Ordinal) -> Prelude.length (show $ parseToConway $ Seq.rep n True) > -1)
       it "halts without error" $ qc (\x -> Prelude.length (show $ parseToConway x) > -1)
-
-    describe "conwaySE/parseToConway" $ do
-      it "inverse (ConwayV0)" $ qc (\(ConwayV0 x) -> parseToConway (conwaySE x) === (x :: CD))
-    -- it "inverse (arbitrary SE)" $ qc (\se -> conwaySE (parseToConway se :: CD) === se)
-    -- it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
 
     -- Important backtracking counterexamples (detected by unreduce failing):
     --   The last segment of the real part belongs to the next value

@@ -35,7 +35,7 @@ maxDepth = 4
 maxLengthByDepth :: Int -> Gen Int
 maxLengthByDepth d =
   case d of
-    0 -> chooseInt (0, 1)
+    0 -> chooseInt (0, 2)
     1 -> chooseInt (0, 2)
     2 -> chooseInt (0, 3)
     3 -> chooseInt (0, 4)
@@ -98,8 +98,9 @@ newtype ConwayGen a = ConwayGen {getConway :: Conway a}
   deriving (Eq, Ord, Show, Zero, OrdZero)
 
 instance Arbitrary DyadicGen where
-  arbitrary = DyadicGen <$> (makeDyadic <$> arbitrary <*> ((`mod` maxPow) <$> arbitrary))
+  arbitrary = DyadicGen <$> ((makeDyadic . (`mod` maxInt) <$> arbitrary) <*> ((`mod` maxPow) <$> arbitrary))
     where
+      maxInt = 16
       maxPow = 8
   shrink (DyadicGen d) =
     map
