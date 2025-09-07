@@ -3,20 +3,41 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
+-- | Parsing sign expansions
+--
+-- The basic algorithm for parsing sign expansions is:
+--
+-- 1. Parse the sign expansion term-by-term (@mono p_i c_i@)
+--
+-- 2. Unreduce the exponents @p_i@ of each term
+--
+-- 3. Detect the Veblen order of each term @p_i = veb1 o_i p_i' @ and parse them recursively
 module Data.Conway.SignExpansion.Parser
-  ( ParseVeb (..),
+  ( -- * Helpers
+    ParseVeb (..),
     lookVebMono,
-    parseMono,
-    parseVeb1,
+
+    -- * Parsing multiple terms
     parseToConway,
     parseToUnreduced,
-    parseToReduced,
-    detectFixedPointSE,
-    vebOrdersFromMinusPart,
     combineToConway,
+
+    -- ** Reduced sign expansions
+    parseToReduced,
     unreduceReduced,
+
+    -- * Detecting Veblen order
+    detectFixedPointSE,
     detectVebOrder,
     detectVebOrderCandidates,
+
+    -- * Parsing terms
+    parseMono,
+    parseRealSuffix,
+
+    -- * Parsing @mono1@s
+    parseVeb1,
+    vebOrdersFromMinusPart,
   )
 where
 
@@ -152,7 +173,7 @@ detectVebOrder se
         o : _ -> o
   where
     -- candidates: +^veb o p  -^(w^(TERM))
-    os = filter isSolution $ Set.toAscList $ Set.fromList $ detectVebOrderCandidates se
+    os = filter isSolution $ Set.toDescList $ Set.fromList $ detectVebOrderCandidates se
     isSolution :: Ordinal -> Bool
     isSolution o =
       case lookahead se of
@@ -167,7 +188,7 @@ detectVebOrderCandidates (SE.toList -> xs) =
   directVebOrders ++ concatMap (vebOrdersFromMinusPart 2) minuses
   where
     directVebOrders = [o | (_, veb1PowView -> Just (VebMono o _)) <- xs]
-    minuses = take 2 [t | (False, t) <- xs]
+    minuses = [t | (False, t) <- xs]
 
 vebOrdersFromMinusPart :: Int -> Ordinal -> [Ordinal]
 vebOrdersFromMinusPart 0 _ = []
