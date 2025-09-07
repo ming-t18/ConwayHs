@@ -12,6 +12,18 @@
 -- 2. Unreduce the exponents @p_i@ of each term
 --
 -- 3. Detect the Veblen order of each term @p_i = veb1 o_i p_i' @ and parse them recursively
+--
+-- The subtle parts of for parsing sign expansions are:
+--
+-- - Sign expansion parsing is mostly greedy except we have to backtrack the last segment
+--   of a dyadic rational so the next term unreduces to a lower exponent (example: @w^-1@).
+--
+-- - Detecting Veblen orders of exponents requires finding the solution to the ordinal expression
+--   for the minus-case of @veb1SE@, if the actual Veblen order is absorbed by the fixed point rule
+--   of @veb1@ and is not occurring in the top-level expressions (see test cases of @detectVebOrder@).
+--
+-- - There is a potential infinite recursion while parsing the exponents recursively if Veblen order
+--   detection is not correct. This implementation will @error@ if this condition is detected.
 module Data.Conway.SignExpansion.Parser
   ( -- * Helpers
     ParseVeb (..),
@@ -26,16 +38,17 @@ module Data.Conway.SignExpansion.Parser
     parseToReduced,
     unreduceReduced,
 
-    -- * Detecting Veblen order
+    -- * Detecting Veblen orders
     detectFixedPointSE,
     detectVebOrder,
     detectVebOrderCandidates,
 
-    -- * Parsing terms
+    -- * Parsing monomial terms
     parseMono,
     parseRealSuffix,
+    shouldDoRealSuffixBacktrack,
 
-    -- * Parsing @mono1@s
+    -- * Parsing @mono1@ terms
     parseVeb1,
     vebOrdersFromMinusPart,
   )
@@ -164,6 +177,11 @@ parseMono se = maybe (emptyParseVeb, se) parse $ lookahead se
 
 -- | Given @p@ of @mono p c@, detect if @p = veb o p' c@ where @p /= p@ and returns the @o@.
 -- @o@ can be zero if no solutions found.
+--
+-- Sometimes the Veblen order does not appear in the Veblen orders of each segment.
+-- In that case, we look at the minus-segments and find the Veblen orders from the sub-expressions.
+--
+-- The minimal example for that case is @veb1SE 1 (veb1SE 2 (plus True) <> minus 1)@
 detectVebOrder :: SignExpansion -> Ordinal
 detectVebOrder se
   | compareZero se /= GT = 0
@@ -289,14 +307,8 @@ parseRealSuffix (ParseVeb {vebOrder = vo, vebArgSE = va, nPlusArg = nPlusA}) plu
   where
     nPlus = toExponent vo nPlusA
     se'' = replicate (mono1 nPlus) (SD.lastSign fse) <> se'
-    nLeadingPlus = SE.countSigns True $ toExponentSE vo va
-    shouldBacktrack =
-      case lookahead se' of
-        Nothing -> False
-        -- the next segment is treated as w^(+^p1 & ...) and p1 has more leading pluses than nLeadingPlus:
-        -- the next term won't unreduce properly
-        Just (_, leadingView -> Just ((VebMono o p, _), _)) -> toExponent o p >= nLeadingPlus
-        Just _ -> False
+    nPlusTotal = SE.countSigns True $ toExponentSE vo va
+    shouldBacktrack = shouldDoRealSuffixBacktrack nPlusTotal se'
 
     (fse, se') =
       mkSEParser
@@ -308,3 +320,20 @@ parseRealSuffix (ParseVeb {vebOrder = vo, vebArgSE = va, nPlusArg = nPlusA}) plu
         )
         (replicate 1 plus)
         se
+
+-- | While parsing the sign expansion of a real number, determine if the final segment belongs to the next
+-- term instead of the current real number.
+--
+-- Determined by the failure to unreduce the sign expansion to a smaller (than the current) exponent
+-- based on the total number of pluses (first argument) of the exponent.
+--
+-- Example: @[+^2 -^w]@ has the second plus belonging to the next term, so it's split into @[+] [+ -^w]@
+-- by this rule.
+shouldDoRealSuffixBacktrack :: Ordinal -> SignExpansion -> Bool
+shouldDoRealSuffixBacktrack nPlus se =
+  case lookahead se of
+    Nothing -> False
+    -- the next segment is treated as w^(+^p1 & ...) and p1 has more leading pluses than nLeadingPlus:
+    -- the next term won't unreduce properly
+    Just (_, leadingView -> Just ((VebMono o p, _), _)) -> toExponent o p >= nPlus
+    Just _ -> False
