@@ -7,13 +7,8 @@ Haskell-based library for ordinal numbers and surreal numbers with support for V
 - Equality and comparison (`Eq` and `Ord` typeclasses)
 - Natural sum and product for ordinal numbers and surreal numbers (`Num` typeclass)
 - Displaying in Cantor/Conway normal forms (`Show` typeclass)
-- The exclusive upper bound is the Feferman–Schütte ordinal. All larger values are unsupported
-
-# Unimplemented features
-
-- Parsing sign expansion given any `Conway`
-- Sign expansions of arbitrary rational and real numbers
-- Multi-argument Veblen functions and the Klammersymbolen
+- The 2-argument Veblen function. The exclusive upper bound is the Feferman–Schütte ordinal
+- Generating and parsing sign expansions
 
 # Setting up
 
@@ -185,6 +180,26 @@ ghci> w + 1
 w + 1
 ghci> mono1 (w + 4) + 2 * w
 w^{w + 4} + w.2
+```
+
+## Sign expansions
+
+```hs
+conwaySE :: Conway a -> SignExpansion
+parseToConway :: SignExpansion -> Conway Dyadic
+
+-- Repeats a sign an ordinal number times
+rep :: Ordinal -> Boolean -> SignExpansion
+
+-- Repeats a sign finite number of times (Dyadic sign expansions)
+rep :: Natural -> Boolean -> FSE
+
+-- Combining sign expansions
+instance Monoid SignExpansion where
+  ...
+instance Monoid FSE where
+  ...
+
 ```
 
 ## Fundamental Sequences
