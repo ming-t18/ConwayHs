@@ -592,7 +592,7 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
-  describe "detectVebOrder" $ modifyMaxSuccess (const 100) $ do
+  describe "detectVebOrder" $ modifyMaxSuccess (const 500) $ do
     it "example (resulting SE does not contain the Veb order)" $ do
       let p = veb1SE 2 (Seq.rep 1 True) <> Seq.rep 1 False
       let p' = veb1SE 1 p
@@ -621,8 +621,6 @@ testParseSignExpansion = do
               let p' = veb1SE o p
                in p' /= p ==> detectVebOrder p' === o
           )
-
-  -- failing: w^{ε_{φ[w, φ[w, 0].25/32 + 1].1/2}.9/16}
 
   modifyMaxSuccess (const 100) $ do
     describe "parseMono" $ do
