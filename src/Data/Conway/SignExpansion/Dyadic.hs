@@ -122,7 +122,7 @@ omitLead (FSE ((s, n) : xs)) = FSE ((s, n - 1) : xs)
 omitLast :: FSE -> FSE
 omitLast (FSE xs0) = FSE $ loop [] xs0
   where
-    loop xs [(b, 1)] = xs
+    loop xs [(_, 1)] = xs
     loop xs [(b, n)] = xs ++ [(b, n - 1)]
     loop xs (e : ys) = loop (xs ++ [e]) ys
     loop _ [] = error "empty"
