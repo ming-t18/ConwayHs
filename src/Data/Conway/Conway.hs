@@ -53,6 +53,7 @@ module Data.Conway.Conway
     finiteView,
     leadingTerm,
     leadingView,
+    trailingView,
     veb1View,
     vebView,
   )
@@ -213,9 +214,9 @@ fromTermsList = conway . M.fromList
 
 -- | Given a @Conway@, returns its term in Cantor/Conway normal form, or zero
 leadingTerm :: (OrdZero a) => Conway a -> (VebMono a, a)
-leadingTerm x = case termsList x of
-  [] -> (VebMono zero zero, zero)
-  (t : _) -> t
+leadingTerm (Conway m)
+  | M.null m = (zero, zero)
+  | otherwise = M.findMax m
 
 -- | Given a @Conway@, returns the leading term and the @Conway@ without it.
 dropLeadingTerm :: (OrdZero a) => Conway a -> ((VebMono a, a), Conway a)
@@ -235,6 +236,11 @@ leadingView :: (OrdZero a) => Conway a -> Maybe ((VebMono a, a), Conway a)
 leadingView x
   | isZero x = Nothing
   | otherwise = Just $ dropLeadingTerm x
+
+trailingView :: (OrdZero a) => Conway a -> Maybe (Conway a, (VebMono a, a))
+trailingView x
+  | isZero x = Nothing
+  | otherwise = Just $ dropTrailingTerm x
 
 -- | Similar to @veb@
 fromVebMono :: (Mult a) => (VebMono a, a) -> Conway a
