@@ -1,5 +1,6 @@
 module Data.Conway.SignExpansion.Conway
   ( isAllPluses,
+    isAllMinuses,
     birthday,
     conwaySE,
 
@@ -34,6 +35,9 @@ isAllPlusesTerm :: (FiniteSignExpansion a) => (VebMono a, a) -> Bool
 isAllPlusesVebMono :: (FiniteSignExpansion a) => VebMono a -> Bool
 isAllPlusesFinite :: (FiniteSignExpansion a) => a -> Bool
 isAllPluses = all isAllPlusesTerm . termsList
+
+isAllMinuses :: (FiniteSignExpansion a, OrdZero a, One a) => Conway a -> Bool
+isAllMinuses = isAllPluses . neg
 
 isAllPlusesTerm (v, c) = isAllPlusesVebMono v && isAllPlusesFinite c
 

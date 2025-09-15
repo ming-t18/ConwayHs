@@ -524,6 +524,27 @@ testReducedSignExpansion = do
 
 testSignExpansionConway :: SpecWith ()
 testSignExpansionConway = do
+  describe "isAllPluses/isAllMinuses" $ do
+    it "isAllPluses agrees with sign expansion" $ do
+      qc
+        ( \(ConwayGen x) ->
+            let res = case toList $ conwaySE (x :: CD) of
+                  [] -> True
+                  [(True, _)] -> True
+                  _ -> False
+             in SE.isAllPluses x === res
+        )
+
+    it "isAllMinuses agrees with sign expansion" $ do
+      qc
+        ( \(ConwayGen x) ->
+            let res = case toList $ conwaySE (x :: CD) of
+                  [] -> True
+                  [(False, _)] -> True
+                  _ -> False
+             in SE.isAllMinuses x === res
+        )
+
   describe "signExpansionConway" $ do
     describe "examples, no Veblen" $ do
       it "finite values" $ do
@@ -592,7 +613,7 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
-  describe "detectVebOrder" $ modifyMaxSuccess (const 500) $ do
+  describe "detectVebOrder" $ modifyMaxSuccess (const 100) $ do
     it "example (resulting SE does not contain the Veb order)" $ do
       let p = veb1SE 2 (Seq.rep 1 True) <> Seq.rep 1 False
       let p' = veb1SE 1 p

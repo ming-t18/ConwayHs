@@ -67,6 +67,7 @@ module Data.Conway.SignExpansion
 
     -- * Birthday
     isAllPluses,
+    isAllMinuses,
     birthday,
   )
 where
