@@ -47,8 +47,17 @@ reduce = snd . foldl' reduceStep (S.empty, [])
         -- The reduced sign expansion
         po = if null ps then Reduced p else pChosen `reduceSingle` p
 
-longestCommonPrefix :: (Foldable t) => SignExpansion -> t SignExpansion -> SignExpansion
-longestCommonPrefix p = maximumBy (comparing $ SE.length . commonPrefix p)
+longestCommonPrefix :: SignExpansion -> Set SignExpansion -> SignExpansion
+longestCommonPrefix v ss = case (lo, hi) of
+  (Just a, Nothing) -> a
+  (Nothing, Just b) -> b
+  (Just a, Just b) -> commonPrefix a b
+  (Nothing, Nothing) -> error "longestCommonPrefix: not found"
+  where
+    (lo, hi) = (S.lookupLE v ss, S.lookupGE v ss)
+
+-- (linear implementation)
+-- longestCommonPrefix p = maximumBy (comparing $ SE.length . commonPrefix p)
 
 -- | Constructs a reduced sign expansion of the second argument given first argument as a base.
 --
