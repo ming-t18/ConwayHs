@@ -502,7 +502,7 @@ testReducedSignExpansion = do
     it "unreduce [Reduced p0, reduceSingle p0 p] === Just [p0, unreduceSingle p0 p] if p < p0" $ do
       qc (\(p0, p) -> p < p0 ==> R.unreduce [Reduced p0, R.reduceSingle p0 p] === Just [p0, p])
 
-    modifyMaxSuccess (const 10) $ do
+    when True $ do
       it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
         qc
           ( \p0 p1 ->
@@ -613,7 +613,7 @@ testSignExpansionConway = do
 
 testParseSignExpansion :: SpecWith ()
 testParseSignExpansion = do
-  describe "detectVebOrder" $ modifyMaxSuccess (const 100) $ do
+  describe "detectVebOrder" $ do
     it "example (resulting SE does not contain the Veb order)" $ do
       let p = veb1SE 2 (Seq.rep 1 True) <> Seq.rep 1 False
       let p' = veb1SE 1 p
@@ -635,15 +635,14 @@ testParseSignExpansion = do
              in p' /= p ==> detectVebOrder p' === o
         )
 
-    modifyMaxSuccess (* 5) $
-      it "detects the order of veb1SE" $
-        qc
-          ( \o p ->
-              let p' = veb1SE o p
-               in p' /= p ==> detectVebOrder p' === o
-          )
+    it "detects the order of veb1SE" $
+      qc
+        ( \o p ->
+            let p' = veb1SE o p
+             in p' /= p ==> detectVebOrder p' === o
+        )
 
-  modifyMaxSuccess (const 100) $ do
+  describe "parsing" $ do
     describe "parseMono" $ do
       it "advances parsing" $ qc (\se -> not (Seq.null se) ==> snd (parseMono se) =/= se)
 
@@ -672,6 +671,7 @@ testParseSignExpansion = do
       it "no remaining" $ qc prop_parseVeb1_noRemain
       it "order isomorphism" $ qc prop_parseVeb1_ordIso
       it "correct value of nPlusArg" $ qc prop_parseVeb1_nPlus
+
     describe "parseMono" $ do
       it "unparse monomial" $ qc prop_parseMono_unparse
 
@@ -744,12 +744,12 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
       testPropsRangeCompression
 
   describe "SignExpansion" $ do
-    when True $ describe "OrdZero" $ do
+    describe "OrdZero" $ do
       propsOrdZero (id :: SignExpansion -> SignExpansion)
 
     describe "SignExpansion parser" $ do
       testParseSignExpansion
 
-    when True $ describe "generator" $ do
+    describe "generator" $ do
       testSignExpansionConway
       testReducedSignExpansion
