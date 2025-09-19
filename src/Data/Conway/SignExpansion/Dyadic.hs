@@ -138,20 +138,33 @@ class FiniteSignExpansion a where
   finiteBirthday :: a -> Natural
   finiteBirthday = sum . map snd . toList . finiteSE
 
+  parseFiniteSE :: FSE -> Maybe a
+
 instance FiniteSignExpansion Dyadic where
   finiteSE = dyadicSE
+  parseFiniteSE = Just . parseDyadicSE
 
 instance FiniteSignExpansion Natural where
   finiteSE = naturalSE
+  parseFiniteSE (FSE []) = Just 0
+  parseFiniteSE (FSE [(True, n)]) = Just n
+  parseFiniteSE (FSE _) = Nothing
 
 instance FiniteSignExpansion Integer where
   finiteSE = integerSE
+  parseFiniteSE (FSE []) = Just 0
+  parseFiniteSE (FSE [(s, n)]) = Just $ if s then fromIntegral n else -(fromIntegral n)
+  parseFiniteSE (FSE _) = Nothing
 
 instance FiniteSignExpansion Int where
   finiteSE = intSE
+  parseFiniteSE (FSE []) = Just 0
+  parseFiniteSE (FSE [(s, n)]) = Just $ if s then fromIntegral n else -(fromIntegral n)
+  parseFiniteSE (FSE _) = Nothing
 
 instance FiniteSignExpansion FSE where
   finiteSE = id
+  parseFiniteSE = Just
 
 nat1 :: Natural
 nat1 = 1
