@@ -1,90 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
 
--- | Let @S + veb o p c@ be a @Conway@ with a trailing term.
---
--- Let @'@ be the left parent of a surreal number, and @''@ be the right parent.
---
--- The range can be empty (zero), singleton (successor) or range (limit).
---
--- @n = 0, 1, 2, ...@ is the index of a limit range.
---
--- Sum of terms rules:
---
---   * SumL: @(S + veb o p c)' = S + (veb1 o p c)'@
---
---   * SumR: @(S + veb o p c)'' = S + (veb1 o p c)''@
---
--- If the last monomial has an empty range, remove the last term and try again with the second last term.
--- This process repeats from the rightmost term to the first term until the first term with non-empty
--- range has been found or if all terms have been exhausted.
---
--- Monomial with non-trivial coefficient rules:
---
---   * CoeffLSucc: @(mono p c)' = mono p c' + mono p' n@
---
---   * CoeffRSucc: @(mono p c)'' = mono p c'' - mono p' n@
---
---   * CoeffLLimit: @(mono p c)' = {0, mono p' c}@
---
---   * CoeffRLimit: @(mono p c)'' = mono p''@
---
--- Monomial with coefficient of 1 rules:
---
---   * Mono1LEmpty: @(mono1 p)' = 0@ where @p'@ is empty
---
---   * Mono1REmpty: @(mono1 p)'' = {}@ where @p''@ is empty
---
---   * Mono1LSucc: @(mono1 p)' = veb 0 p' n@
---
---   * Mono1RSucc: @(mono1 p)'' = veb 0 p'' (1 `shr` n)@
---
---   * Mono1LLimit: @(mono1 p)' = {0, mono1 p'}@
---
---   * Mono1RLimit: @(mono1 p)'' = mono1 p''@
---
--- * Veb1 rules
---
--- The @Veb1@ rules are based on the "CGV Googology part 1: veblen function" definition of the surreal single-argument Veblen function:
---
--- @veb1 o p = { iterate (veb1 o') {0, p' * n} | iterate (veb1 o') (p'' * (1 `shr` n)) }@
---
--- where @n@ is the range @{0, 1, 2, 3, 4, ...}@ and @1 `shr` n@ is the range @{1, 1/2, 1/4, 1/8, 1/16, ...}@
---
--- Zero argument:
---
---   * Veb1LSuccZero: @(veb1 o 0)' = iterate (veb1 o') 0@
---
---   * Veb1RSuccZero: @(veb1 o 0)'' = {}@
---
---   * Veb1LLimitZero: @(veb1 o 0)' = veb1 o' 0@
---
---   * Veb1RLimitZero: @(veb1 o 0)'' = {}@
---
--- Empty argument:
---
---   * Veb1LSuccEmpty: @(veb1 o p)' = veb1 o' 0@ where @p'@ is empty
---
---   * Veb1RSuccEmpty: @(veb1 o p)'' = {}@ where @p''@ is empty
---
--- Successor argument:
---
---   * Veb1LSuccSucc: @(veb1 o p)' = iterate (veb1 o') (veb1 o p' + 1)@
---
---   * Veb1RSuccSucc: @(veb1 o p)'' = iterate (veb1 o') (veb1 o p'' - 1)@
---
---   * Veb1LLimitSucc: @(veb1 o p)' = veb1 o' (veb1 o p' + 1)@
---
---   * Veb1RLimitSucc: @(veb1 o p)'' = veb1 o' (veb1 o p'' - 1)@
---
--- Limit argument:
---
---   * Veb1LSuccLimit: @(veb1 o p)' = veb1 o p'@
---
---   * Veb1RSuccLimit: @(veb1 o p)'' = veb1 o p''@
---
---   * Veb1LLimitLimit: @(veb1 o p)' = veb1 o p'@
---
---   * Veb1RLimitLimit: @(veb1 o p)'' = veb1 o p''@
 module Data.Conway.Simplicity.Parent
   ( ParentSeq,
     ConwaySeq (..),
@@ -178,15 +93,11 @@ parentVeb1 isLeft (VebMono o (isZero -> True))
 parentVeb1 isLeft (VebMono o p) = do
   let cp = parentConway isLeft p
   case cp of
+    Nothing | isLeft -> do
+      -- Veb1LSuccEmpty, Veb1LLimitEmpty
+      parentVeb1 True (VebMono o zero)
     -- Veb1RSuccEmpty, Veb1RLimitEmpty
-    Nothing | not isLeft -> Nothing
-    Nothing -> do
-      co <- parentConway True o
-      case co of
-        -- Veb1LSuccEmpty
-        Left o'Succ -> parentVeb1 True (VebMono o'Succ zero)
-        -- Veb1LLimitEmpty
-        Right o'Lim -> Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim zero
+    Nothing -> Nothing
     Just (Left p'Succ) -> do
       co <- parentConway True o
       case co of
@@ -203,3 +114,6 @@ getIterOffset isLeft = if isLeft then (`add` one) else (`sub` one)
 
 addSeq :: (OrdRing a) => Conway a -> ConwaySeq a -> ConwaySeq a
 addSeq base0 c@ConwaySeq {csBase = b0} = c {csBase = base0 `add` b0}
+
+-- TODO limit completion
+-- TODO skip based on reduced SE
