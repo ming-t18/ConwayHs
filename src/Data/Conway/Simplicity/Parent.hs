@@ -8,59 +8,83 @@
 --
 -- @n = 0, 1, 2, ...@ is the index of a limit range.
 --
--- * SumL and SumR: @(S + veb o p c)' = S + (veb1 o p c)'@ and also for @''@
+-- Sum of terms rules:
 --
--- ** Monominal rules
+--   * SumL: @(S + veb o p c)' = S + (veb1 o p c)'@
 --
--- * CoeffLSucc: @(mono p c)' = mono p c' + mono p' n@
+--   * SumR: @(S + veb o p c)'' = S + (veb1 o p c)''@
 --
--- * CoeffRSucc: @(mono p c)'' = mono p c'' - mono p' n@
+-- If the last monomial has an empty range, remove the last term and try again with the second last term.
+-- This process repeats from the rightmost term to the first term until the first term with non-empty
+-- range has been found or if all terms have been exhausted.
 --
--- * CoeffLLimit: @(mono p c)' = {0, mono p' c}@
+-- Monomial with non-trivial coefficient rules:
 --
--- * CoeffRLimit: @(mono p c)'' = mono p''@
+--   * CoeffLSucc: @(mono p c)' = mono p c' + mono p' n@
 --
--- ** Mono1 rules
+--   * CoeffRSucc: @(mono p c)'' = mono p c'' - mono p' n@
 --
--- * Mono1LSucc: @(mono1 p)' = {0, veb 0 p' n}@
+--   * CoeffLLimit: @(mono p c)' = {0, mono p' c}@
 --
--- * Mono1RSucc: @(mono1 p)'' = veb 0 p'' (1 `shr` n)@
+--   * CoeffRLimit: @(mono p c)'' = mono p''@
 --
--- * Mono1LLimit: @(mono1 p)' = {0, mono1 p'}@
+-- Monomial with coefficient of 1 rules:
 --
--- * Mono1RLimit: @(mono1 p)'' = mono1 p''@
+--   * Mono1LEmpty: @(mono1 p)' = 0@ where @p'@ is empty
 --
--- ** Veb1 rules
+--   * Mono1REmpty: @(mono1 p)'' = {}@ where @p''@ is empty
+--
+--   * Mono1LSucc: @(mono1 p)' = veb 0 p' n@
+--
+--   * Mono1RSucc: @(mono1 p)'' = veb 0 p'' (1 `shr` n)@
+--
+--   * Mono1LLimit: @(mono1 p)' = {0, mono1 p'}@
+--
+--   * Mono1RLimit: @(mono1 p)'' = mono1 p''@
+--
+-- * Veb1 rules
 --
 -- The @Veb1@ rules are based on the "CGV Googology part 1: veblen function" definition of the surreal single-argument Veblen function:
 --
--- @veb1 o p = { 0, p' * n, iterate (veb1 o') {0, p' * n} | p'' * (1 `shr` n), iterate (veb1 o') (p'' * (1 `shr` n)) }@
+-- @veb1 o p = { iterate (veb1 o') {0, p' * n} | iterate (veb1 o') (p'' * (1 `shr` n)) }@
 --
 -- where @n@ is the range @{0, 1, 2, 3, 4, ...}@ and @1 `shr` n@ is the range @{1, 1/2, 1/4, 1/8, 1/16, ...}@
 --
--- * Veb1LLimitZero: @(veb1 o 0)' = veb1 o' 0@
+-- Zero argument:
 --
--- * Veb1RLimitZero: @(veb1 o 0)'' = {}@
+--   * Veb1LSuccZero: @(veb1 o 0)' = iterate (veb1 o') 0@
 --
--- * Veb1LSuccZero: @(veb1 o 0)' = iterate (veb1 o') 0@
+--   * Veb1RSuccZero: @(veb1 o 0)'' = {}@
 --
--- * Veb1RSuccZero: @(veb1 o 0)'' = {}@
+--   * Veb1LLimitZero: @(veb1 o 0)' = veb1 o' 0@
 --
--- * Veb1LSuccSucc: @(veb1 o p)' = iterate (veb1 o') (veb1 o p' + 1)@
+--   * Veb1RLimitZero: @(veb1 o 0)'' = {}@
 --
--- * Veb1RSuccSucc: @(veb1 o p)'' = iterate (veb1 o') (veb1 o p'' - 1)@
+-- Empty argument:
 --
--- * Veb1LSuccLimit: @(veb1 o p)' = veb1 o p'@
+--   * Veb1LSuccEmpty: @(veb1 o p)' = veb1 o' 0@ where @p'@ is empty
 --
--- * Veb1RSuccLimit: @(veb1 o p)'' = veb1 o p''@
+--   * Veb1RSuccEmpty: @(veb1 o p)'' = {}@ where @p''@ is empty
 --
--- * Veb1LLimitSucc: @(veb1 o p)' = veb1 o' (veb1 o p' + 1)@
+-- Successor argument:
 --
--- * Veb1RLimitSucc: @(veb1 o p)'' = veb1 o' (veb1 o p'' - 1)@
+--   * Veb1LSuccSucc: @(veb1 o p)' = iterate (veb1 o') (veb1 o p' + 1)@
 --
--- * Veb1LLimitLimit: @(veb1 o p)' = veb1 o p'@
+--   * Veb1RSuccSucc: @(veb1 o p)'' = iterate (veb1 o') (veb1 o p'' - 1)@
 --
--- * Veb1RLimitLimit: @(veb1 o p)'' = veb1 o p''@
+--   * Veb1LLimitSucc: @(veb1 o p)' = veb1 o' (veb1 o p' + 1)@
+--
+--   * Veb1RLimitSucc: @(veb1 o p)'' = veb1 o' (veb1 o p'' - 1)@
+--
+-- Limit argument:
+--
+--   * Veb1LSuccLimit: @(veb1 o p)' = veb1 o p'@
+--
+--   * Veb1RSuccLimit: @(veb1 o p)'' = veb1 o p''@
+--
+--   * Veb1LLimitLimit: @(veb1 o p)' = veb1 o p'@
+--
+--   * Veb1RLimitLimit: @(veb1 o p)'' = veb1 o p''@
 module Data.Conway.Simplicity.Parent
   ( ParentSeq,
     ConwaySeq (..),
@@ -246,7 +270,15 @@ parentVeb1 isLeft (VebMono o (isZero -> True))
 parentVeb1 isLeft (VebMono o p) = do
   let cp = parentConway isLeft p
   case cp of
-    Nothing -> if isLeft then parentVeb1 True (VebMono o zero) else Nothing
+    -- Veb1RSuccEmpty, Veb1RLimitEmpty
+    Nothing | not isLeft -> Nothing
+    Nothing -> do
+      co <- parentConway True o
+      case co of
+        -- Veb1LSuccEmpty
+        Left o'Succ -> parentVeb1 True (VebMono o'Succ zero)
+        -- Veb1LLimitEmpty
+        Right o'Lim -> Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim zero
     Just (Left p'Succ) -> do
       co <- parentConway True o
       case co of
