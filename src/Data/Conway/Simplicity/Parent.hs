@@ -46,13 +46,17 @@
 --
 -- * Veb1RSuccZero: @(veb1 o 0)'' = {}@
 --
--- * Veb1LSuccSucc: @(veb1 o p)' = iterate (veb1 o') (p' + 1)@
+-- * Veb1LSuccSucc: @(veb1 o p)' = iterate (veb1 o') (veb1 o p' + 1)@
 --
--- * Veb1RSuccSucc: @(veb1 o p)'' = iterate (veb1 o') (p'' - 1)@
+-- * Veb1RSuccSucc: @(veb1 o p)'' = iterate (veb1 o') (veb1 o p'' - 1)@
 --
 -- * Veb1LSuccLimit: @(veb1 o p)' = veb1 o p'@
 --
 -- * Veb1RSuccLimit: @(veb1 o p)'' = veb1 o p''@
+--
+-- * Veb1LLimitSucc: @(veb1 o p)' = veb1 o' (veb1 o p' + 1)@
+--
+-- * Veb1RLimitSucc: @(veb1 o p)'' = veb1 o' (veb1 o p'' - 1)@
 --
 -- * Veb1LLimitLimit: @(veb1 o p)' = veb1 o p'@
 --
@@ -131,7 +135,7 @@ data Veb1Seq a
     -- * False: @(veb1 o p)' = iterate (veb1 o) (p - 1) = {p - 1, veb1 o (p - 1), veb 1 o (veb1 o (p - 1)) , ...}@
     Veb1IterSeq Ordinal (Conway a) Bool
 
-instance (OrdZero a, One a, Show a) => Show (ConwaySeq a) where
+instance (OrdRing a, One a, Show a) => Show (ConwaySeq a) where
   show ConwaySeq {csBase = b, csSign = s, csTerm = t}
     | isZero b = if s then seqTail else "-" ++ seqTail
     | otherwise = show b ++ " " ++ op ++ " " ++ seqTail
@@ -139,24 +143,26 @@ instance (OrdZero a, One a, Show a) => Show (ConwaySeq a) where
       op = if s then "+" else "-"
       seqTail = show t
 
-instance (OrdZero a, One a, Show a) => Show (MonoSeq a) where
+instance (OrdRing a, One a, Show a) => Show (MonoSeq a) where
   show (Mono1Seq sa) = show sa
   show (MonoMultSeq (VebMono o p) s) =
     case (o, show p) of
       (0, "0") -> seqCoeff
       (0, "1") -> "w * " ++ seqCoeff
       (0, p') -> "w^[" ++ p' ++ "] * " ++ seqCoeff
-      (o', p') -> "phi(" ++ show o' ++ "," ++ p' ++ ") * " ++ seqCoeff
+      (o', p') -> "φ[" ++ show o' ++ "," ++ p' ++ "] * " ++ seqCoeff
     where
       seqTrue = "{0, 1, 2, 3, ...}"
       seqFalse = "{1, 1/2, 1/4, 1/8, ...}"
       seqCoeff = if s then seqTrue else seqFalse
 
-instance (OrdZero a, One a, Show a) => Show (Veb1Seq a) where
+instance (OrdRing a, One a, Show a) => Show (Veb1Seq a) where
   show (Veb1ArgSeq 0 s) = "w^[" ++ show s ++ "]"
-  show (Veb1ArgSeq o s) = "phi(" ++ show o ++ ", " ++ show s ++ ")"
-  show (Veb1OrderSeq o s) = "phi(" ++ show o ++ ", " ++ show s ++ ")"
-  show (Veb1IterSeq o t s) = "Iter[phi(" ++ show o ++ ", -), " ++ (if s then show t ++ " + 1" else show t ++ " - 1") ++ "]"
+  show (Veb1ArgSeq o s) = "φ[" ++ show o ++ ", " ++ show s ++ "]"
+  show (Veb1OrderSeq o s) = "φ[" ++ show o ++ ", " ++ show s ++ "]"
+  show (Veb1IterSeq o t s) = "Iter[" ++ funcPart ++ ", " ++ (if s then show (t `add` one) else show (t `sub` one)) ++ "]"
+    where
+      funcPart = if isZero o then "w^[-]" else "φ[" ++ show o ++ ", -]"
 
 negateParentSeq :: (OrdZero a, One a) => ParentSeq a -> ParentSeq a
 negateParentSeq Nothing = Nothing
@@ -173,7 +179,7 @@ parentDyadic isLeft x = SED.parent isLeft (finiteSE x) >>= parseFiniteSE
 
 data LeftRight a = LR (ParentSeq a) (ParentSeq a)
 
-instance (OrdZero a, One a, Show a) => Show (LeftRight a) where
+instance (OrdRing a, One a, Show a) => Show (LeftRight a) where
   show (LR ls rs) = "{ " ++ ls' ++ " | " ++ rs' ++ " }"
     where
       ls' = maybe "" show' ls
@@ -184,34 +190,19 @@ lrConway :: (OrdRing a, FiniteSignExpansion a) => Conway a -> LeftRight a
 lrConway x = LR (parentConway True x) (parentConway False x)
 
 parentConway :: (OrdRing a, FiniteSignExpansion a) => Direction -> Conway a -> ParentSeq a
-parentConway isLeft0 x =
+parentConway isLeft x =
   do
-    (base, (p, c0)) <- trailingView x
-
-    let res = do
-          let (sign, isLeft, c) = if isNegative c0 then (False, not isLeft0, neg c0) else (True, isLeft0, c0)
-          let op = if sign then add else sub
-          if isOne c
-            then do
-              p' <- parentVeb1 isLeft p
-              -- base + V(p) = { base + V(p)' | base + V(p)'' }
-              case p' of
-                Left p'Succ -> psPoint $ base `op` p'Succ
-                Right p'Lim -> psLim $ ConwaySeq {csBase = base, csSign = sign, csTerm = p'Lim}
-            else do
-              -- base + V(p).c = { base + [V(p).c' + V(p)'.n] | base + [V(p).c'' - V(p)''.n] }
-              pm <- parentMono isLeft (p, c)
-              case pm of
-                Left pc'Succ -> psPoint $ base `op` pc'Succ
-                Right pc'Lim -> psLim $ addOrSubSeq sign base pc'Lim
+    (base, (p, c)) <- trailingView x
+    let res = parentMono isLeft (p, c)
     case res of
-      Nothing -> parentConway isLeft0 base
-      Just r -> Just r
+      Nothing -> parentConway isLeft base
+      Just (Left s) -> psPoint $ base `add` s
+      Just (Right l) -> psLim $ addSeq base l
 
 parentMono :: (OrdRing a, FiniteSignExpansion a) => Direction -> (VebMono a, a) -> ParentSeq a
 parentMono isLeft (p, c)
   | isZero c = psEmpty
-  | isNegative c = negateParentSeq $ parentMono isLeft (p, neg c)
+  | isNegative c = negateParentSeq $ parentMono (not isLeft) (p, neg c)
   | isOne c = do
       p' <- parentVeb1 isLeft p
       case p' of
@@ -242,8 +233,33 @@ parentVeb1 isLeft (VebMono (isZero -> True) p) =
     -- L: V(0, p) = w^{p'[n]|...} = { w^p'[n] | ... }
     -- R: V(0, p) = w^{...|p''[n]} = { ... | w^p''[n] }
     Just (Right p'Lim) -> Just $ Right $ Mono1Seq $ Veb1ArgSeq zero p'Lim
-parentVeb1 _ _ = error "parentVeb1: not defined for higher Veblen orders"
+parentVeb1 isLeft (VebMono o (isZero -> True))
+  | isLeft = do
+      co <- parentConway True o
+      case co of
+        -- Veb1LSuccZero
+        Left o'Succ -> Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ zero isLeft
+        -- Veb1LLimitZero
+        Right o'Lim -> Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim zero
+  -- Veb1RSuccZero, Veb1RLimitZero
+  | otherwise = Nothing
+parentVeb1 isLeft (VebMono o p) = do
+  let cp = parentConway isLeft p
+  case cp of
+    Nothing -> if isLeft then parentVeb1 True (VebMono o zero) else Nothing
+    Just (Left p'Succ) -> do
+      co <- parentConway True o
+      case co of
+        -- Veb1LSuccSucc, Veb1RSuccSucc
+        Left o'Succ -> Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ (veb1 o p'Succ) isLeft
+        -- Veb1LLimitSucc, Veb1LRimitSucc
+        Right o'Lim ->
+          let off = getIterOffset isLeft
+           in Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim (off $ veb1 o p'Succ)
+    Just (Right p'Lim) -> Just $ Right $ Mono1Seq $ Veb1ArgSeq o p'Lim
 
-addOrSubSeq :: (OrdRing a) => Bool -> Conway a -> ConwaySeq a -> ConwaySeq a
-addOrSubSeq True base0 c@ConwaySeq {csBase = b0} = c {csBase = base0 `add` b0}
-addOrSubSeq False base0 c = let c'@ConwaySeq {csBase = b0} = negateConwaySeq c in c' {csBase = base0 `add` b0}
+getIterOffset :: (AddSub a, One a) => Bool -> a -> a
+getIterOffset isLeft = if isLeft then (`add` one) else (`sub` one)
+
+addSeq :: (OrdRing a) => Conway a -> ConwaySeq a -> ConwaySeq a
+addSeq base0 c@ConwaySeq {csBase = b0} = c {csBase = base0 `add` b0}
