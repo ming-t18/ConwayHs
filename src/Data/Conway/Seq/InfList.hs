@@ -17,7 +17,10 @@ module Data.Conway.Seq.InfList
     map,
     skipWhile,
     toList,
+    fromInfiniteList,
     index,
+    nats,
+    generate,
   )
 where
 
@@ -78,6 +81,15 @@ skipWhile p xs0@(Inf x xs)
 
 toList :: Infinite a -> [a]
 toList (Inf x xs) = x : toList xs
+
+fromInfiniteList :: [a] -> Infinite a
+fromInfiniteList = foldr Inf (error "fromInfiniteList: reached the end")
+
+nats :: Infinite Natural
+nats = loop 0 where loop i = Inf i (loop $ i + 1)
+
+generate :: (Natural -> a) -> Infinite a
+generate = (<$> nats)
 
 index :: Infinite a -> Natural -> a
 index (Inf x _) 0 = x
