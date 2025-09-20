@@ -58,10 +58,10 @@ import Control.Arrow (first)
 import Control.Monad (guard)
 import Control.Monad.State
 import Data.Conway.Conway
-import Data.Conway.Dyadic (Dyadic)
+import Data.Conway.Dyadic ()
 import Data.Conway.OrdinalArith (ordAdd, ordDivRem, ordPow, ordSymDiff, unMono1)
 import Data.Conway.Seq as Seq
-import Data.Conway.SignExpansion.Dyadic (FSE, FiniteSignExpansion (..), parseDyadicSE)
+import Data.Conway.SignExpansion.Dyadic (FSE, FiniteSignExpansion (..))
 import qualified Data.Conway.SignExpansion.Dyadic as SD
 import Data.Conway.SignExpansion.Reduce (Reduced (..), unreduce')
 import Data.Conway.SignExpansion.Types (SignExpansion)
