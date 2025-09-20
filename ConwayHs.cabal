@@ -46,7 +46,9 @@ library
       Data.Conway.SignExpansion.Reduce
       Data.Conway.SignExpansion.Types
       Data.Conway.SignExpansion.Veb
+      Data.Conway.Simplicity
       Data.Conway.Simplicity.Parent
+      Data.Conway.Simplicity.Types
       Data.Conway.Typeclasses
   other-modules:
       Paths_ConwayHs
