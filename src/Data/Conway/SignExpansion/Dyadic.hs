@@ -41,6 +41,7 @@ import qualified Data.Conway.Seq as Seq (RunLengthSeq (..), Seq (..))
 import Data.Conway.SignExpansion.Types (SignExpansion)
 import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Typeclasses
+import Data.Maybe (fromJust)
 import Prelude hiding (length)
 
 infixr 5 +++.
@@ -155,6 +156,8 @@ class FiniteSignExpansion a where
   finiteBirthday = sum . map snd . toList . finiteSE
 
   parseFiniteSE :: FSE -> Maybe a
+  parseFiniteSE' :: FSE -> a
+  parseFiniteSE' = fromJust . parseFiniteSE
 
 instance FiniteSignExpansion Dyadic where
   finiteSE = dyadicSE

@@ -61,13 +61,14 @@ import Data.Conway.Conway
 import Data.Conway.Dyadic (Dyadic)
 import Data.Conway.OrdinalArith (ordAdd, ordDivRem, ordPow, ordSymDiff, unMono1)
 import Data.Conway.Seq as Seq
-import Data.Conway.SignExpansion.Dyadic (FSE, parseDyadicSE)
+import Data.Conway.SignExpansion.Dyadic (FSE, FiniteSignExpansion (..), parseDyadicSE)
 import qualified Data.Conway.SignExpansion.Dyadic as SD
 import Data.Conway.SignExpansion.Reduce (Reduced (..), unreduce')
 import Data.Conway.SignExpansion.Types (SignExpansion)
 import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.SignExpansion.Veb (veb1SE)
-import Data.Conway.Typeclasses (One (..), OrdZero (..), Zero (..))
+import Data.Conway.Typeclasses (AddSub (..), One (..), OrdRing, OrdZero (..), Zero (..))
+import Data.Foldable (foldl')
 import qualified Data.Set as Set
 import Prelude hiding (replicate)
 
@@ -97,7 +98,7 @@ emptyParseVeb = (ParseVeb {nPlusArg = zero, vebOrder = zero, vebArgSE = zero, co
 
 -- * Parsing @Conway@
 
-parseToConway :: SignExpansion -> Conway Dyadic
+parseToConway :: (OrdRing a, FiniteSignExpansion a) => SignExpansion -> Conway a
 parseToConway se =
   case detectFixedPointSE se res of
     Just (0, _) -> error "parseToConway: detected infinite recursion, detected vebOrder is 0."
@@ -118,9 +119,9 @@ detectFixedPointSE se res =
                in Just (o, p')
     _ -> Nothing
 
-combineToConway :: [(SignExpansion, FSE)] -> Conway Dyadic
+combineToConway :: (OrdRing a, FiniteSignExpansion a) => [(SignExpansion, FSE)] -> Conway a
 combineToConway =
-  sum . map (\(pse, cse) -> parseToConway pse `mono` parseDyadicSE cse)
+  foldl' add zero . map (\(pse, cse) -> parseToConway pse `mono` parseFiniteSE' cse)
 
 parseToUnreduced :: SignExpansion -> [(SignExpansion, FSE)]
 parseToUnreduced = unreduceReduced . parseToReduced
