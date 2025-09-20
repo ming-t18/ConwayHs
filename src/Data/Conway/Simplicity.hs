@@ -9,8 +9,12 @@ module Data.Conway.Simplicity
     parentConway,
     parentMono,
     parentVeb1,
+    conwaySeq,
+    monoSeq,
+    veb1Seq,
   )
 where
 
 import Data.Conway.Simplicity.Parent
+import Data.Conway.Simplicity.Seq
 import Data.Conway.Simplicity.Types

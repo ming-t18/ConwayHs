@@ -1,0 +1,30 @@
+module Data.Conway.Simplicity.Seq (conwaySeq, monoSeq, veb1Seq) where
+
+import Data.Conway.Conway
+import Data.Conway.Seq.InfList (Infinite)
+import qualified Data.Conway.Seq.InfList as I
+import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (parseFiniteSE), fromList)
+import Data.Conway.Simplicity.Parent
+import Data.Conway.Typeclasses
+import Data.Maybe (fromJust)
+
+conwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Infinite (Conway a)
+monoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Infinite (Conway a)
+veb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Infinite (Conway a)
+conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq}
+  | isAdd = (base `add`) <$> monoSeq tSeq
+  | otherwise = (base `sub`) <$> monoSeq tSeq
+
+monoSeq (Mono1Seq vSeq) = veb1Seq vSeq
+monoSeq (MonoMultSeq p True) = I.generate (\n -> fromVebMono (p, fromJust $ parseFiniteSE $ fromList [(True, n)]))
+monoSeq (MonoMultSeq p False) = I.generate (\n -> fromVebMono (p, fromJust $ parseFiniteSE $ fromList [(True, 1), (False, n)]))
+
+veb1Seq (Veb1ArgSeq o p') = I.generate (veb1 o . I.index pSeq)
+  where
+    pSeq = conwaySeq p'
+veb1Seq (Veb1OrderSeq o' p) = I.generate ((`veb1` p) . I.index oSeq)
+  where
+    oSeq = conwaySeq o'
+veb1Seq (Veb1IterSeq o p s) = zero `I.cons` I.iterate (veb1 o) base
+  where
+    base = if s then p `add` one else p `sub` one
