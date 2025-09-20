@@ -20,6 +20,7 @@ module Data.Conway.SignExpansion.Dyadic
     plus,
     minus,
     lastSign,
+    parent,
 
     -- * Sign Expansions of dyadics and subsets
     dyadicSE,
@@ -126,6 +127,21 @@ omitLast (FSE xs0) = FSE $ loop [] xs0
     loop xs [(b, n)] = xs ++ [(b, n - 1)]
     loop xs (e : ys) = loop (xs ++ [e]) ys
     loop _ [] = error "empty"
+
+parent :: Bool -> FSE -> Maybe FSE
+parent _ (FSE []) = Nothing
+parent sign (FSE [(s', n)])
+  | s' == sign = Just $ FSE [(sign, n - 1) | n > 1]
+  | otherwise = Nothing
+parent sign (FSE xs) = FSE . reverse <$> loop (reverse xs)
+  where
+    loop [] = Nothing
+    loop [(s', n)]
+      | s' == sign = Just ([(sign, n - 1) | n > 1])
+      | otherwise = Nothing
+    loop ((s', n) : xs')
+      | s' == sign = Just ([(sign, n - 1) | n > 1] ++ xs')
+      | otherwise = loop xs'
 
 lastSign :: FSE -> Bool
 lastSign (FSE xs) = fst $ last xs
