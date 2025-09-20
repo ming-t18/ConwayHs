@@ -56,6 +56,7 @@ module Data.Conway.Conway
     trailingView,
     veb1View,
     vebView,
+    fixedPointView,
   )
 where
 
@@ -298,6 +299,19 @@ vebView x =
 -- | @True@ if and only if the argument is a monomial (is zero or has only one term in its Cantor/Conway normal form)
 isMono :: Conway a -> Bool
 isMono x = case termsList x of [] -> True; [_] -> True; _ -> False
+
+fixedPointView :: (OrdZero a, One a) => Conway a -> Maybe (VebMono a, Ordering)
+fixedPointView x
+  | isNegative x = Nothing
+  | otherwise = do
+      ((vm@(VebMono o p), c), rest) <- leadingView x
+      let lp = fixedPointView p
+      if isZero o
+        then
+          lp
+        else case lp of
+          Just (VebMono ((> o) -> True) _, _) -> lp
+          _ -> Just (vm, compare c one <> compare rest zero)
 
 -- * Specific values
 
