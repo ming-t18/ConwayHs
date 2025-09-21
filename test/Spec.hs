@@ -9,13 +9,15 @@ import Data.Conway.FundamentalSeq
 import Data.Conway.OrdinalArith
 import qualified Data.Conway.RangeCompression as RC
 import qualified Data.Conway.Seq as Seq
+import qualified Data.Conway.Seq.InfList as I
 import qualified Data.Conway.Seq.InfList as NE
 import Data.Conway.SignExpansion ()
 import Data.Conway.SignExpansion as SE
-import Data.Conway.SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
+import Data.Conway.SignExpansion.Dyadic (FSE, FiniteSignExpansion, finiteSE, parseDyadicSE)
 import Data.Conway.SignExpansion.Reduce (Reduced (..))
 import qualified Data.Conway.SignExpansion.Reduce as R
 import Data.Conway.SignExpansion.Types ()
+import Data.Conway.Simplicity
 import Data.Conway.Typeclasses
   ( AddSub (..),
     Mult (..),
@@ -25,7 +27,7 @@ import Data.Conway.Typeclasses
     Zero (isZero, zero),
   )
 import Data.Function (on)
-import Data.Maybe (isJust)
+import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as S
 import Gen
 import Test.Hspec
@@ -652,8 +654,9 @@ testParseSignExpansion = do
       it "inverse" $ qc (\(ConwayGen x) -> parseToConway (conwaySE x) === (x :: CD))
 
     describe "parseToConway" $ do
-      it "halts without error for all ordinals" $ qc (\(n :: Ordinal) -> Prelude.length (show $ parseToConway $ Seq.rep n True) > -1)
-      it "halts without error" $ qc (\x -> Prelude.length (show $ parseToConway x) > -1)
+      let show' = show :: CD -> String
+      it "halts without error for all ordinals" $ qc (\(n :: Ordinal) -> Prelude.length (show' $ parseToConway $ Seq.rep n True) > -1)
+      it "halts without error" $ qc (\x -> Prelude.length (show' $ parseToConway x) > -1)
 
     -- Important backtracking counterexamples (detected by unreduce failing):
     --   The last segment of the real part belongs to the next value
@@ -675,7 +678,100 @@ testParseSignExpansion = do
     describe "parseMono" $ do
       it "unparse monomial" $ qc prop_parseMono_unparse
 
--- it "no remaining SE to parse for a single mono" $ qc prop_parseMono_unparseNoRemain
+-- | Given a @ParentSeq@, index the limit sequence or return the value itself if it a point.
+indexParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Natural -> Maybe (Conway a)
+indexParentSeq s i = either id ((`I.index` i) . conwaySeq) <$> s
+
+checkOrd :: (Show a, Ord a) => Ordering -> a -> a -> Property
+checkOrd o x y =
+  counterexample ("(" ++ show x ++ " `compare` " ++ show y ++ ") " ++ interpret res ++ " " ++ show o) res
+  where
+    res = compare x y == o
+    interpret True = " == "
+    interpret False = " /= "
+
+checkBetween :: (Show a, Ord a) => (Maybe a, Maybe a) -> a -> Property
+checkBetween (x0, y0) z =
+  case (x0, y0) of
+    (Nothing, Nothing) -> True === True
+    (Just x, Nothing) -> checkOrd LT x z
+    (Nothing, Just y) -> checkOrd LT z y
+    (Just x, Just y) -> checkOrd LT x z .&&. checkOrd LT z y
+
+testSimplicity :: SpecWith ()
+testSimplicity = do
+  -- TODO doesn't work
+  when False $ describe "limit sequences" $ do
+    it "increasing birthday" $ do
+      qc
+        ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) -> do
+            let (i, j) = if i0 < j0 then (i0, j0) else (j0, i0)
+                (l, r) = toPair $ lrConway x
+                get s k = birthday $ fromJust $ indexParentSeq s k
+                pl = checkOrd LT (get l i) (get l j)
+                pr = checkOrd LT (get r i) (get r j)
+             in i
+                  /= j ==> case (l, r) of
+                    (Just (Right _), Just (Right _)) -> pl .&. pr
+                    (Just (Right _), _) -> pl
+                    (_, Just (Right _)) -> pr
+                    (_, _) -> False ==> True
+        )
+
+    it "left limit sequence is increasing and right limit sequence is decreasing" $ do
+      qc
+        ( \(ConwayGen (x :: CD), i :: Natural, j :: Natural) -> do
+            let (l, r) = toPair $ lrConway x
+                get s k = indexParentSeq s k `compare` indexParentSeq s (k + 1)
+                check o s = checkOrd o (get s i) (get s j)
+                (pl, pr) = (check GT l, check LT r)
+             in i
+                  /= j ==> case (l, r) of
+                    (Just (Right _), Just (Right _)) -> pl .&. pr
+                    (Just (Right _), _) -> pl
+                    (_, Just (Right _)) -> pr
+                    (_, _) -> False ==> True
+        )
+
+  describe "simplicity sequences: x = { left | right }" $ do
+    -- "sufficiently large i" for sequences in general,
+    -- but for our way of generating sequences, the condition is "i > 0"
+    it "left[i] < right[i] for i > 0 and both being non-empty" $ do
+      qc
+        ( \(ConwayGen (x :: CD), i :: Natural) -> do
+            let (l, r) = toPair $ lrConway x
+                pair = (,) <$> indexParentSeq l i <*> indexParentSeq r i
+             in i
+                  > 0 ==> case pair of
+                    Just (x', y') -> checkOrd LT x' y'
+                    Nothing -> False ==> True
+        )
+
+    it "left[i] < completion < right[i] for i > 0" $ do
+      qc
+        ( \(ConwayGen (x :: CD), i :: Natural) ->
+            let xc = lrConway x
+                (l, r) = toPair xc
+             in i > 0 ==> checkBetween (indexParentSeq l i, indexParentSeq r i) $ limLR xc
+        )
+
+    it "left and right have lower birthdays than the completion" $ do
+      qc
+        ( \(ConwayGen (x :: CD), i :: Natural) ->
+            let xc = lrConway x
+                bx = birthday x
+                (l, r) = toPair xc
+                bl = fmap birthday (indexParentSeq l i)
+                br = fmap birthday (indexParentSeq r i)
+             in case (bl, br) of
+                  (Nothing, Nothing) -> True === True
+                  (Just bl', Nothing) -> checkOrd LT bl' bx
+                  (Nothing, Just br') -> checkOrd LT br' bx
+                  (Just bl', Just br') -> checkOrd LT bl' bx .&&. checkOrd LT br' bx
+        )
+
+    it "completion recovers the original value" $ do
+      qc (\(ConwayGen (x :: CD)) -> limLR (lrConway x) === x)
 
 testPropsRangeCompression :: SpecWith ()
 testPropsRangeCompression = do
@@ -712,6 +808,8 @@ testDyadic = do
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
+  testSimplicity
+
   when True $ do
     describe "Dyadic" $ do
       testDyadic
@@ -743,7 +841,7 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
     describe "Range compression (Ordinal -> Dyadic)" $ do
       testPropsRangeCompression
 
-  describe "SignExpansion" $ do
+  when True $ describe "SignExpansion" $ do
     describe "OrdZero" $ do
       propsOrdZero (id :: SignExpansion -> SignExpansion)
 
