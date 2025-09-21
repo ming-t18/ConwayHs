@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Data.Conway.Simplicity.Seq (conwaySeq, monoSeq, veb1Seq) where
 
 import Data.Conway.Conway
@@ -5,6 +7,7 @@ import Data.Conway.Seq.InfList (Infinite)
 import qualified Data.Conway.Seq.InfList as I
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (parseFiniteSE), fromList)
 import Data.Conway.Simplicity.Parent
+import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 import Data.Maybe (fromJust)
 
@@ -22,9 +25,7 @@ monoSeq (MonoMultSeq p False) = I.generate (\n -> fromVebMono (p, fromJust $ par
 veb1Seq (Veb1ArgSeq o p') = I.generate (veb1 o . I.index pSeq)
   where
     pSeq = conwaySeq p'
-veb1Seq (Veb1OrderSeq o' p) = I.generate ((`veb1` p) . I.index oSeq)
+veb1Seq (Veb1OrderSeq o' (fromFixBase -> p)) = I.generate ((`veb1` p) . I.index oSeq)
   where
     oSeq = conwaySeq o'
-veb1Seq (Veb1IterSeq o p s) = zero `I.cons` I.iterate (veb1 o) base
-  where
-    base = if s then p `add` one else p `sub` one
+veb1Seq (Veb1IterSeq o (fromFixBase -> base)) = zero `I.cons` I.iterate (veb1 o) base

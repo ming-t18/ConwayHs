@@ -68,6 +68,9 @@ parentMono isLeft (p, c)
         Just (Left p'Succ) -> psPoint $ base `add` p'Succ
         Just (Right p'Lim) -> psLim $ cs0 {csTerm = p'Lim}
 
+fixBaseZero :: FixBase a
+fixBaseZero = Nothing
+
 parentVeb1 :: (OrdRing a, FiniteSignExpansion a) => Direction -> VebMono a -> ParentSeq0 a
 parentVeb1 isLeft (VebMono (isZero -> True) p) =
   case parentConway isLeft p of
@@ -85,9 +88,9 @@ parentVeb1 isLeft (VebMono o (isZero -> True))
       co <- parentConway True o
       case co of
         -- Veb1LSuccZero
-        Left o'Succ -> Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ zero isLeft
+        Left o'Succ -> Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ fixBaseZero
         -- Veb1LLimitZero
-        Right o'Lim -> Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim zero
+        Right o'Lim -> Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim fixBaseZero
   -- Veb1RSuccZero, Veb1RLimitZero
   | otherwise = Nothing
 parentVeb1 isLeft (VebMono o p) = do
@@ -102,18 +105,16 @@ parentVeb1 isLeft (VebMono o p) = do
       co <- parentConway True o
       case co of
         -- Veb1LSuccSucc, Veb1RSuccSucc
-        Left o'Succ -> Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ (veb1 o p'Succ) isLeft
+        Left o'Succ ->
+          let base = Just (VebMono o p'Succ, isLeft)
+           in Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ base
         -- Veb1LLimitSucc, Veb1LRimitSucc
         Right o'Lim ->
-          let off = getIterOffset isLeft
-           in Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim (off $ veb1 o p'Succ)
+          let base = Just (VebMono o p'Succ, isLeft)
+           in Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim base
     Just (Right p'Lim) -> Just $ Right $ Mono1Seq $ Veb1ArgSeq o p'Lim
-
-getIterOffset :: (AddSub a, One a) => Bool -> a -> a
-getIterOffset isLeft = if isLeft then (`add` one) else (`sub` one)
 
 addSeq :: (OrdRing a) => Conway a -> ConwaySeq a -> ConwaySeq a
 addSeq base0 c@ConwaySeq {csBase = b0} = c {csBase = base0 `add` b0}
 
--- TODO limit completion
 -- TODO skip based on reduced SE

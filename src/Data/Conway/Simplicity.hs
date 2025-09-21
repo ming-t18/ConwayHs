@@ -88,6 +88,7 @@ module Data.Conway.Simplicity
     ParentSeq0,
     ConwaySeq (..),
     MonoSeq (..),
+    FixBase,
     Veb1Seq (..),
     LeftRight (..),
 
@@ -103,16 +104,15 @@ module Data.Conway.Simplicity
     veb1Seq,
 
     -- * Limit completion
+    limConwaySeq,
+    limMonoSeq,
+    limVeb1Seq,
+    limParentSeq,
+    limLR,
   )
 where
 
--- limConwaySeq,
--- limMonoSeq,
--- limVeb1Seq,
--- limParentSeq,
--- limLR,
-
--- import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Seq
 import Data.Conway.Simplicity.Types
