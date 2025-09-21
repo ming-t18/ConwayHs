@@ -60,16 +60,18 @@ limConwaySeq cs0@ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
     addBase = if s then (base `add`) else (base `sub`)
     pLim = limMonoSeq tSeq
 
+-- | True if and only if @p@ equals @pLim@ with a non-zero number of minuses after it.
 onlyMinusesBetween :: (OrdZero a, One a, FiniteSignExpansion a) => Conway a -> Conway a -> Bool
-onlyMinusesBetween p pLim =
-  case SE.toList pRest of
-    [(False, _)] -> True
-    [] -> True
-    _ -> False
+onlyMinusesBetween p pLim = pCond && pLimCond
   where
     pSE = conwaySE p
     pLimSE = conwaySE pLim
-    (_, (pRest, _)) = SE.takeCommonPrefix pLimSE pSE
+    (_, (pPart, pLimPart)) = SE.takeCommonPrefix pSE pLimSE
+    pLimCond = isZero pLimPart
+    pCond =
+      case SE.toList pPart of
+        [(False, _)] -> True
+        _ -> False
 
 --  | s = base `add` limMonoSeq tSeq
 --  | otherwise = base `sub` limMonoSeq tSeq
