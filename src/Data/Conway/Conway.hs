@@ -335,7 +335,10 @@ veb1 a p
 veb :: (Mult a) => Ordinal -> Conway a -> a -> Conway a
 veb a p c
   | c == one = veb1 a p
-  | otherwise = conway $ M.singleton (VebMono a p) c
+  | otherwise =
+      case veb1View p of
+        Just vm@(VebMono a' _) | a < a' -> conway $ M.singleton vm c
+        _ -> conway $ M.singleton (VebMono a p) c
 
 -- | A sum of two-argument Veblen function terms with coefficients, @sum [(veb a p) * c | ...]@.
 multMono :: (AddSub a, Mult a) => (VebMono a, a) -> Conway a -> Conway a
