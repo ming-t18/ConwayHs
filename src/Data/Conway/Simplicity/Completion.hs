@@ -20,28 +20,41 @@ import Data.Conway.Typeclasses
 import Data.Maybe (fromJust)
 
 appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
-limConwaySeq :: (Show a, OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
-limMonoSeq :: (Show a, OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
-limVeb1Seq :: (Show a, OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Conway a
-limParentSeq :: (Show a, OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Conway a)
-limLR :: (Show a, OrdRing a, FiniteSignExpansion a) => LeftRight a -> Conway a
+limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
+limMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
+limVeb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Conway a
+limParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Conway a)
+limLR :: (OrdRing a, FiniteSignExpansion a) => LeftRight a -> Conway a
 appendSignDyadic :: (FiniteSignExpansion a) => Bool -> a -> a
 appendSignDyadic s c = fromJust $ parseFiniteSE (finiteSE c <> SED.single (s, 1 :: Natural))
 appendSign s x = parseToConway (conwaySE x <> SE.single (s, 1))
 
-limConwaySeq cs0@ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
+-- | Completes the limit @base + w^pLim@
+--
+-- * Cases:
+-- @base' + w^p.c +/- w^pLim = ?@
+--
+-- * p > pLim: @= base' + w^p.c + w^pLim@
+--
+-- * p = pLim: @= base' + w^p.(c & +/-)@
+--
+-- * p < pLim: @= base' + w^p.(c & +/-)@ where @pLim@ is immediate predecessor
+--
+-- * p < pLim: @= base'@
+limConwaySeq ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
   case trailingView base of
     Nothing -> addBase $ limMonoSeq tSeq
     Just (base', (v@(fromVebMono1 -> p), c)) ->
-      let pLim = limMonoSeq tSeq
-       in case p `compare` pLim of
-            LT -> limConwaySeq cs0 {csBase = base'}
-            EQ ->
-              let c' = appendSignDyadic (if s then isPositive pLim else isNegative pLim) c
-               in base' `add` fromVebMono (v, c')
-            GT -> addBase pLim
+      case p `compare` pLim of
+        GT -> addBase pLim
+        -- TODO not verifying the "absorbed" case
+        -- LT -> limConwaySeq cs0 {csBase = base'}
+        _ ->
+          let c' = appendSignDyadic (if s then isPositive pLim else isNegative pLim) c
+           in base' `add` fromVebMono (v, c')
   where
     addBase = if s then (base `add`) else (base `sub`)
+    pLim = limMonoSeq tSeq
 
 --  | s = base `add` limMonoSeq tSeq
 --  | otherwise = base `sub` limMonoSeq tSeq
@@ -66,6 +79,9 @@ limVeb1Seq (Veb1IterSeq _o' (Just (VebMono o p, s))) =
 
 limParentSeq = (either id limConwaySeq <$>)
 
+limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> Maybe (Either (Conway a) (ConwaySeq a)) -> Maybe (Conway a)
+limParentSeqDir sign = (either (appendSign sign) limConwaySeq <$>)
+
 limLR (LR l r) =
   case (limL, limR) of
     (Nothing, Nothing) -> zero
@@ -73,5 +89,5 @@ limLR (LR l r) =
     (Nothing, Just x) -> x
     (Just x, Just y) -> if birthday x < birthday y then y else x
   where
-    limL = limParentSeq l
-    limR = limParentSeq r
+    limL = limParentSeqDir True l
+    limR = limParentSeqDir False r
