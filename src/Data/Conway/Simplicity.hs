@@ -91,12 +91,14 @@ module Data.Conway.Simplicity
     FixBase,
     Veb1Seq (..),
     LeftRight (..),
+    toPair,
 
     -- * Parent sequence
     parentDyadic,
     parentConway,
     parentMono,
     parentVeb1,
+    lrConway,
 
     -- * Sequence generation
     conwaySeq,

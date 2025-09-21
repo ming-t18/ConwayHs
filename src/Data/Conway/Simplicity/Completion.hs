@@ -12,10 +12,12 @@ where
 import Data.Conway.Conway
 import Data.Conway.SignExpansion (parseToConway)
 import Data.Conway.SignExpansion.Conway (birthday, conwaySE)
-import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
+import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (..))
+import qualified Data.Conway.SignExpansion.Dyadic as SED
 import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
+import Data.Maybe (fromJust)
 
 appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
 limConwaySeq :: (Show a, OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
@@ -23,11 +25,28 @@ limMonoSeq :: (Show a, OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway 
 limVeb1Seq :: (Show a, OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Conway a
 limParentSeq :: (Show a, OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Conway a)
 limLR :: (Show a, OrdRing a, FiniteSignExpansion a) => LeftRight a -> Conway a
+appendSignDyadic :: (FiniteSignExpansion a) => Bool -> a -> a
+appendSignDyadic s c = fromJust $ parseFiniteSE (finiteSE c <> SED.single (s, 1 :: Natural))
 appendSign s x = parseToConway (conwaySE x <> SE.single (s, 1))
 
-limConwaySeq ConwaySeq {csBase = base, csSign = s, csTerm = tSeq}
-  | s = base `add` limMonoSeq tSeq
-  | otherwise = base `sub` limMonoSeq tSeq
+limConwaySeq cs0@ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
+  case trailingView base of
+    Nothing -> addBase $ limMonoSeq tSeq
+    Just (base', (v@(fromVebMono1 -> p), c)) ->
+      let pLim = limMonoSeq tSeq
+       in case p `compare` pLim of
+            LT -> limConwaySeq cs0 {csBase = base'}
+            EQ ->
+              let c' = appendSignDyadic (if s then isPositive pLim else isNegative pLim) c
+               in base' `add` fromVebMono (v, c')
+            GT -> addBase pLim
+  where
+    addBase = if s then (base `add`) else (base `sub`)
+
+--  | s = base `add` limMonoSeq tSeq
+--  | otherwise = base `sub` limMonoSeq tSeq
+
+-- break up base, check if adding a minus is needed
 
 limMonoSeq (Mono1Seq v1Seq) = limVeb1Seq v1Seq
 limMonoSeq (MonoMultSeq (VebMono (isZero -> True) p) sign) = mono1 $ appendSign sign p

@@ -6,6 +6,7 @@ module Data.Conway.Simplicity.Types
     FixBase,
     Veb1Seq (..),
     LeftRight (..),
+    toPair,
     psEmpty,
     psPoint,
     psLim,
@@ -75,6 +76,9 @@ data Veb1Seq a
     Veb1IterSeq Ordinal (FixBase a)
 
 data LeftRight a = LR (ParentSeq a) (ParentSeq a)
+
+toPair :: LeftRight a -> (ParentSeq a, ParentSeq a)
+toPair (LR a b) = (a, b)
 
 instance (OrdRing a, One a, Show a) => Show (ConwaySeq a) where
   show ConwaySeq {csBase = b, csSign = s, csTerm = t}

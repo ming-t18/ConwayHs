@@ -19,6 +19,7 @@ module Data.Conway.SignExpansion.Dyadic
     negFSE,
     plus,
     minus,
+    single,
     lastSign,
     parent,
 
@@ -216,6 +217,9 @@ minus n = FSE [(False, fromIntegral n)]
 signs :: (Integral a) => Bool -> a -> FSE
 signs _ 0 = empty
 signs s n = FSE [(s, fromIntegral n)]
+
+single :: (Integral a) => (Bool, a) -> FSE
+single = uncurry signs
 
 naturalSE 0 = empty
 naturalSE n = plus n
