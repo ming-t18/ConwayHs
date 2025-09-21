@@ -29,32 +29,47 @@ appendSignDyadic :: (FiniteSignExpansion a) => Bool -> a -> a
 appendSignDyadic s c = fromJust $ parseFiniteSE (finiteSE c <> SED.single (s, 1 :: Natural))
 appendSign s x = parseToConway (conwaySE x <> SE.single (s, 1))
 
--- | Completes the limit @base + w^pLim@
+-- | Complete the limit @base + w^{pLim}@ where @pLim is a limit sequence@.
 --
--- * Cases:
--- @base' + w^p.c +/- w^pLim = ?@
+-- Let @w^p.c@ be the trailing term of @base@.
 --
--- * p > pLim: @= base' + w^p.c + w^pLim@
+-- The cases of @base' + w^p.c +/- w^pLim = ?@:
 --
--- * p = pLim: @= base' + w^p.(c & +/-)@
+-- * @p > pLim@: @= base' + w^p.c + w^pLim@
 --
--- * p < pLim: @= base' + w^p.(c & +/-)@ where @pLim@ is immediate predecessor
+-- * @p = pLim@: @= base' + w^p.(c & +/-)@
 --
--- * p < pLim: @= base'@
-limConwaySeq ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
+-- * @p < pLim && unreduceCheck@: @= base' + w^p.(c & +/-)@
+--     where @unreduceCheck@ is true if and only if @p = pLim & [-^k]@ for some ordinal @k@
+--
+-- * otherwise: @= base'@
+limConwaySeq cs0@ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
   case trailingView base of
     Nothing -> addBase $ limMonoSeq tSeq
     Just (base', (v@(fromVebMono1 -> p), c)) ->
       case p `compare` pLim of
         GT -> addBase pLim
-        -- TODO not verifying the "absorbed" case
-        -- LT -> limConwaySeq cs0 {csBase = base'}
-        _ ->
-          let c' = appendSignDyadic (if s then isPositive pLim else isNegative pLim) c
-           in base' `add` fromVebMono (v, c')
+        cmp
+          | cmp == EQ || unreduceCheck -> base' `add` fromVebMono (v, c')
+          where
+            c' = appendSignDyadic (if s then isPositive pLim else isNegative pLim) c
+            unreduceCheck = onlyMinusesBetween p pLim
+        -- "absorbed" case
+        _ -> limConwaySeq cs0 {csBase = base'}
   where
     addBase = if s then (base `add`) else (base `sub`)
     pLim = limMonoSeq tSeq
+
+onlyMinusesBetween :: (OrdZero a, One a, FiniteSignExpansion a) => Conway a -> Conway a -> Bool
+onlyMinusesBetween p pLim =
+  case SE.toList pRest of
+    [(False, _)] -> True
+    [] -> True
+    _ -> False
+  where
+    pSE = conwaySE p
+    pLimSE = conwaySE pLim
+    (_, (pRest, _)) = SE.takeCommonPrefix pLimSE pSE
 
 --  | s = base `add` limMonoSeq tSeq
 --  | otherwise = base `sub` limMonoSeq tSeq
