@@ -56,10 +56,9 @@ parentMono isLeft (p, c)
         Left p'Succ -> psPoint p'Succ
         Right p'Lim -> psLim $ ConwaySeq {csBase = zero, csSign = True, csTerm = p'Lim}
   | otherwise = do
-      -- L: V(o, p).c = { V(o, p).c' + V(o, p)'.n | ... }
-      -- R: V(o, p).c = { ... | V(o, p).c'' - V(o, p)'.n }
+      -- Let m = veb1 o p and c is non-zero and finite
+      -- m.c = { m.c' + m'.n | m.c'' - m'.n }
       c' <- parentDyadic isLeft c
-      -- let op = if isLeft then add else sub
       let base = fromVebMono (p, c')
       let cs0 = ConwaySeq {csBase = base, csSign = isLeft, csTerm = undefined}
       let p0'Lower = parentVeb1 True p
@@ -75,13 +74,13 @@ parentVeb1 :: (OrdRing a, FiniteSignExpansion a) => Direction -> VebMono a -> Pa
 parentVeb1 isLeft (VebMono (isZero -> True) p) =
   case parentConway isLeft p of
     Nothing -> if isLeft then Just $ Left zero else Nothing
-    -- L: V(0, p) = w^{|...} = { 0 | ... } (handled by caller)
-    -- R: V(0, p) = w^{...|} = { ... | }
-    -- L: V(0, p) = w^{p'|...} = { w^p . n | ... }
-    -- R: V(0, p) = w^{...|p''} = { ... | w^p'' . (1 `shr` n)}
+    -- L: (veb1 0 p) = w^{|...} = { 0 | ... } (handled by caller)
+    -- R: (veb1 0 p) = w^{...|} = { ... | }
+    -- L: (veb1 0 p) = w^{p'|...} = { w^p . n | ... }
+    -- R: (veb1 0 p) = w^{...|p''} = { ... | w^p'' . (1 `shr` n)}
     Just (Left p'Succ) -> Just $ Right $ MonoMultSeq (VebMono zero p'Succ) isLeft
-    -- L: V(0, p) = w^{p'[n]|...} = { w^p'[n] | ... }
-    -- R: V(0, p) = w^{...|p''[n]} = { ... | w^p''[n] }
+    -- L: (veb1 0 p) = w^{p'[n]|...} = { w^p'[n] | ... }
+    -- R: (veb1 0 p) = w^{...|p''[n]} = { ... | w^p''[n] }
     Just (Right p'Lim) -> Just $ Right $ Mono1Seq $ Veb1ArgSeq zero p'Lim
 parentVeb1 isLeft (VebMono o (isZero -> True))
   | isLeft = do
@@ -116,5 +115,3 @@ parentVeb1 isLeft (VebMono o p) = do
 
 addSeq :: (OrdRing a) => Conway a -> ConwaySeq a -> ConwaySeq a
 addSeq base0 c@ConwaySeq {csBase = b0} = c {csBase = base0 `add` b0}
-
--- TODO skip based on reduced SE
