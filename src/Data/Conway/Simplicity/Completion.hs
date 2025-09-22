@@ -6,7 +6,10 @@ module Data.Conway.Simplicity.Completion
     limVeb1Seq,
     limParentSeq,
     limLR,
+    birthdayLimParentSeq,
     parentSeq,
+    parentSeqWithSign,
+    parentSeqSign,
   )
 where
 
@@ -19,7 +22,7 @@ import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Simplicity.Parent (parentConway)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust)
 
 appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
 limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
@@ -111,20 +114,35 @@ limLR (LR l r) =
     limL = limParentSeqDir True l
     limR = limParentSeqDir False r
 
+-- | Given a @ParentSeq@, find its immediate.
+birthdayLimParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Ordinal
+birthdayLimParentSeq x = maybe zero birthday (limParentSeq x)
+
 -- | Given a @Conway@, find its immediate parent sequence.
 parentSeq :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ParentSeq a
-parentSeq x0 =
+parentSeq = maybe psEmpty snd . parentSeqWithSign
+
+-- | Given a @Conway@, find its immediate parent sequence and its direction.
+parentSeqWithSign :: (OrdRing a, FiniteSignExpansion a) => Conway a -> Maybe (Bool, ParentSeq a)
+parentSeqWithSign x0 =
   case (limL, limR) of
-    (Nothing, Nothing) -> psEmpty
-    (Just _, Nothing) -> seqL
-    (Nothing, Just _) -> seqR
-    (Just x, Just y) -> if birthday x < birthday y then seqR else seqL
+    (Nothing, Nothing) -> Nothing
+    (Just _, Nothing) -> Just (True, seqL)
+    (Nothing, Just _) -> Just (False, seqR)
+    (Just x, Just y) -> if birthday x < birthday y then Just (False, seqR) else Just (True, seqL)
   where
     seqL = parentConway True x0
     seqR = parentConway False x0
     limL = limParentSeqDir True seqL
     limR = limParentSeqDir False seqR
 
-tryGetPoint :: ParentSeq a -> Maybe (Conway a)
-tryGetPoint (Just (Left x)) = Just x
-tryGetPoint _ = Nothing
+parentSeqSign :: ParentSeq a -> Maybe Bool
+parentSeqSign Nothing = Nothing
+parentSeqSign (Just (Left _)) = Nothing
+parentSeqSign (Just (Right ConwaySeq {csTerm = t})) = onTerm t
+  where
+    onTerm :: MonoSeq a -> Maybe Bool
+    onTerm (MonoMultSeq _ b) = Just b
+    onTerm (Mono1Seq (Veb1ArgSeq _ c)) = parentSeqSign $ psLim c
+    onTerm (Mono1Seq (Veb1OrderSeq _ b)) = snd <$> b
+    onTerm (Mono1Seq (Veb1IterSeq _ b)) = snd <$> b
