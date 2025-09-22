@@ -6,6 +6,7 @@ module Data.Conway.Simplicity.Completion
     limVeb1Seq,
     limParentSeq,
     limLR,
+    parentSeq,
   )
 where
 
@@ -15,9 +16,10 @@ import Data.Conway.SignExpansion.Conway (birthday, conwaySE)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (..))
 import qualified Data.Conway.SignExpansion.Dyadic as SED
 import qualified Data.Conway.SignExpansion.Types as SE
+import Data.Conway.Simplicity.Parent (parentConway)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 
 appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
 limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
@@ -108,3 +110,21 @@ limLR (LR l r) =
   where
     limL = limParentSeqDir True l
     limR = limParentSeqDir False r
+
+-- | Given a @Conway@, find its immediate parent sequence.
+parentSeq :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ParentSeq a
+parentSeq x0 =
+  case (limL, limR) of
+    (Nothing, Nothing) -> psEmpty
+    (Just _, Nothing) -> seqL
+    (Nothing, Just _) -> seqR
+    (Just x, Just y) -> if birthday x < birthday y then seqR else seqL
+  where
+    seqL = parentConway True x0
+    seqR = parentConway False x0
+    limL = limParentSeqDir True seqL
+    limR = limParentSeqDir False seqR
+
+tryGetPoint :: ParentSeq a -> Maybe (Conway a)
+tryGetPoint (Just (Left x)) = Just x
+tryGetPoint _ = Nothing

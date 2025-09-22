@@ -111,10 +111,16 @@ module Data.Conway.Simplicity
     limVeb1Seq,
     limParentSeq,
     limLR,
+
+    -- * Descent
+    parentSeq,
+    descend,
+    descent,
   )
 where
 
 import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Descent
 import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Seq
 import Data.Conway.Simplicity.Types
