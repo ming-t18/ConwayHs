@@ -25,6 +25,8 @@ module Data.Conway.Conway
     termsList,
     ascTermsList,
     fromTermsList,
+    mapCoeffs,
+    mapCoeffsMonotonic,
 
     -- * Construction helpers
     finite,
@@ -212,6 +214,14 @@ ascTermsList = M.toAscList . toMap
 
 fromTermsList :: (OrdZero a, One a) => [(VebMono a, a)] -> Conway a
 fromTermsList = conway . M.fromList
+
+mapCoeffs, mapCoeffsMonotonic :: (OrdZero a, One a, OrdZero b, One b) => (a -> b) -> Conway a -> Conway b
+
+-- | Perform a mapping on the coefficients. Must preserve @isZero@ to abide by functor laws.
+mapCoeffs f = conway . M.fromList . map (\(VebMono o p, c) -> (VebMono o (mapCoeffs f p), f c)) . M.toList . toMap
+
+-- | Perform a order-preserving mapping on the coefficients. This precondition is unchecked.
+mapCoeffsMonotonic f = conway . M.map f . M.mapKeys (\(VebMono o p) -> VebMono o (mapCoeffsMonotonic f p)) . toMap
 
 -- | Given a @Conway@, returns its term in Cantor/Conway normal form, or zero
 leadingTerm :: (OrdZero a) => Conway a -> (VebMono a, a)
