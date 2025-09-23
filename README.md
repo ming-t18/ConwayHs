@@ -27,18 +27,31 @@ stack test
 
 # API
 
+Top-level module: `Data.Conway`
+
 ## Basic datatypes
 
- - `Dyadic`: dyadic rational numbers -- rationals with power of 2 denominators
- - `Conway a`: surreal numbers with coefficient type `a`
- - `Conway Dyadic`: representable surreal numbers
- - `VebMono`: a Veblen function monomial
- - `MonoTerm p a`: a single term (including finite coefficient) in Cantor/Conway normal form. helper for the `Ord` implementation of `Conway`, `SignExpansion` and `FSE`
- - `Ordinal`: representable ordinal numbers, alias of `Conway Natural`
- - `SignExpansion`: sign expansions of `Conway Dyadic`
- - `FSE`: sign expansions of dyadic rationals
- - `Reduced a`: wrapper for reduced sign expansions
- - `Infinite a`: an infinite list with order type $\omega$
+ - Finite values
+    - `Natural`: natural number from Haskell standard library
+    - `Dyadic`: dyadic rational numbers -- rationals with power of 2 denominators
+ - Ordinals and surreals -- `Conway`
+    - `Conway a`: surreal numbers with coefficient type `a`
+    - `Conway Dyadic`: representable surreal numbers
+    - `Ordinal`: representable ordinal numbers, alias of `Conway Natural`
+    - `VebMono`: a Veblen function monomial: $\phi(o, a)$
+ - Sign expansions
+    - `SignExpansion`: sign expansions of `Conway Dyadic`
+    - `FSE`: sign expansions of dyadic rationals
+    - `Reduced a`: wrapper for reduced sign expansions as explained in Gonshor's book
+ - Ranges and sequences
+    - `ParentSeq a`: the immediate parent sequence of a `Conway a`
+    - `ConwaySeq a`: the limit sequence completing to a `Conway a`
+    - `MonoSeq a`: the limit sequence of a monomial
+    - `Veb1Seq a`: the limit sequence of a Veblen monomial $\phi(o, a)$
+    - `FixBase a`: the base of a fixed-point iteration
+    - `LeftRight a`: the `{ left | right }` representation of a `Conway a`
+ - Transfinite sequences
+    - `Infinite a`: an infinite list with order type $\omega$
 
 ## Typeclasses
 
@@ -209,9 +222,22 @@ instance Monoid FSE where
 fsOrd :: Ordinal -> Either Ordinal (NonEmpty Ordinal)
 ```
 
-## Fundamental sequence of $\Gamma_0$
+### Fundamental sequence of $\Gamma_0$
 
 ```
 ghci> take 8 $ iterate (`veb1` 0) 0
 [0,1,ε_0,φ[ε_0, 0],φ[φ[ε_0, 0], 0],φ[φ[φ[ε_0, 0], 0], 0],φ[φ[φ[φ[ε_0, 0], 0], 0], 0],φ[φ[φ[φ[φ[ε_0, 0], 0], 0], 0], 0]]
 ```
+
+## Representing values larger than $\Gamma_0$
+
+In theory the type `Conway (Conway a)` can be used to represent the arguments to ordinal collapsing functions, but currently there are no implementations to specially handle them.
+
+## Ranges ("parent", "fundamental sequence", "canonical sequence", "simplicity sequence")
+
+A surreal number `x` can be defined in terms of `x = { L | R }` where `L` and `R` are sequences of surreal numbers (zero, finite or infinite length sequences). For the sequence to be value, everything in `L` are less than everything in `R`, and `{ L | R }` denotes the simplest (by birthday) surreal number between `L` and `R`.
+
+There are infinitely many ways to write the `L` and `R` for a given surreal number, but there is
+a system for the "canonical" way of defining the left and right sequences.
+
+The `Data.Conway.Simplicity` module contains the functions to convert from a surreal to its immediate parent sequence, functions to enumerate the sequences, and functions to complete the limit sequences.
