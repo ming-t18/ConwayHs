@@ -11,6 +11,9 @@ module Data.Conway.Typeclasses
     Mult (..),
     OrdRing,
     Veblen (..),
+
+    -- * Zero-only type
+    ZeroOnly (..),
   )
 where
 
@@ -232,3 +235,31 @@ instance (Zero a, Zero b) => Zero (a, b) where
 
 instance (OrdZero a, OrdZero b) => OrdZero (a, b) where
   neg (a, b) = (neg a, neg b)
+
+-- * A type with only zero element
+
+data ZeroOnly = ZeroOnly
+  deriving (Eq, Ord)
+
+instance Show ZeroOnly where
+  show ZeroOnly = "0"
+
+instance Zero ZeroOnly where
+  zero = ZeroOnly
+  isZero _ = True
+
+instance One ZeroOnly where
+  one = error "No one element for ZeroOnly"
+  isOne _ = False
+
+instance OrdZero ZeroOnly where
+  neg = id
+
+instance AddSub ZeroOnly where
+  add _ _ = zero
+  sub _ _ = zero
+
+instance Mult ZeroOnly where
+  mult _ _ = zero
+
+instance OrdRing ZeroOnly
