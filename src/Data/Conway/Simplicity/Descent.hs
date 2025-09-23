@@ -5,7 +5,7 @@ import qualified Data.Conway.Seq.InfList as I
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion (parentSeq)
 import Data.Conway.Simplicity.Seq
-import Data.Conway.Simplicity.Types (ConwaySeq (..), MonoSeq (..), Veb1Seq (..))
+import Data.Conway.Simplicity.Types (ConwaySeq (..), MonoSeq (..), ParentSeq, Veb1Seq (..))
 import Data.Conway.Typeclasses
 import Data.List (unfoldr)
 
