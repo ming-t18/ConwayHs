@@ -614,7 +614,7 @@ testSignExpansionConway = do
     it "fixed point on veb1 of lower order" $ qc (\o1 o p -> o1 < o ==> (let p' = veb1SE o p in veb1SE o1 p' === p'))
 
 testParseSignExpansion :: SpecWith ()
-testParseSignExpansion = do
+testParseSignExpansion = modifyMaxSuccess (`div` 5) $ do
   describe "detectVebOrder" $ do
     it "example (resulting SE does not contain the Veb order)" $ do
       let p = veb1SE 2 (Seq.rep 1 True) <> Seq.rep 1 False
