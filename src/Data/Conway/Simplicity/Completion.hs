@@ -99,10 +99,16 @@ limVeb1Seq (Veb1IterSeq o Nothing) = fromVebMono1 $ VebMono (o + 1) zero
 limVeb1Seq (Veb1IterSeq _o' (Just (VebMono o p, s))) =
   fromVebMono1 $ VebMono o $ appendSign s p
 
-limParentSeq = (either id limConwaySeq <$>)
+limParentSeq Nothing = Nothing
+limParentSeq (Just re) = case re of
+  EPoint (p, _) -> Just p
+  ELimit l -> limConwaySeq <$> Just l
 
-limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> Maybe (Either (Conway a) (ConwaySeq a)) -> Maybe (Conway a)
-limParentSeqDir sign = (either (appendSign sign) limConwaySeq <$>)
+limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> ParentSeq a -> Maybe (Conway a)
+limParentSeqDir _ Nothing = Nothing
+limParentSeqDir sign (Just re) = case re of
+  EPoint (p, _sign) -> Just $ appendSign sign p
+  ELimit l -> limConwaySeq <$> Just l
 
 limLR (LR l r) =
   case (limL, limR) of
@@ -138,8 +144,8 @@ parentSeqWithSign x0 =
 
 parentSeqSign :: ParentSeq a -> Maybe Bool
 parentSeqSign Nothing = Nothing
-parentSeqSign (Just (Left _)) = Nothing
-parentSeqSign (Just (Right ConwaySeq {csTerm = t})) = onTerm t
+parentSeqSign (Just (EPoint _)) = Nothing
+parentSeqSign (Just (ELimit ConwaySeq {csTerm = t})) = onTerm t
   where
     onTerm :: MonoSeq a -> Maybe Bool
     onTerm (MonoMultSeq _ b) = Just b

@@ -1,5 +1,7 @@
 module Data.Conway.Simplicity.Types
-  ( ParentSeq,
+  ( RangeElem (..),
+    RangeElemMono (..),
+    ParentSeq,
     ParentSeq0,
     ConwaySeq (..),
     MonoSeq (..),
@@ -7,15 +9,26 @@ module Data.Conway.Simplicity.Types
     Veb1Seq (..),
     LeftRight (..),
     toPair,
+    fromFixBase,
+
+    -- * PS builders
     psEmpty,
     psPoint,
     psLim,
-    fromFixBase,
+    ps0Empty,
+    ps0Point,
+    ps0Lim,
   )
 where
 
 import Data.Conway.Conway
 import Data.Conway.Typeclasses
+
+data RangeElem a = EPoint (Conway a, Bool) | ELimit (ConwaySeq a)
+  deriving (Show)
+
+data RangeElemMono a = MPoint ((VebMono a, a), Bool) | MLimit (MonoSeq a)
+  deriving (Show)
 
 -- | The parent range of a surreal number is one of:
 --
@@ -26,18 +39,27 @@ import Data.Conway.Typeclasses
 -- 3. Limit sequence
 --
 -- The type @Maybe@ is used because its monadic nature is used to propagate the emptyness.
-type ParentSeq a = Maybe (Either (Conway a) (ConwaySeq a))
+type ParentSeq a = Maybe (RangeElem a)
 
-type ParentSeq0 a = Maybe (Either (Conway a) (MonoSeq a))
+type ParentSeq0 a = Maybe (RangeElemMono a)
 
 psEmpty :: ParentSeq a
-psPoint :: Conway a -> ParentSeq a
+psPoint :: (Conway a, Bool) -> ParentSeq a
 psLim :: ConwaySeq a -> ParentSeq a
 psEmpty = Nothing
 
-psPoint = Just . Left
+psPoint = Just . EPoint
 
-psLim = Just . Right
+psLim = Just . ELimit
+
+ps0Empty :: ParentSeq0 a
+ps0Point :: ((VebMono a, a), Bool) -> ParentSeq0 a
+ps0Lim :: MonoSeq a -> ParentSeq0 a
+ps0Empty = Nothing
+
+ps0Point = Just . MPoint
+
+ps0Lim = Just . MLimit
 
 -- | A limit sequence of a @Conway a@.
 --
@@ -120,7 +142,9 @@ instance (OrdRing a, One a, Show a) => Show (LeftRight a) where
     where
       ls' = maybe "" show' ls
       rs' = maybe "" show' rs
-      show' = either show show
+      show' re = case re of
+        EPoint (p, _) -> show p
+        ELimit l -> show l
 
 fromFixBase :: (OrdRing a) => FixBase a -> Conway a
 fromFixBase Nothing = zero

@@ -22,8 +22,8 @@ import Data.Conway.Typeclasses
 
 negateParentSeq :: (OrdZero a, One a) => ParentSeq a -> ParentSeq a
 negateParentSeq Nothing = Nothing
-negateParentSeq (Just (Left x)) = Just $ Left $ neg x
-negateParentSeq (Just (Right x)) = Just $ Right $ negateConwaySeq x
+negateParentSeq (Just (EPoint (x, sign))) = psPoint (neg x, not sign)
+negateParentSeq (Just (ELimit x)) = psLim $ negateConwaySeq x
 
 negateConwaySeq :: (OrdZero a, One a) => ConwaySeq a -> ConwaySeq a
 negateConwaySeq ConwaySeq {csBase = b, csSign = s, csTerm = t} = ConwaySeq {csBase = neg b, csSign = not s, csTerm = t}
@@ -43,8 +43,8 @@ parentConway isLeft x =
     let res = parentMono isLeft (p, c)
     case res of
       Nothing -> parentConway isLeft base
-      Just (Left s) -> psPoint $ base `add` s
-      Just (Right l) -> psLim $ addSeq base l
+      Just (EPoint (s, b)) -> psPoint (base `add` s, b)
+      Just (ELimit l) -> psLim $ addSeq base l
 
 parentMono :: (OrdRing a, FiniteSignExpansion a) => Direction -> (VebMono a, a) -> ParentSeq a
 parentMono isLeft (p, c)
@@ -53,8 +53,8 @@ parentMono isLeft (p, c)
   | isOne c = do
       p' <- parentVeb1 isLeft p
       case p' of
-        Left p'Succ -> psPoint p'Succ
-        Right p'Lim -> psLim $ ConwaySeq {csBase = zero, csSign = True, csTerm = p'Lim}
+        MPoint (fromVebMono -> p'Succ, _) -> psPoint (p'Succ, isLeft)
+        MLimit p'Lim -> psLim $ ConwaySeq {csBase = zero, csSign = True, csTerm = p'Lim}
   | otherwise = do
       -- Let m = veb1 o p and c is non-zero and finite
       -- m.c = { m.c' + m'.n | m.c'' - m'.n }
@@ -63,9 +63,9 @@ parentMono isLeft (p, c)
       let cs0 = ConwaySeq {csBase = base, csSign = isLeft, csTerm = undefined}
       let p0'Lower = parentVeb1 True p
       case p0'Lower of
-        Nothing -> if isLeft then psPoint base else Nothing
-        Just (Left p'Succ) -> psPoint $ base `add` p'Succ
-        Just (Right p'Lim) -> psLim $ cs0 {csTerm = p'Lim}
+        Nothing -> if isLeft then psPoint (base, isLeft) else Nothing
+        Just (MPoint (fromVebMono -> p'Succ, _)) -> psPoint (base `add` p'Succ, isLeft)
+        Just (MLimit p'Lim) -> psLim $ cs0 {csTerm = p'Lim}
 
 fixBaseZero :: FixBase a
 fixBaseZero = Nothing
@@ -73,23 +73,23 @@ fixBaseZero = Nothing
 parentVeb1 :: (OrdRing a, FiniteSignExpansion a) => Direction -> VebMono a -> ParentSeq0 a
 parentVeb1 isLeft (VebMono (isZero -> True) p) =
   case parentConway isLeft p of
-    Nothing -> if isLeft then Just $ Left zero else Nothing
+    Nothing -> if isLeft then ps0Point (zero, isLeft) else ps0Empty
     -- L: (veb1 0 p) = w^{|...} = { 0 | ... } (handled by caller)
     -- R: (veb1 0 p) = w^{...|} = { ... | }
     -- L: (veb1 0 p) = w^{p'|...} = { w^p . n | ... }
     -- R: (veb1 0 p) = w^{...|p''} = { ... | w^p'' . (1 `shr` n)}
-    Just (Left p'Succ) -> Just $ Right $ MonoMultSeq (VebMono zero p'Succ) isLeft
+    Just (EPoint (p'Succ, _)) -> Just $ MLimit $ MonoMultSeq (VebMono zero p'Succ) isLeft
     -- L: (veb1 0 p) = w^{p'[n]|...} = { w^p'[n] | ... }
     -- R: (veb1 0 p) = w^{...|p''[n]} = { ... | w^p''[n] }
-    Just (Right p'Lim) -> Just $ Right $ Mono1Seq $ Veb1ArgSeq zero p'Lim
+    Just (ELimit p'Lim) -> Just $ MLimit $ Mono1Seq $ Veb1ArgSeq zero p'Lim
 parentVeb1 isLeft (VebMono o (isZero -> True))
   | isLeft = do
       co <- parentConway True o
       case co of
         -- Veb1LSuccZero
-        Left o'Succ -> Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ fixBaseZero
+        EPoint (o'Succ, _) -> Just $ MLimit $ Mono1Seq $ Veb1IterSeq o'Succ fixBaseZero
         -- Veb1LLimitZero
-        Right o'Lim -> Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim fixBaseZero
+        ELimit o'Lim -> Just $ MLimit $ Mono1Seq $ Veb1OrderSeq o'Lim fixBaseZero
   -- Veb1RSuccZero, Veb1RLimitZero
   | otherwise = Nothing
 parentVeb1 isLeft (VebMono o p) = do
@@ -100,18 +100,18 @@ parentVeb1 isLeft (VebMono o p) = do
       parentVeb1 True (VebMono o zero)
     -- Veb1RSuccEmpty, Veb1RLimitEmpty
     Nothing -> Nothing
-    Just (Left p'Succ) -> do
+    Just (EPoint (p'Succ, _)) -> do
       co <- parentConway True o
       case co of
         -- Veb1LSuccSucc, Veb1RSuccSucc
-        Left o'Succ ->
+        EPoint (o'Succ, _) ->
           let base = Just (VebMono o p'Succ, isLeft)
-           in Just $ Right $ Mono1Seq $ Veb1IterSeq o'Succ base
+           in ps0Lim $ Mono1Seq $ Veb1IterSeq o'Succ base
         -- Veb1LLimitSucc, Veb1LRimitSucc
-        Right o'Lim ->
+        ELimit o'Lim ->
           let base = Just (VebMono o p'Succ, isLeft)
-           in Just $ Right $ Mono1Seq $ Veb1OrderSeq o'Lim base
-    Just (Right p'Lim) -> Just $ Right $ Mono1Seq $ Veb1ArgSeq o p'Lim
+           in ps0Lim $ Mono1Seq $ Veb1OrderSeq o'Lim base
+    Just (ELimit p'Lim) -> ps0Lim $ Mono1Seq $ Veb1ArgSeq o p'Lim
 
 addSeq :: (OrdRing a) => Conway a -> ConwaySeq a -> ConwaySeq a
 addSeq base0 c@ConwaySeq {csBase = b0} = c {csBase = base0 `add` b0}

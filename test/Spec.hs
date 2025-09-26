@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -18,6 +19,7 @@ import Data.Conway.SignExpansion.Reduce (Reduced (..))
 import qualified Data.Conway.SignExpansion.Reduce as R
 import Data.Conway.SignExpansion.Types ()
 import Data.Conway.Simplicity
+import Data.Conway.Simplicity.Types (RangeElem (..))
 import Data.Conway.Typeclasses
   ( AddSub (..),
     Mult (..),
@@ -680,7 +682,12 @@ testParseSignExpansion = modifyMaxSuccess (`div` 5) $ do
 
 -- | Given a @ParentSeq@, index the limit sequence or return the value itself if it a point.
 indexParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Natural -> Maybe (Conway a)
-indexParentSeq s i = either id ((`I.index` i) . conwaySeq) <$> s
+indexParentSeq s i =
+  ( \case
+      EPoint (p, _) -> p
+      ELimit l -> ((`I.index` i) $ conwaySeq l)
+  )
+    <$> s
 
 checkOrd :: (Show a, Ord a) => Ordering -> a -> a -> Property
 checkOrd o x y =
@@ -712,9 +719,9 @@ testSimplicity = do
                 pr = checkOrd LT (get r i) (get r j)
              in i
                   /= j ==> case (l, r) of
-                    (Just (Right _), Just (Right _)) -> pl .&. pr
-                    (Just (Right _), _) -> pl
-                    (_, Just (Right _)) -> pr
+                    (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
+                    (Just (ELimit _), _) -> pl
+                    (_, Just (ELimit _)) -> pr
                     (_, _) -> False ==> True
         )
 
@@ -727,9 +734,9 @@ testSimplicity = do
                 (pl, pr) = (check GT l, check LT r)
              in i
                   /= j ==> case (l, r) of
-                    (Just (Right _), Just (Right _)) -> pl .&. pr
-                    (Just (Right _), _) -> pl
-                    (_, Just (Right _)) -> pr
+                    (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
+                    (Just (ELimit _), _) -> pl
+                    (_, Just (ELimit _)) -> pr
                     (_, _) -> False ==> True
         )
 

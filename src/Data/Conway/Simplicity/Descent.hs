@@ -5,7 +5,7 @@ import qualified Data.Conway.Seq.InfList as I
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion (parentSeq)
 import Data.Conway.Simplicity.Seq
-import Data.Conway.Simplicity.Types (ConwaySeq (..), MonoSeq (..), ParentSeq, Veb1Seq (..))
+import Data.Conway.Simplicity.Types (ConwaySeq (..), MonoSeq (..), ParentSeq, RangeElem (..), Veb1Seq (..))
 import Data.Conway.Typeclasses
 import Data.List (unfoldr)
 
@@ -14,8 +14,8 @@ descend x =
   do
     s <- parentSeq x
     case s of
-      Left pt -> Just pt
-      Right s' ->
+      EPoint (pt, _dir) -> Just pt
+      ELimit s' ->
         let cs = conwaySeq s'
          in Just $ I.index cs $ decideIndex s'
 

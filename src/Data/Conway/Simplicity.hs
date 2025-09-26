@@ -86,6 +86,8 @@
 module Data.Conway.Simplicity
   ( ParentSeq,
     ParentSeq0,
+    RangeElem (..),
+    RangeElemMono (..),
     ConwaySeq (..),
     MonoSeq (..),
     FixBase,
