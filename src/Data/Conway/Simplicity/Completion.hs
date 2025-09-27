@@ -101,13 +101,13 @@ limVeb1Seq (Veb1IterSeq _o' (Just (VebMono o p, s))) =
 
 limParentSeq Nothing = Nothing
 limParentSeq (Just re) = case re of
-  EPoint (p, _) -> Just p
+  EPoint p -> Just p
   ELimit l -> limConwaySeq <$> Just l
 
 limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> ParentSeq a -> Maybe (Conway a)
 limParentSeqDir _ Nothing = Nothing
 limParentSeqDir sign (Just re) = case re of
-  EPoint (p, _sign) -> Just $ appendSign sign p
+  EPoint p -> Just $ appendSign sign p
   ELimit l -> limConwaySeq <$> Just l
 
 limLR (LR l r) =

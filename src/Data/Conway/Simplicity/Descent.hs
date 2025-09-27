@@ -14,7 +14,7 @@ descend x =
   do
     s <- parentSeq x
     case s of
-      EPoint (pt, _dir) -> Just pt
+      EPoint pt -> Just pt
       ELimit s' ->
         let cs = conwaySeq s'
          in Just $ I.index cs $ decideIndex s'

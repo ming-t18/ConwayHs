@@ -24,10 +24,10 @@ where
 import Data.Conway.Conway
 import Data.Conway.Typeclasses
 
-data RangeElem a = EPoint (Conway a, Bool) | ELimit (ConwaySeq a)
+data RangeElem a = EPoint (Conway a) | ELimit (ConwaySeq a)
   deriving (Show)
 
-data RangeElemMono a = MPoint ((VebMono a, a), Bool) | MLimit (MonoSeq a)
+data RangeElemMono a = MPoint (VebMono a, a) | MLimit (MonoSeq a)
   deriving (Show)
 
 -- | The parent range of a surreal number is one of:
@@ -44,7 +44,7 @@ type ParentSeq a = Maybe (RangeElem a)
 type ParentSeq0 a = Maybe (RangeElemMono a)
 
 psEmpty :: ParentSeq a
-psPoint :: (Conway a, Bool) -> ParentSeq a
+psPoint :: Conway a -> ParentSeq a
 psLim :: ConwaySeq a -> ParentSeq a
 psEmpty = Nothing
 
@@ -53,7 +53,7 @@ psPoint = Just . EPoint
 psLim = Just . ELimit
 
 ps0Empty :: ParentSeq0 a
-ps0Point :: ((VebMono a, a), Bool) -> ParentSeq0 a
+ps0Point :: (VebMono a, a) -> ParentSeq0 a
 ps0Lim :: MonoSeq a -> ParentSeq0 a
 ps0Empty = Nothing
 
@@ -143,7 +143,7 @@ instance (OrdRing a, One a, Show a) => Show (LeftRight a) where
       ls' = maybe "" show' ls
       rs' = maybe "" show' rs
       show' re = case re of
-        EPoint (p, _) -> show p
+        EPoint p -> show p
         ELimit l -> show l
 
 fromFixBase :: (OrdRing a) => FixBase a -> Conway a

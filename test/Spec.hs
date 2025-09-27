@@ -19,7 +19,6 @@ import Data.Conway.SignExpansion.Reduce (Reduced (..))
 import qualified Data.Conway.SignExpansion.Reduce as R
 import Data.Conway.SignExpansion.Types ()
 import Data.Conway.Simplicity
-import Data.Conway.Simplicity.Types (RangeElem (..))
 import Data.Conway.Typeclasses
   ( AddSub (..),
     Mult (..),
@@ -684,7 +683,7 @@ testParseSignExpansion = modifyMaxSuccess (`div` 5) $ do
 indexParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Natural -> Maybe (Conway a)
 indexParentSeq s i =
   ( \case
-      EPoint (p, _) -> p
+      EPoint p -> p
       ELimit l -> ((`I.index` i) $ conwaySeq l)
   )
     <$> s
