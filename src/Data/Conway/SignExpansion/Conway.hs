@@ -1,6 +1,8 @@
 module Data.Conway.SignExpansion.Conway
   ( isAllPluses,
     isAllMinuses,
+    isAllPlusesFinite,
+    isAllMinusesFinite,
     birthday,
     conwaySE,
 
@@ -33,7 +35,7 @@ import Data.Foldable (foldl')
 isAllPluses :: (FiniteSignExpansion a) => Conway a -> Bool
 isAllPlusesTerm :: (FiniteSignExpansion a) => (VebMono a, a) -> Bool
 isAllPlusesVebMono :: (FiniteSignExpansion a) => VebMono a -> Bool
-isAllPlusesFinite :: (FiniteSignExpansion a) => a -> Bool
+isAllPlusesFinite, isAllMinusesFinite :: (FiniteSignExpansion a) => a -> Bool
 isAllPluses = all isAllPlusesTerm . termsList
 
 isAllMinuses :: (FiniteSignExpansion a, OrdZero a, One a) => Conway a -> Bool
@@ -44,6 +46,8 @@ isAllPlusesTerm (v, c) = isAllPlusesVebMono v && isAllPlusesFinite c
 isAllPlusesVebMono (VebMono _ p) = isAllPluses p
 
 isAllPlusesFinite = all fst . toList . fromFSE . finiteSE
+
+isAllMinusesFinite = not . any fst . toList . fromFSE . finiteSE
 
 -- * Conway
 

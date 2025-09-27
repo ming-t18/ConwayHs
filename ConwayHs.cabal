@@ -29,6 +29,7 @@ library
       Data.Conway.Dyadic.Bisect
       Data.Conway.Dyadic.Ratio
       Data.Conway.FundamentalSeq
+      Data.Conway.Helpers
       Data.Conway.MonoTerm
       Data.Conway.OrdinalArith
       Data.Conway.OrdLim
