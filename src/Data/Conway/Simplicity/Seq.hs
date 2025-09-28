@@ -3,9 +3,11 @@
 module Data.Conway.Simplicity.Seq (toPointOrSeq, conwaySeq, monoSeq, veb1Seq) where
 
 import Data.Conway.Conway
+import Data.Conway.Helpers
 import Data.Conway.Seq.InfList (Infinite)
 import qualified Data.Conway.Seq.InfList as I
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (parseFiniteSE), fromList)
+import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
@@ -17,11 +19,19 @@ toPointOrSeq = (rangeElem Left (Right . conwaySeq) <$>)
 conwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Infinite (Conway a)
 monoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Infinite (Conway a)
 veb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Infinite (Conway a)
-conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq}
-  | isAdd = (base `add`) <$> monoSeq tSeq
-  | otherwise = (base `sub`) <$> monoSeq tSeq
-
--- TODO minimum exponent constraint on the sequence: w^(-3.5) + [w^-w][i] starts at w^(-3.5) + [w^-4] by skipping terms
+conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
+  addBase <$> doSkip (monoSeq tSeq)
+  where
+    addBase = if isAdd then (base `add`) else (base `sub`)
+    pLast = trailingArchiClass base
+    doSkip =
+      case (tSeq, pLast) of
+        (Mono1Seq s, Just pL) ->
+          -- Skip lower exponents
+          if pLim < pL then I.skipWhile (maybe True (> pL) . archiClass) else id
+          where
+            pLim = toExponent $ limVeb1SeqVebMono s
+        (_, _) -> id
 
 -- Added a zero in the beginning to allow the mono1 to be removed at index zero
 monoSeq (Mono1Seq vSeq) = I.cons zero $ veb1Seq vSeq

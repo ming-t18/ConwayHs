@@ -4,6 +4,7 @@ module Data.Conway.Simplicity.Completion
   ( limConwaySeq,
     limMonoSeq,
     limVeb1Seq,
+    limVeb1SeqVebMono,
     limParentSeq,
     limLR,
     birthdayLimParentSeq,
@@ -28,6 +29,7 @@ appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
 limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
 limMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
 limVeb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Conway a
+limVeb1SeqVebMono :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> VebMono a
 limParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Conway a)
 limLR :: (OrdRing a, FiniteSignExpansion a) => LeftRight a -> Conway a
 appendSignDyadic :: (FiniteSignExpansion a) => Bool -> a -> a
@@ -87,15 +89,17 @@ limMonoSeq (MonoMultSeq vm@(VebMono _ _) sign) = mono1 $ appendSign sign p'
   where
     p' = mono1 $ appendSign sign $ fromVebMono1 vm
 
-limVeb1Seq (Veb1ArgSeq o pSeq) = fromVebMono1 $ VebMono o $ limConwaySeq pSeq
-limVeb1Seq (Veb1OrderSeq oSeq Nothing) = fromVebMono1 $ VebMono (limConwaySeq oSeq) zero
+limVeb1Seq = fromVebMono1 . limVeb1SeqVebMono
+
+limVeb1SeqVebMono (Veb1ArgSeq o pSeq) = VebMono o $ limConwaySeq pSeq
+limVeb1SeqVebMono (Veb1OrderSeq oSeq Nothing) = VebMono (limConwaySeq oSeq) zero
 -- TODO doesn't verify if the inner order makes sense
-limVeb1Seq (Veb1OrderSeq oSeq (Just (VebMono _o' p, s))) = fromVebMono1 $ VebMono (limConwaySeq oSeq) $ appendSign s p
+limVeb1SeqVebMono (Veb1OrderSeq oSeq (Just (VebMono _o' p, s))) = VebMono (limConwaySeq oSeq) $ appendSign s p
 -- {0, veb1 o 0, veb1 o (veb1 o 0), ...} -> veb1 (o + 1) 0
-limVeb1Seq (Veb1IterSeq o Nothing) = fromVebMono1 $ VebMono (o + 1) zero
+limVeb1SeqVebMono (Veb1IterSeq o Nothing) = VebMono (o + 1) zero
 -- TODO doesn't verify if the outer order makes sense
-limVeb1Seq (Veb1IterSeq _o' (Just (VebMono o p, s))) =
-  fromVebMono1 $ VebMono o $ appendSign s p
+limVeb1SeqVebMono (Veb1IterSeq _o' (Just (VebMono o p, s))) =
+  VebMono o $ appendSign s p
 
 limParentSeq = (rangeElem id limConwaySeq <$>)
 
