@@ -21,9 +21,7 @@ import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 
 negateParentSeq :: (OrdZero a, One a) => ParentSeq a -> ParentSeq a
-negateParentSeq Nothing = Nothing
-negateParentSeq (Just (EPoint x)) = psPoint $ neg x
-negateParentSeq (Just (ELimit x)) = psLim $ negateConwaySeq x
+negateParentSeq = (>>= rangeElem (psPoint . neg) (psLim . negateConwaySeq))
 
 negateConwaySeq :: (OrdZero a, One a) => ConwaySeq a -> ConwaySeq a
 negateConwaySeq ConwaySeq {csBase = b, csSign = s, csTerm = t} = ConwaySeq {csBase = neg b, csSign = not s, csTerm = t}
@@ -43,8 +41,7 @@ parentConway isLeft x =
     let res = parentMono isLeft (p, c)
     case res of
       Nothing -> parentConway isLeft base
-      Just (EPoint s) -> psPoint (base `add` s)
-      Just (ELimit l) -> psLim $ addSeq base l
+      Just e -> rangeElem (psPoint . (base `add`)) (psLim . addSeq base) e
 
 parentMono :: (OrdRing a, FiniteSignExpansion a) => Direction -> (VebMono a, a) -> ParentSeq a
 parentMono isLeft (p, c)
@@ -78,18 +75,18 @@ parentVeb1 isLeft (VebMono (isZero -> True) p) =
     -- R: (veb1 0 p) = w^{...|} = { ... | }
     -- L: (veb1 0 p) = w^{p'|...} = { w^p . n | ... }
     -- R: (veb1 0 p) = w^{...|p''} = { ... | w^p'' . (1 `shr` n)}
-    Just (EPoint p'Succ) -> Just $ MLimit $ MonoMultSeq (VebMono zero p'Succ) isLeft
+    Just (EPoint p'Succ) -> ps0Lim $ MonoMultSeq (VebMono zero p'Succ) isLeft
     -- L: (veb1 0 p) = w^{p'[n]|...} = { w^p'[n] | ... }
     -- R: (veb1 0 p) = w^{...|p''[n]} = { ... | w^p''[n] }
-    Just (ELimit p'Lim) -> Just $ MLimit $ Mono1Seq $ Veb1ArgSeq zero p'Lim
+    Just (ELimit p'Lim) -> ps0Lim $ Mono1Seq $ Veb1ArgSeq zero p'Lim
 parentVeb1 isLeft (VebMono o (isZero -> True))
   | isLeft = do
       co <- parentConway True o
       case co of
         -- Veb1LSuccZero
-        EPoint o'Succ -> Just $ MLimit $ Mono1Seq $ Veb1IterSeq o'Succ fixBaseZero
+        EPoint o'Succ -> ps0Lim $ Mono1Seq $ Veb1IterSeq o'Succ fixBaseZero
         -- Veb1LLimitZero
-        ELimit o'Lim -> Just $ MLimit $ Mono1Seq $ Veb1OrderSeq o'Lim fixBaseZero
+        ELimit o'Lim -> ps0Lim $ Mono1Seq $ Veb1OrderSeq o'Lim fixBaseZero
   -- Veb1RSuccZero, Veb1RLimitZero
   | otherwise = Nothing
 parentVeb1 isLeft (VebMono o p) = do
