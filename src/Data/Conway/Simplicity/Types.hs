@@ -18,6 +18,10 @@ module Data.Conway.Simplicity.Types
     ps0Empty,
     ps0Point,
     ps0Lim,
+
+    -- * Decomposers
+    rangeElem,
+    rangeElem0,
   )
 where
 
@@ -60,6 +64,14 @@ ps0Empty = Nothing
 ps0Point = Just . MPoint
 
 ps0Lim = Just . MLimit
+
+rangeElem :: (Conway a -> b) -> (ConwaySeq a -> b) -> RangeElem a -> b
+rangeElem p _ (EPoint x) = p x
+rangeElem _ s (ELimit x) = s x
+
+rangeElem0 :: ((VebMono a, a) -> b) -> (MonoSeq a -> b) -> RangeElemMono a -> b
+rangeElem0 p _ (MPoint x) = p x
+rangeElem0 _ s (MLimit x) = s x
 
 -- | A limit sequence of a @Conway a@.
 --
