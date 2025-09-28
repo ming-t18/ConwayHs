@@ -17,7 +17,7 @@ toExponent (VebMono o p) = veb1 o p
 isInteger :: (FiniteSignExpansion a, OrdRing a) => Conway a -> Bool
 isInteger x = case trailingView x of
   Nothing -> True
-  Just (_, ((isZero -> True), c)) -> isIntegerFinite c
+  Just (_, (isZero -> True, c)) -> isIntegerFinite c
   Just (_, (VebMono (isZero -> True) p, _)) -> isPositive p
   Just _ -> True
 

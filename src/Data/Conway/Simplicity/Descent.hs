@@ -17,11 +17,9 @@ descent = unfoldr (fmap (\x -> (x, x)) . descend)
 
 descentSeq :: (OrdRing a, FiniteSignExpansion a) => Conway a -> [(Conway a, Bool, RangeElem a)]
 descentSeq x =
-  case s of
+  case parentSeq x of
     Nothing -> []
     Just s'@(EPoint x') -> (x, x > x', s') : descentSeq x'
     Just s'@(ELimit l) ->
       let x' = I.index (conwaySeq l) 0
        in (x, x > x', s') : descentSeq x'
-  where
-    s = parentSeq x
