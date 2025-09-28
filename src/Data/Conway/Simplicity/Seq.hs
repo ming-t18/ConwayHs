@@ -1,6 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module Data.Conway.Simplicity.Seq (conwaySeq, monoSeq, veb1Seq) where
+module Data.Conway.Simplicity.Seq (toPointOrSeq, conwaySeq, monoSeq, veb1Seq) where
 
 import Data.Conway.Conway
 import Data.Conway.Seq.InfList (Infinite)
@@ -11,6 +11,9 @@ import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 import Data.Maybe (fromJust)
 
+toPointOrSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Either (Conway a) (Infinite (Conway a)))
+toPointOrSeq = (rangeElem Left (Right . conwaySeq) <$>)
+
 conwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Infinite (Conway a)
 monoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Infinite (Conway a)
 veb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Infinite (Conway a)
@@ -20,7 +23,8 @@ conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq}
 
 -- TODO minimum exponent constraint on the sequence: w^(-3.5) + [w^-w][i] starts at w^(-3.5) + [w^-4] by skipping terms
 
-monoSeq (Mono1Seq vSeq) = veb1Seq vSeq
+-- Added a zero in the beginning to allow the mono1 to be removed at index zero
+monoSeq (Mono1Seq vSeq) = I.cons zero $ veb1Seq vSeq
 monoSeq (MonoMultSeq p True) = I.generate (\n -> fromVebMono (p, fromJust $ parseFiniteSE $ fromList [(True, n)]))
 monoSeq (MonoMultSeq p False) = I.generate (\n -> fromVebMono (p, fromJust $ parseFiniteSE $ fromList [(True, 1), (False, n)]))
 

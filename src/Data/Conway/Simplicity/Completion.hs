@@ -69,9 +69,7 @@ limConwaySeq cs0@ConwaySeq {csBase = base, csSign = s, csTerm = tSeq} =
 onlyMinusesBetween :: (OrdZero a, One a, FiniteSignExpansion a) => Conway a -> Conway a -> Bool
 onlyMinusesBetween p pLim = pCond && pLimCond
   where
-    pSE = conwaySE p
-    pLimSE = conwaySE pLim
-    (_, (pPart, pLimPart)) = SE.takeCommonPrefix pSE pLimSE
+    (_, (pPart, pLimPart)) = SE.takeCommonPrefix (conwaySE p) (conwaySE pLim)
     pLimCond = isZero pLimPart
     pCond =
       case SE.toList pPart of
@@ -99,16 +97,10 @@ limVeb1Seq (Veb1IterSeq o Nothing) = fromVebMono1 $ VebMono (o + 1) zero
 limVeb1Seq (Veb1IterSeq _o' (Just (VebMono o p, s))) =
   fromVebMono1 $ VebMono o $ appendSign s p
 
-limParentSeq Nothing = Nothing
-limParentSeq (Just re) = case re of
-  EPoint p -> Just p
-  ELimit l -> limConwaySeq <$> Just l
+limParentSeq = (rangeElem id limConwaySeq <$>)
 
 limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> ParentSeq a -> Maybe (Conway a)
-limParentSeqDir _ Nothing = Nothing
-limParentSeqDir sign (Just re) = case re of
-  EPoint p -> Just $ appendSign sign p
-  ELimit l -> limConwaySeq <$> Just l
+limParentSeqDir sign = (rangeElem (appendSign sign) limConwaySeq <$>)
 
 limLR (LR l r) =
   case (limL, limR) of
@@ -143,9 +135,7 @@ parentSeqWithSign x0 =
     limR = limParentSeqDir False seqR
 
 parentSeqSign :: ParentSeq a -> Maybe Bool
-parentSeqSign Nothing = Nothing
-parentSeqSign (Just (EPoint _)) = Nothing
-parentSeqSign (Just (ELimit ConwaySeq {csTerm = t})) = onTerm t
+parentSeqSign = (>>= rangeElem (const Nothing) (onTerm . csTerm))
   where
     onTerm :: MonoSeq a -> Maybe Bool
     onTerm (MonoMultSeq _ b) = Just b
