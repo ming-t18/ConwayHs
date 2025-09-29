@@ -1,5 +1,14 @@
 {-# LANGUAGE ViewPatterns #-}
 
+-- | Module for enumerating the fundamental sequences of surreal numbers.
+--
+-- Modifications from the "standard" fundamental sequences:
+--
+-- * The FS of monomials must be monomial
+--
+-- * The FS of monomials must start with zero
+--
+-- * The FS of the sum of multiple monomials must remove the last term at index zero
 module Data.Conway.Simplicity.Seq (toPointOrSeq, conwaySeq, monoSeq, veb1Seq) where
 
 import Data.Conway.Conway
@@ -20,7 +29,7 @@ conwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Infinite (Conw
 monoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Infinite (Conway a)
 veb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Infinite (Conway a)
 conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
-  addBase <$> doSkip (monoSeq tSeq)
+  addBase <$> doSkip (ensureLeadingZero $ monoSeq tSeq)
   where
     addBase = if isAdd then (base `add`) else (base `sub`)
     pLast = trailingArchiClass base
@@ -28,13 +37,16 @@ conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
       case (tSeq, pLast) of
         (Mono1Seq s, Just pL) ->
           -- Skip lower exponents
+          -- TODO skip [0, 0, ...] for eps (-1/2)
           if pLim < pL then I.skipWhile (maybe True (> pL) . archiClass) else id
           where
             pLim = toExponent $ limVeb1SeqVebMono s
         (_, _) -> id
+    ensureLeadingZero xs@(I.consView -> (isZero -> True, _)) = xs
+    ensureLeadingZero xs = I.cons zero xs
 
 -- Added a zero in the beginning to allow the mono1 to be removed at index zero
-monoSeq (Mono1Seq vSeq) = I.cons zero $ veb1Seq vSeq
+monoSeq (Mono1Seq vSeq) = veb1Seq vSeq
 monoSeq (MonoMultSeq p True) = I.generate (\n -> fromVebMono (p, fromJust $ parseFiniteSE $ fromList [(True, n)]))
 monoSeq (MonoMultSeq p False) = I.generate (\n -> fromVebMono (p, fromJust $ parseFiniteSE $ fromList [(True, 1), (False, n)]))
 
@@ -44,4 +56,4 @@ veb1Seq (Veb1ArgSeq o p') = I.generate (veb1 o . I.index pSeq)
 veb1Seq (Veb1OrderSeq o' (fromFixBase -> p)) = I.generate ((`veb1` p) . I.index oSeq)
   where
     oSeq = conwaySeq o'
-veb1Seq (Veb1IterSeq o (fromFixBase -> base)) = zero `I.cons` I.iterate (veb1 o) base
+veb1Seq (Veb1IterSeq o (fromFixBase -> base)) = I.iterate (veb1 o) $ veb1 o base
