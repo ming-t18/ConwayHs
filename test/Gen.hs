@@ -21,10 +21,9 @@ import Data.Conway.SignExpansion.Dyadic (FSE)
 import qualified Data.Conway.SignExpansion.Dyadic as SED
 import Data.Conway.Typeclasses
   ( AddSub (..),
-    One (one),
     OrdRing,
-    OrdZero (neg),
-    Zero (isZero, zero),
+    OrdZero (..),
+    Zero (..),
   )
 import Data.Foldable
 import Test.QuickCheck
@@ -56,15 +55,11 @@ arbConway fromOrder fromCoeff = recurse
       p <- recurse (d - 1)
       veb a p . fromCoeff <$> arbitrary
 
-shrinkFinite :: (OrdRing a) => a -> [a]
-shrinkFinite c
-  | isZero c = []
-  | zero < c && c <= one = [zero]
-  | one < c = [zero, one]
-  | neg one <= c && c < zero = [zero]
-  | otherwise = [zero, neg one]
+-- TODO
+shrinkFinite :: (SED.FiniteSignExpansion a) => a -> [a]
+shrinkFinite = map (SED.parseFiniteSE' . SED.fromList) . shrink . SED.toList . SED.finiteSE
 
-shrinkTriple :: (OrdRing a) => (Ordinal, Conway a, a) -> [(Ordinal, Conway a, a)]
+shrinkTriple :: (OrdRing a, SED.FiniteSignExpansion a) => (Ordinal, Conway a, a) -> [(Ordinal, Conway a, a)]
 shrinkTriple (a, p, c) =
   [(a, p, c') | c' <- shrinkFinite c]
     ++ [(a', p, c) | a' <- shrinkConway a]
@@ -73,7 +68,7 @@ shrinkTriple (a, p, c) =
 monosList :: Conway a -> [(Ordinal, Conway a, a)]
 monosList x = map (\(VebMono a p, c) -> (a, p, c)) $ termsList x
 
-shrinkConway :: (OrdRing a) => Conway a -> [Conway a]
+shrinkConway :: (OrdRing a, SED.FiniteSignExpansion a) => Conway a -> [Conway a]
 shrinkConway x =
   [ foldl' (\s (o, p, c) -> add s (veb o p c)) zero list'
   | list' <- shrinkList shrinkTriple $ monosList x
@@ -127,11 +122,11 @@ instance Arbitrary OrdV0Gen where
   arbitrary = OrdV0 <$> arbConway (\() -> zero :: Ordinal) getNatural maxDepth
   shrink (OrdV0 x) = OrdV0 <$> shrinkConway x
 
-instance (Arbitrary a, OrdRing a) => Arbitrary (ConwayV0Gen a) where
+instance (Arbitrary a, SED.FiniteSignExpansion a, OrdRing a) => Arbitrary (ConwayV0Gen a) where
   arbitrary = ConwayV0 <$> arbConway (\() -> zero :: Ordinal) (id :: a -> a) maxDepth
   shrink (ConwayV0 x) = ConwayV0 <$> shrinkConway x
 
-instance (Arbitrary a, OrdRing a) => Arbitrary (ConwayGen a) where
+instance (Arbitrary a, SED.FiniteSignExpansion a, OrdRing a) => Arbitrary (ConwayGen a) where
   arbitrary = ConwayGen <$> arbConway getOrdV0 (id :: a -> a) maxDepth
   shrink (ConwayGen x) = ConwayGen <$> shrinkConway x
 
