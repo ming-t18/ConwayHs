@@ -236,6 +236,10 @@ intSE n
 
 parseDyadicSE :: FSE -> Dyadic
 parseDyadicSE (FSE []) = 0
+parseDyadicSE (FSE [(True, n)]) = fromIntegral n
+parseDyadicSE (FSE [(False, n)]) = -fromIntegral n
+parseDyadicSE (FSE [(True, 1), (False, n)]) = 1 `shr` fromIntegral n
+parseDyadicSE (FSE [(False, 1), (True, n)]) = (-1) `shr` fromIntegral n
 parseDyadicSE (FSE ((True, n) : xs)) = fromIntegral (n - 1) + parseFracSE 1 half xs
 parseDyadicSE (FSE ((False, n) : xs)) = (-(fromIntegral n - 1)) + parseFracSE (-1) half xs
 
