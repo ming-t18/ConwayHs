@@ -93,13 +93,23 @@ limVeb1Seq = fromVebMono1 . limVeb1SeqVebMono
 
 limVeb1SeqVebMono (Veb1ArgSeq o pSeq) = VebMono o $ limConwaySeq pSeq
 limVeb1SeqVebMono (Veb1OrderSeq oSeq Nothing) = VebMono (limConwaySeq oSeq) zero
--- TODO doesn't verify if the inner order makes sense
-limVeb1SeqVebMono (Veb1OrderSeq oSeq (Just (VebMono _o' p, s))) = VebMono (limConwaySeq oSeq) $ appendSign s p
+limVeb1SeqVebMono (Veb1OrderSeq oSeq (Just (vm@(VebMono o p), s))) =
+  case compare oLim o of
+    LT -> VebMono oLim $ fromVebMono1 vm `add` one
+    EQ -> VebMono o $ appendSign s p
+    GT -> VebMono oLim zero
+  where
+    oLim = limConwaySeq oSeq
+
 -- {0, veb1 o 0, veb1 o (veb1 o 0), ...} -> veb1 (o + 1) 0
 limVeb1SeqVebMono (Veb1IterSeq o Nothing) = VebMono (o + 1) zero
--- TODO doesn't verify if the outer order makes sense
-limVeb1SeqVebMono (Veb1IterSeq _o' (Just (VebMono o p, s))) =
-  VebMono o $ appendSign s p
+limVeb1SeqVebMono (Veb1IterSeq o' (Just (vm@(VebMono o p), s))) =
+  case compare oSucc o of
+    LT -> VebMono oSucc $ fromVebMono1 vm `add` one
+    EQ -> VebMono o $ appendSign s p
+    GT -> VebMono oSucc zero
+  where
+    oSucc = appendSign True o'
 
 limParentSeq = (rangeElem id limConwaySeq <$>)
 
