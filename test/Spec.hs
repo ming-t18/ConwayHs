@@ -690,7 +690,7 @@ indexParentSeq s i =
 
 checkOrd :: (Show a, Ord a) => Ordering -> a -> a -> Property
 checkOrd o x y =
-  counterexample ("(" ++ show x ++ " `compare` " ++ show y ++ ") " ++ interpret res ++ " " ++ show o) res
+  counterexample ("(" ++ show x ++ " `compare` " ++ show y ++ ")" ++ interpret res ++ " " ++ show o) res
   where
     res = compare x y == o
     interpret True = " == "
@@ -710,33 +710,36 @@ testSimplicity = do
   when False $ describe "limit sequences" $ do
     it "increasing birthday" $ do
       qc
-        ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) -> do
-            let (i, j) = if i0 < j0 then (i0, j0) else (j0, i0)
-                (l, r) = toPair $ lrConway x
-                get s k = birthday $ fromJust $ indexParentSeq s k
-                pl = checkOrd LT (get l i) (get l j)
-                pr = checkOrd LT (get r i) (get r j)
-             in i
-                  /= j ==> case (l, r) of
-                    (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
-                    (Just (ELimit _), _) -> pl
-                    (_, Just (ELimit _)) -> pr
-                    (_, _) -> False ==> True
+        ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) ->
+            i0
+              /= j0 ==> do
+                let (i, j) = if i0 < j0 then (i0, j0) else (j0, i0)
+                    (l, r) = toPair $ lrConway x
+                    get s k = birthday $ fromJust $ indexParentSeq s k
+                    pl = checkOrd LT (get l i) (get l j)
+                    pr = checkOrd LT (get r i) (get r j)
+                 in case (l, r) of
+                      (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
+                      (Just (ELimit _), _) -> pl
+                      (_, Just (ELimit _)) -> pr
+                      (_, _) -> False ==> True
         )
 
     it "left limit sequence is increasing and right limit sequence is decreasing" $ do
       qc
-        ( \(ConwayGen (x :: CD), i :: Natural, j :: Natural) -> do
-            let (l, r) = toPair $ lrConway x
-                get s k = indexParentSeq s k `compare` indexParentSeq s (k + 1)
-                check o s = checkOrd o (get s i) (get s j)
-                (pl, pr) = (check GT l, check LT r)
-             in i
-                  /= j ==> case (l, r) of
-                    (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
-                    (Just (ELimit _), _) -> pl
-                    (_, Just (ELimit _)) -> pr
-                    (_, _) -> False ==> True
+        ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) ->
+            i0
+              /= j0 ==> do
+                let (i, j) = if i0 < j0 then (i0, j0) else (j0, i0)
+                let (l, r) = toPair $ lrConway x
+                    get = indexParentSeq
+                    check o s = checkOrd o (get s j) (get s i)
+                    (pl, pr) = (check GT l, check LT r)
+                 in case (l, r) of
+                      (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
+                      (Just (ELimit _), _) -> pl
+                      (_, Just (ELimit _)) -> pr
+                      (_, _) -> False ==> True
         )
 
   describe "simplicity sequences: x = { left | right }" $ do
