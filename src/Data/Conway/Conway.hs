@@ -222,6 +222,7 @@ termsList = M.toDescList . toMap
 ascTermsList :: ConwayI n a -> [(VebMonoI n a, a)]
 ascTermsList = M.toAscList . toMap
 
+-- | Create a new @Conway@ from a list of terms. If there are terms with the same exponent, the last one is retained.
 fromTermsList :: (OrdZero a, One a, OrdZero n, One n) => [(VebMonoI n a, a)] -> ConwayI n a
 fromTermsList = conway . M.fromList
 

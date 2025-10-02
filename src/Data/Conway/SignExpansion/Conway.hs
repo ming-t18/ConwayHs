@@ -3,6 +3,7 @@ module Data.Conway.SignExpansion.Conway
     isAllMinuses,
     isAllPlusesFinite,
     isAllMinusesFinite,
+    isAllPlusesVebMono,
     birthday,
     conwaySE,
 

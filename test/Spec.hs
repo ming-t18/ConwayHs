@@ -19,6 +19,7 @@ import Data.Conway.SignExpansion.Reduce (Reduced (..))
 import qualified Data.Conway.SignExpansion.Reduce as R
 import Data.Conway.SignExpansion.Types ()
 import Data.Conway.Simplicity
+import Data.Conway.Simplicity.Prefix
 import Data.Conway.Typeclasses
   ( AddSub (..),
     Mult (..),
@@ -706,8 +707,14 @@ checkBetween (x0, y0) z =
 
 testSimplicity :: SpecWith ()
 testSimplicity = do
-  -- TODO doesn't work
-  when False $ describe "limit sequences" $ do
+  describe "leadingPlusesOnly" $ do
+    it "all pluses" $
+      qc (\(ConwayGen (x :: CD)) -> isAllPluses $ leadingPlusesOnly x)
+
+    it "sign expansion coherence" $
+      qc (\(ConwayGen (x :: CD)) -> conwaySE (leadingPlusesOnly x) === SE.fromList (take 1 $ SE.toList $ conwaySE x))
+
+  describe "limit sequences" $ do
     it "increasing birthday" $ do
       qc
         ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) ->
