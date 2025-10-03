@@ -1,7 +1,10 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Data.Conway.Simplicity.Completion
-  ( limConwaySeq,
+  ( Limit (..),
+    limConwaySeq,
     limMonoSeq,
     limVeb1Seq,
     limVeb1SeqVebMono,
@@ -24,6 +27,26 @@ import Data.Conway.Simplicity.Parent (parentConway)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 import Data.Maybe (fromJust)
+
+-- | Typeclass for type @a@ that represents a sequence that completes to a @limit@ of type @b@
+class Limit a b | a -> b where
+  -- | Completion of the limit.
+  limit :: a -> b
+
+instance (OrdRing a, FiniteSignExpansion a) => Limit (ConwaySeq a) (Conway a) where
+  limit = limConwaySeq
+
+instance (OrdRing a, FiniteSignExpansion a) => Limit (MonoSeq a) (Conway a) where
+  limit = limMonoSeq
+
+instance (OrdRing a, FiniteSignExpansion a) => Limit (Veb1Seq a) (VebMono a) where
+  limit = limVeb1SeqVebMono
+
+instance (OrdRing a, FiniteSignExpansion a) => Limit (ParentSeq a) (Maybe (Conway a)) where
+  limit = limParentSeq
+
+instance (OrdRing a, FiniteSignExpansion a) => Limit (LeftRight a) (Conway a) where
+  limit = limLR
 
 appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
 limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
