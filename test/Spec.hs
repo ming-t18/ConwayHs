@@ -705,6 +705,19 @@ checkBetween (x0, y0) z =
     (Nothing, Just y) -> checkOrd LT z y
     (Just x, Just y) -> checkOrd LT x z .&&. checkOrd LT z y
 
+propIncreasingLR :: (Show a, OrdRing a, FiniteSignExpansion a) => Natural -> Natural -> Conway a -> Property
+propIncreasingLR i j x =
+  case (l, r) of
+    (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
+    (Just (ELimit _), _) -> pl
+    (_, Just (ELimit _)) -> pr
+    (_, _) -> False ==> True
+  where
+    (l, r) = toPair $ lrConway x
+    get = indexParentSeq
+    check o s = checkOrd o (get s j) (get s i)
+    (pl, pr) = (check GT l, check LT r)
+
 testSimplicity :: SpecWith ()
 testSimplicity = do
   describe "leadingPlusesOnly" $ do
@@ -720,7 +733,7 @@ testSimplicity = do
         ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) ->
             i0
               /= j0 ==> do
-                let (i, j) = if i0 < j0 then (i0, j0) else (j0, i0)
+                let (i, j) = (min i0 j0, max i0 j0)
                     (l, r) = toPair $ lrConway x
                     get s k = birthday $ fromJust $ indexParentSeq s k
                     pl = checkOrd LT (get l i) (get l j)
@@ -735,19 +748,11 @@ testSimplicity = do
     it "left limit sequence is increasing and right limit sequence is decreasing" $ do
       qc
         ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) ->
-            i0
-              /= j0 ==> do
-                let (i, j) = if i0 < j0 then (i0, j0) else (j0, i0)
-                let (l, r) = toPair $ lrConway x
-                    get = indexParentSeq
-                    check o s = checkOrd o (get s j) (get s i)
-                    (pl, pr) = (check GT l, check LT r)
-                 in case (l, r) of
-                      (Just (ELimit _), Just (ELimit _)) -> pl .&. pr
-                      (Just (ELimit _), _) -> pl
-                      (_, Just (ELimit _)) -> pr
-                      (_, _) -> False ==> True
+            i0 /= j0 ==> let (i, j) = (max i0 j0, min i0 j0) in propIncreasingLR i j x
         )
+
+    it "left limit sequence is increasing and right limit sequence is decreasing at 0 and 1" $ do
+      qc (\(ConwayGen (x :: CD)) -> propIncreasingLR 0 1 x)
 
   describe "simplicity sequences: x = { left | right }" $ do
     -- "sufficiently large i" for sequences in general,
