@@ -87,6 +87,8 @@ test-suite ConwayHs-test
   other-modules:
       Gen
       Props
+      SignExpansion
+      Simplicity
       Paths_ConwayHs
   hs-source-dirs:
       test
