@@ -52,6 +52,7 @@ library
       Data.Conway.Simplicity.Descent
       Data.Conway.Simplicity.Parent
       Data.Conway.Simplicity.Prefix
+      Data.Conway.Simplicity.RangeElemArith
       Data.Conway.Simplicity.Seq
       Data.Conway.Simplicity.Types
       Data.Conway.Typeclasses

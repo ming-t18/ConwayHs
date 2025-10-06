@@ -1,11 +1,14 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module Data.Conway.Helpers (isInteger, archiClass, trailingArchiClass, toExponent) where
+module Data.Conway.Helpers (isInteger, archiClass, trailingArchiClass, toExponent, partitionArchiClass, cutOffArchiClass, cutOffArchiClassExclusive) where
 
+import Data.Bifunctor (bimap)
 import Data.Conway.Conway
 import Data.Conway.SignExpansion.Conway (isAllMinusesFinite, isAllPlusesFinite)
 import Data.Conway.SignExpansion.Dyadic
 import Data.Conway.Typeclasses
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 
 toExponent :: (OrdZero a, One a) => VebMono a -> Conway a
 toExponent (VebMono 0 p) = p
@@ -31,3 +34,10 @@ archiClass x = (\((vm, _), _) -> toExponent vm) <$> leadingView x
 -- | Gets the Archimedean class of the last term of a @Conway@.
 trailingArchiClass :: (OrdZero a, One a) => Conway a -> Maybe (Conway a)
 trailingArchiClass x = (\(_, (vm, _)) -> toExponent vm) <$> trailingView x
+
+partitionArchiClass :: (OrdZero a) => (VebMono a -> Bool) -> Conway a -> (Conway a, Conway a)
+partitionArchiClass p = bimap conway conway . M.partitionWithKey (\k _ -> p k) . toMap
+
+cutOffArchiClass, cutOffArchiClassExclusive :: (OrdZero a, One a) => Conway a -> Conway a -> Conway a
+cutOffArchiClass p = fst . partitionArchiClass ((>= p) . toExponent)
+cutOffArchiClassExclusive p = fst . partitionArchiClass ((> p) . toExponent)
