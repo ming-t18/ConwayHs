@@ -34,13 +34,16 @@ conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
     addBase = if isAdd then (base `add`) else (base `sub`)
     pLast = trailingArchiClass base
     mseq = monoSeq tSeq
-    shouldSkipInitialZero = I.index mseq 2 < I.index mseq 1
+    -- TODO find a better way to detect trend
+    shouldSkipInitialZero =
+      let (i0, i1, i2) = (I.index mseq 0, I.index mseq 1, I.index mseq 2)
+          zc = zero `compare` i0
+       in zc /= EQ && zc /= i1 `compare` i2
 
     doSkip =
       case (tSeq, pLast) of
         (Mono1Seq s, Just pL) ->
           -- Skip lower exponents
-          -- TODO skip [0, 0, ...] for eps (-1/2)
           if pLim < pL then I.skipWhile (maybe True (> pL) . archiClass) else id
           where
             pLim = toExponent $ limVeb1SeqVebMono s

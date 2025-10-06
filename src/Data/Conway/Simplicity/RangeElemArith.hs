@@ -25,7 +25,7 @@ module Data.Conway.Simplicity.RangeElemArith
 where
 
 import Data.Conway.Conway (Conway, Ordinal, VebMono, VebMonoI (..), fromVebMono1)
-import Data.Conway.Helpers (archiClass, cutOffArchiClass)
+import Data.Conway.Helpers (archiClass, cutOffArchiClass, cutOffArchiClassExclusive)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Types
@@ -59,8 +59,10 @@ addOffset off cs@ConwaySeq {csBase = base, csSign = _, csTerm = seqTerm} = cs {c
   where
     base' = off `T.add` base
     pTerm = archiClassMonoSeq seqTerm
-    -- TODO if seqTerm is diverging (MonoMultSeq _ True), use > cutoff instead of >=
-    base'' = cutOffArchiClass pTerm base'
+    absorb = case seqTerm of
+      MonoMultSeq _ True -> True
+      _ -> False
+    base'' = if absorb then cutOffArchiClassExclusive pTerm base' else cutOffArchiClass pTerm base'
 
 addMono s1 s2 =
   -- w^[-> a] + w^[-> b] = w^[-> a] if a > b
