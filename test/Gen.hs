@@ -26,6 +26,7 @@ import Data.Conway.Typeclasses
     Zero (..),
   )
 import Data.Foldable
+import Data.Maybe (mapMaybe)
 import Test.QuickCheck
 
 maxDepth :: Int
@@ -55,9 +56,8 @@ arbConway fromOrder fromCoeff = recurse
       p <- recurse (d - 1)
       veb a p . fromCoeff <$> arbitrary
 
--- TODO
 shrinkFinite :: (SED.FiniteSignExpansion a) => a -> [a]
-shrinkFinite = map (SED.parseFiniteSE' . SED.fromList) . shrink . SED.toList . SED.finiteSE
+shrinkFinite = mapMaybe (SED.parseFiniteSE . SED.fromList) . shrink . SED.toList . SED.finiteSE
 
 shrinkTriple :: (OrdRing a, SED.FiniteSignExpansion a) => (Ordinal, Conway a, a) -> [(Ordinal, Conway a, a)]
 shrinkTriple (a, p, c) =
