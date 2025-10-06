@@ -29,10 +29,13 @@ conwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Infinite (Conw
 monoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Infinite (Conway a)
 veb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Infinite (Conway a)
 conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
-  addBase <$> doSkip (ensureLeadingZero $ monoSeq tSeq)
+  addBase <$> doSkip (if shouldSkipInitialZero then mseq else ensureLeadingZero mseq)
   where
     addBase = if isAdd then (base `add`) else (base `sub`)
     pLast = trailingArchiClass base
+    mseq = monoSeq tSeq
+    shouldSkipInitialZero = I.index mseq 2 < I.index mseq 1
+
     doSkip =
       case (tSeq, pLast) of
         (Mono1Seq s, Just pL) ->
