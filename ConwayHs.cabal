@@ -86,10 +86,10 @@ test-suite ConwayHs-test
   main-is: Spec.hs
   other-modules:
       Gen
-      OrdinalArith
       Props
-      SignExpansion
-      Simplicity
+      Specs.OrdinalArith
+      Specs.SignExpansion
+      Specs.Simplicity
       Paths_ConwayHs
   hs-source-dirs:
       test

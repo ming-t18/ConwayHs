@@ -16,10 +16,10 @@ import Data.Conway.Typeclasses
   )
 import Data.Maybe (isJust)
 import Gen
-import OrdinalArith
 import Props
-import SignExpansion
-import Simplicity
+import Specs.OrdinalArith
+import Specs.SignExpansion
+import Specs.Simplicity
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck

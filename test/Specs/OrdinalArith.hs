@@ -1,4 +1,4 @@
-module OrdinalArith (testPropsOrdArith) where
+module Specs.OrdinalArith (testPropsOrdArith) where
 
 import Data.Conway.Conway
 import Data.Conway.OrdinalArith

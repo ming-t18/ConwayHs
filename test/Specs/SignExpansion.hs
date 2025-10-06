@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module SignExpansion
+module Specs.SignExpansion
   ( testReducedSignExpansion,
     testSignExpansionConway,
     testParseSignExpansion,

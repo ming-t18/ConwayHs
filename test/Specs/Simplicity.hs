@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplicity (testSimplicity) where
+module Specs.Simplicity (testSimplicity) where
 
 import Data.Conway.Conway
 import Data.Conway.Dyadic
