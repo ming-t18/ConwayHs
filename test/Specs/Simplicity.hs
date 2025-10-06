@@ -89,7 +89,7 @@ testSimplicity = do
     it "left limit sequence is increasing and right limit sequence is decreasing" $ do
       qc
         ( \(ConwayGen (x :: CD), i0 :: Natural, j0 :: Natural) ->
-            i0 /= j0 ==> let (i, j) = (max i0 j0, min i0 j0) in propIncreasingLR i j x
+            i0 /= j0 ==> let (i, j) = (min i0 j0, max i0 j0) in propIncreasingLR i j x
         )
 
     it "left limit sequence is increasing and right limit sequence is decreasing at 0 and 1" $ do
