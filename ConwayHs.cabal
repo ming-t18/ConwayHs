@@ -90,6 +90,7 @@ test-suite ConwayHs-test
       Specs.OrdinalArith
       Specs.SignExpansion
       Specs.Simplicity
+      Specs.Veb
       Paths_ConwayHs
   hs-source-dirs:
       test

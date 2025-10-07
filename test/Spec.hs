@@ -8,37 +8,17 @@ import Data.Conway.SignExpansion ()
 import Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Dyadic (FSE, finiteSE, parseDyadicSE)
 import Data.Conway.SignExpansion.Types ()
-import Data.Conway.Typeclasses
-  ( AddSub (..),
-    One (one),
-    OrdZero (..),
-    Zero (zero),
-  )
+import Data.Conway.Typeclasses (OrdZero (..))
 import Data.Maybe (isJust)
 import Gen
 import Props
 import Specs.OrdinalArith
 import Specs.SignExpansion
 import Specs.Simplicity
+import Specs.Veb
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
-
--- * Veblen Function
-
-prop_vebIncrMap, prop_vebDecrMap :: OrdV0Gen -> OrdV0Gen -> Property
-
--- | @a < b ==> V[a, V[b, 0] + 1] > V[b, 0]@
-prop_vebIncrMap (OrdV0 a) (OrdV0 b)
-  | a == b = False ==> True
-  | a < b = True ==> veb1 a (veb1 b zero `add` one) > (veb1 b zero :: Conway Dyadic)
-  | otherwise = True ==> veb1 b (veb1 a zero `add` one) > (veb1 a zero :: Conway Dyadic)
-
--- | @a < b ==> V[a, V[b, 0] - 1] < V[b, 0]@
-prop_vebDecrMap (OrdV0 a) (OrdV0 b)
-  | a == b = False ==> True
-  | a < b = True ==> veb1 a (veb1 b zero `sub` one) < (veb1 b zero :: Conway Dyadic)
-  | otherwise = True ==> veb1 b (veb1 a zero `sub` one) < (veb1 a zero :: Conway Dyadic)
 
 -- * Fundamental Sequences
 
@@ -118,10 +98,7 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
       testPropsOrdArith
 
     describe "Veb" $ do
-      it "Veb increasing map" $ do
-        qc prop_vebIncrMap
-      it "Veb decreasing map" $ do
-        qc prop_vebDecrMap
+      testPropsVeb
 
     describe "Ordinal fundamental sequences" $ do
       it "Entries are smaller" $ do
