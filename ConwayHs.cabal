@@ -50,6 +50,7 @@ library
       Data.Conway.Simplicity
       Data.Conway.Simplicity.Completion
       Data.Conway.Simplicity.Descent
+      Data.Conway.Simplicity.HelperTypes
       Data.Conway.Simplicity.Parent
       Data.Conway.Simplicity.Prefix
       Data.Conway.Simplicity.RangeElemArith
