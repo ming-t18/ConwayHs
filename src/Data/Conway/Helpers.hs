@@ -7,7 +7,7 @@ import Data.Conway.Conway
 import Data.Conway.SignExpansion.Conway (isAllMinusesFinite, isAllPlusesFinite)
 import Data.Conway.SignExpansion.Dyadic
 import Data.Conway.Typeclasses
-import Data.Map.Strict (Map)
+import Data.Map.Strict ()
 import qualified Data.Map.Strict as M
 
 toExponent :: (OrdZero a, One a) => VebMono a -> Conway a

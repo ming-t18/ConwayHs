@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 -- | Range arithmetic
 --
 -- This module handles the arithmetic operations on surreal sequences of type @ConwaySeq@, @MonoSeq@ and @Veb1Seq@.
@@ -12,19 +14,24 @@
 --
 -- * Addition
 module Data.Conway.Simplicity.RangeElemArith
-  ( addOffset,
+  ( -- * Addition and Subtraction
+    addOffset,
     addSeq,
+    subSeq,
+    negSeq,
     addMono,
-    mult',
-    -- subCancel,
-    -- sub,
-    -- mult,
+
+    -- * Multiplication
+    multSeqByConst,
+    multSeq,
+    multMonoSeq,
+    multMonoSeqByConst,
     -- mono1,
     -- veb1,
   )
 where
 
-import Data.Conway.Conway (Conway, Ordinal, VebMono, VebMonoI (..), fromVebMono1)
+import Data.Conway.Conway (Conway, VebMono, VebMonoI (..), fromVebMono1, leadingView)
 import Data.Conway.Helpers (archiClass, cutOffArchiClass, cutOffArchiClassExclusive)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion
@@ -32,18 +39,7 @@ import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses (AddSub, One, OrdRing, OrdZero (..), Zero (..))
 import qualified Data.Conway.Typeclasses as T
-import Data.Maybe (fromJust)
-
-archiClassMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
-
--- * Addition
-
-addOffset :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> ConwaySeq a
-addMono :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> MonoSeq a
-
--- * Multiplication
-
--- * Others
+import Data.Maybe (fromJust, maybeToList)
 
 -- sub :: MonoSeq a -> MonoSeq a -> [MonoSeq a]
 -- subCancel :: MonoSeq a -> MonoSeq a -> Maybe (Either (MonoSeq a) (MonoSeq a))
@@ -51,8 +47,13 @@ addMono :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> MonoS
 -- mono1 :: MonoSeq a -> MonoSeq a
 -- veb1 :: Ordinal -> MonoSeq a -> MonoSeq a
 
+archiClassMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
 archiClassMonoSeq = fromJust . archiClass . limMonoSeq
 
+-- * Addition and Subtraction
+
+addOffset :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> ConwaySeq a
+addMono :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> MonoSeq a
 addOffset off cs@ConwaySeq {csBase = base, csSign = _, csTerm = seqTerm}
   | isZero off = cs
   | otherwise = cs {csBase = base''}
@@ -64,7 +65,10 @@ addOffset off cs@ConwaySeq {csBase = base, csSign = _, csTerm = seqTerm}
       _ -> False
     base'' = if absorb then cutOffArchiClassExclusive pTerm base' else cutOffArchiClass pTerm base'
 
-addSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> OneOrTwo (ConwaySeq a)
+negSeq :: (OrdZero a, One a) => ConwaySeq a -> ConwaySeq a
+negSeq ConwaySeq {csBase = base, csSign = s, csTerm = t} = ConwaySeq {csBase = neg base, csSign = not s, csTerm = t}
+
+addSeq, subSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> OneOrTwo (ConwaySeq a)
 addSeq ConwaySeq {csBase = base1, csSign = s1, csTerm = t1} ConwaySeq {csBase = base2, csSign = s2, csTerm = t2} =
   fmap (\(Signed (s'', t'')) -> normalize $ ConwaySeq {csBase = base1 `T.add` base2, csSign = s'', csTerm = t''}) t'
   where
@@ -74,6 +78,7 @@ addSeq ConwaySeq {csBase = base1, csSign = s1, csTerm = t1} ConwaySeq {csBase = 
       (True, True) -> One $ signedPos (t1 `addMono` t2)
       (True, False) -> t1 `subMono` t2
       (False, True) -> t2 `subMono` t1
+subSeq s1 s2 = s1 `addSeq` negSeq s2
 
 addMono s1 s2 =
   -- w^[-> a] + w^[-> b] = w^[-> a] if a > b
@@ -117,26 +122,90 @@ subMono s1 s2 =
     rhs = One $ signedNeg s2
     diverge = Two (signedNeg s1) (signedPos s1)
 
-addExponents :: (AddSub a, One a) => VebMono a -> VebMono a -> VebMono a
-addExponents a b = VebMono zero (fromVebMono1 a `T.add` fromVebMono1 b)
+addMonoSigned :: (OrdRing a, FiniteSignExpansion a) => Signed (MonoSeq a) -> Signed (MonoSeq a) -> OneOrTwo (Signed (MonoSeq a))
+addMonoSigned (Signed (sx, x)) (Signed (sy, y)) =
+  case (sx, sy) of
+    (True, True) -> One $ signedPos $ x `addMono` y
+    (False, False) -> One $ signedNeg $ x `addMono` y
+    (True, False) -> x `subMono` y
+    (False, True) -> y `subMono` x
 
-mult' :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> [MonoSeq a]
-mult' s1@(Mono1Seq p1) s2@(Mono1Seq p2) = if limVeb1Seq p1 > limVeb1Seq p2 then [s1] else [s2]
-mult' (MonoMultSeq p1 d1) (MonoMultSeq p2 d2) =
+-- * Multiplication
+
+addExponents :: (AddSub a, One a) => VebMono a -> VebMono a -> VebMono a
+addExponents va@(VebMono pa a) vb@(VebMono pb b) =
+  case (isZero pa, isZero pb) of
+    (True, True) -> VebMono zero (a `T.add` b)
+    (True, False) -> VebMono zero (a `T.add` fromVebMono1 vb)
+    (False, True) -> VebMono zero (fromVebMono1 va `T.add` b)
+    (False, False) -> VebMono zero (fromVebMono1 va `T.add` fromVebMono1 vb)
+
+offsetExponents :: (OrdRing a, FiniteSignExpansion a) => VebMono a -> Veb1Seq a -> Veb1Seq a
+offsetExponents vOff b = Veb1ArgSeq zero $ addOffset (fromVebMono1 vOff) $ ConwaySeq {csBase = zero, csSign = True, csTerm = Mono1Seq b}
+
+multMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> OneOrTwo (MonoSeq a)
+multMonoSeq s1@(Mono1Seq p1) s2@(Mono1Seq p2) = if limVeb1Seq p1 > limVeb1Seq p2 then One s1 else One s2
+multMonoSeq (MonoMultSeq p1 d1) (MonoMultSeq p2 d2) =
   case (d1, d2) of
     -- w^a.j * w^b.k = w^(a + b).k
-    (True, True) -> [MonoMultSeq s' d1]
+    (True, True) -> One $ MonoMultSeq s' d1
     -- w^a.(-> 0) * w^b.(-> 0) = w^(a + b).(-> 0)
-    (False, False) -> [MonoMultSeq s' d1]
-    -- w^a.(-> 0) * w^b.k = two possibilities above
-    (True, False) -> MonoMultSeq s' <$> ft
-    (False, True) -> MonoMultSeq s' <$> ft
+    (False, False) -> One $ MonoMultSeq s' d1
+    -- w^a.(-> 0) * w^b.k = two possibilities
+    -- (False, True) and (True, False)
+    _ -> MonoMultSeq s' <$> ft
   where
     s' = addExponents p1 p2
-    ft = [False, True]
-mult' (MonoMultSeq p1 d1) (Mono1Seq p2) = error "TODO"
+    ft = Two False True
+multMonoSeq (MonoMultSeq p1 _) (Mono1Seq p2) = One $ Mono1Seq $ offsetExponents p1 p2
+multMonoSeq (Mono1Seq p1) (MonoMultSeq p2 _) = One $ Mono1Seq $ offsetExponents p2 p1
+
+multMonoSeqByPositive :: (OrdRing a, FiniteSignExpansion a) => Conway a -> MonoSeq a -> MonoSeq a
+-- a ~ 1, a S = S
+multMonoSeqByPositive ((isZero <$>) . archiClass -> Just True) ms = ms
+multMonoSeqByPositive a@(leadingView -> Just ((vm, _), _)) ms = case ms of
+  -- a ~ w^c, a w^P = w^(c + p)
+  Mono1Seq (Veb1ArgSeq (isZero -> True) pSeq) -> Mono1Seq $ Veb1ArgSeq zero $ addOffset (fromJust $ archiClass a) pSeq
+  -- a ~ w^(veb1 o p), a w^(veb1 ...) = w^(c + veb1 ...)
+  Mono1Seq vs -> Mono1Seq $ Veb1ArgSeq zero $ addOffset c (ConwaySeq zero True $ Mono1Seq vs)
+  -- a ~ w^c, a (w^p.R) = w^(a + p).R
+  MonoMultSeq b s -> MonoMultSeq (vm `addExponents` b) s
   where
-    l2 = limVeb1Seq p2
-mult' (Mono1Seq p1) (MonoMultSeq p2 d2) = error "TODO"
+    c = fromVebMono1 vm
+multMonoSeqByPositive _ _ = error "multMonoSeqByConst: multiplier is zero"
+
+multMonoSeqByConst :: (OrdRing a, FiniteSignExpansion a) => Conway a -> MonoSeq a -> Maybe (Signed (MonoSeq a))
+multMonoSeqByConst c m
+  | isZero c = Nothing
+  | isNegative c = Just $ signedNeg $ multMonoSeqByPositive (neg c) m
+  | otherwise = Just $ signedPos $ multMonoSeqByPositive c m
+
+multSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> [ConwaySeq a]
+multSeq ConwaySeq {csBase = a, csSign = s1, csTerm = x} ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
+  (\(Signed (sign, z)) -> addOffset ab ConwaySeq {csBase = zero, csSign = sign, csTerm = z})
+    <$> res
   where
-    l1 = limVeb1Seq p1
+    ab = a `T.mult` b
+    xy' = x `multMonoSeq` y
+    bx' = b `multMonoSeqByConst` x
+    ay' = a `multMonoSeqByConst` y
+    s1s2 = s1 /= s2
+    res = do
+      xy <- listFrom12 $ withSign s1s2 <$> xy'
+      bx <- maybeToList bx'
+      ay <- maybeToList ay'
+      bxay <- listFrom12 $ addMonoSigned (s1 `flipSigned` bx) (s2 `flipSigned` ay)
+      listFrom12 $ addMonoSigned bxay xy
+
+-- (a + s1 X)(b + s2 Y) = a b + ((s1 b X + s2 a Y) + s1 s2 X Y)
+--                      = a b + (sbxay BXAY + s1s2 X Y)
+
+multSeqByConst :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> Maybe (ConwaySeq a)
+multSeqByConst a ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
+  (\(Signed (sign, z)) -> addOffset ab ConwaySeq {csBase = zero, csSign = sign, csTerm = z})
+    <$> ay'
+  where
+    ab = a `T.mult` b
+    ay' = (s2 `flipSigned`) <$> (a `multMonoSeqByConst` y)
+
+-- a(b + s2 Y) = a b + s2 a Y
