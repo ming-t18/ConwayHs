@@ -5,7 +5,7 @@ module Data.Conway.Simplicity.HelperTypes (OneOrTwo (..), Signed (..), signedPos
 data OneOrTwo a = One a | Two a a
   deriving (Eq, Ord, Functor, Foldable, Traversable)
 
-newtype Signed a = Signed (Bool, a)
+newtype Signed a = Signed {getSigned :: (Bool, a)}
   deriving (Eq, Ord, Functor, Foldable, Traversable)
 
 withSign :: Bool -> a -> Signed a

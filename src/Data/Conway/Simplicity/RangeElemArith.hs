@@ -18,7 +18,7 @@ module Data.Conway.Simplicity.RangeElemArith
     addOffset,
     addSeq,
     subSeq,
-    negSeq,
+    negConwaySeq,
     addMono,
 
     -- * Multiplication
@@ -32,12 +32,13 @@ module Data.Conway.Simplicity.RangeElemArith
 where
 
 import Data.Conway.Conway (Conway, VebMono, VebMonoI (..), fromVebMono1, leadingView)
-import Data.Conway.Helpers (archiClass, cutOffArchiClass, cutOffArchiClassExclusive)
+import Data.Conway.Helpers (archiClass)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.ConwaySeq
 import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Types
-import Data.Conway.Typeclasses (AddSub, One, OrdRing, OrdZero (..), Zero (..))
+import Data.Conway.Typeclasses (AddSub (..), One, OrdRing, OrdZero (..), Zero (..))
 import qualified Data.Conway.Typeclasses as T
 import Data.Maybe (fromJust, maybeToList)
 
@@ -47,30 +48,11 @@ import Data.Maybe (fromJust, maybeToList)
 -- mono1 :: MonoSeq a -> MonoSeq a
 -- veb1 :: Ordinal -> MonoSeq a -> MonoSeq a
 
-archiClassMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
-archiClassMonoSeq = fromJust . archiClass . limMonoSeq
-
 -- * Addition and Subtraction
-
-addOffset :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> ConwaySeq a
-addMono :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> MonoSeq a
-addOffset off cs@ConwaySeq {csBase = base, csSign = _, csTerm = seqTerm}
-  | isZero off = cs
-  | otherwise = cs {csBase = base''}
-  where
-    base' = off `T.add` base
-    pTerm = archiClassMonoSeq seqTerm
-    absorb = case seqTerm of
-      MonoMultSeq _ True -> True
-      _ -> False
-    base'' = if absorb then cutOffArchiClassExclusive pTerm base' else cutOffArchiClass pTerm base'
-
-negSeq :: (OrdZero a, One a) => ConwaySeq a -> ConwaySeq a
-negSeq ConwaySeq {csBase = base, csSign = s, csTerm = t} = ConwaySeq {csBase = neg base, csSign = not s, csTerm = t}
 
 addSeq, subSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> OneOrTwo (ConwaySeq a)
 addSeq ConwaySeq {csBase = base1, csSign = s1, csTerm = t1} ConwaySeq {csBase = base2, csSign = s2, csTerm = t2} =
-  fmap (\(Signed (s'', t'')) -> normalize $ ConwaySeq {csBase = base1 `T.add` base2, csSign = s'', csTerm = t''}) t'
+  fmap (\(Signed (s'', t'')) -> normalize $ ConwaySeq {csBase = base1 `add` base2, csSign = s'', csTerm = t''}) t'
   where
     normalize cs3@ConwaySeq {csBase = base3} = addOffset base3 $ cs3 {csBase = zero}
     t' = case (s1, s2) of
@@ -78,8 +60,9 @@ addSeq ConwaySeq {csBase = base1, csSign = s1, csTerm = t1} ConwaySeq {csBase = 
       (True, True) -> One $ signedPos (t1 `addMono` t2)
       (True, False) -> t1 `subMono` t2
       (False, True) -> t2 `subMono` t1
-subSeq s1 s2 = s1 `addSeq` negSeq s2
+subSeq s1 s2 = s1 `addSeq` negConwaySeq s2
 
+addMono :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> MonoSeq a
 addMono s1 s2 =
   -- w^[-> a] + w^[-> b] = w^[-> a] if a > b
   -- w^[-> a] + w^[-> b].k = w^[-> a]
@@ -135,13 +118,13 @@ addMonoSigned (Signed (sx, x)) (Signed (sy, y)) =
 addExponents :: (AddSub a, One a) => VebMono a -> VebMono a -> VebMono a
 addExponents va@(VebMono pa a) vb@(VebMono pb b) =
   case (isZero pa, isZero pb) of
-    (True, True) -> VebMono zero (a `T.add` b)
-    (True, False) -> VebMono zero (a `T.add` fromVebMono1 vb)
-    (False, True) -> VebMono zero (fromVebMono1 va `T.add` b)
-    (False, False) -> VebMono zero (fromVebMono1 va `T.add` fromVebMono1 vb)
+    (True, True) -> VebMono zero (a `add` b)
+    (True, False) -> VebMono zero (a `add` fromVebMono1 vb)
+    (False, True) -> VebMono zero (fromVebMono1 va `add` b)
+    (False, False) -> VebMono zero (fromVebMono1 va `add` fromVebMono1 vb)
 
 offsetExponents :: (OrdRing a, FiniteSignExpansion a) => VebMono a -> Veb1Seq a -> Veb1Seq a
-offsetExponents vOff b = Veb1ArgSeq zero $ addOffset (fromVebMono1 vOff) $ ConwaySeq {csBase = zero, csSign = True, csTerm = Mono1Seq b}
+offsetExponents vOff b = Veb1ArgSeq zero $ addOffset (fromVebMono1 vOff) $ fromMonoSeq $ Mono1Seq b
 
 multMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> OneOrTwo (MonoSeq a)
 multMonoSeq s1@(Mono1Seq p1) s2@(Mono1Seq p2) = if limVeb1Seq p1 > limVeb1Seq p2 then One s1 else One s2
@@ -202,8 +185,7 @@ multSeq ConwaySeq {csBase = a, csSign = s1, csTerm = x} ConwaySeq {csBase = b, c
 
 multSeqByConst :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> Maybe (ConwaySeq a)
 multSeqByConst a ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
-  (\(Signed (sign, z)) -> addOffset ab ConwaySeq {csBase = zero, csSign = sign, csTerm = z})
-    <$> ay'
+  fromSignedMonoSeqOffset ab <$> ay'
   where
     ab = a `T.mult` b
     ay' = (s2 `flipSigned`) <$> (a `multMonoSeqByConst` y)
