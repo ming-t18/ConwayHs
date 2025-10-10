@@ -1,6 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
 
--- | Range arithmetic
+-- | Sequence arithmetic
 --
 -- This module handles the arithmetic operations on surreal sequences of type @ConwaySeq@, @MonoSeq@ and @Veb1Seq@.
 --
@@ -13,7 +13,7 @@
 -- Ordinal: @ordAdd@ @ordMult@ @ordPow@
 --
 -- * Addition
-module Data.Conway.Simplicity.RangeElemArith
+module Data.Conway.Simplicity.SeqArith
   ( -- * Addition and Subtraction
     addOffset,
     addSeq,
