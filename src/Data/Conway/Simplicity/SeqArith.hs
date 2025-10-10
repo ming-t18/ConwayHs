@@ -26,6 +26,7 @@ module Data.Conway.Simplicity.SeqArith
     multSeq,
     multMonoSeq,
     multMonoSeqByConst,
+    mono1Seq,
     -- mono1,
     -- veb1,
   )
@@ -165,7 +166,7 @@ multMonoSeqByConst c m
 
 multSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> [ConwaySeq a]
 multSeq ConwaySeq {csBase = a, csSign = s1, csTerm = x} ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
-  (\(Signed (sign, z)) -> addOffset ab ConwaySeq {csBase = zero, csSign = sign, csTerm = z})
+  (\(Signed (sign, z)) -> addOffset ab $ fromSignedMonoSeq $ Signed (sign, z))
     <$> res
   where
     ab = a `T.mult` b
@@ -175,10 +176,13 @@ multSeq ConwaySeq {csBase = a, csSign = s1, csTerm = x} ConwaySeq {csBase = b, c
     s1s2 = s1 /= s2
     res = do
       xy <- listFrom12 $ withSign s1s2 <$> xy'
-      bx <- maybeToList bx'
-      ay <- maybeToList ay'
-      bxay <- listFrom12 $ addMonoSigned (s1 `flipSigned` bx) (s2 `flipSigned` ay)
-      listFrom12 $ addMonoSigned bxay xy
+      case (bx', ay') of
+        (Nothing, Nothing) -> return xy
+        (Just bx, Nothing) -> listFrom12 $ addMonoSigned bx xy
+        (Nothing, Just ay) -> listFrom12 $ addMonoSigned ay xy
+        (Just bx, Just ay) -> do
+          bxay <- listFrom12 $ addMonoSigned (s1 `flipSigned` bx) (s2 `flipSigned` ay)
+          listFrom12 $ addMonoSigned bxay xy
 
 -- (a + s1 X)(b + s2 Y) = a b + ((s1 b X + s2 a Y) + s1 s2 X Y)
 --                      = a b + (sbxay BXAY + s1s2 X Y)
@@ -191,3 +195,6 @@ multSeqByConst a ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
     ay' = (s2 `flipSigned`) <$> (a `multMonoSeqByConst` y)
 
 -- a(b + s2 Y) = a b + s2 a Y
+
+mono1Seq :: ConwaySeq a -> ConwaySeq a
+mono1Seq _ = error "TODO"
