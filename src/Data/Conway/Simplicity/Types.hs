@@ -174,7 +174,7 @@ fromFixBase Nothing = zero
 fromFixBase (Just (p0, True)) = fromVebMono1 p0 `add` one
 fromFixBase (Just (p0, False)) = fromVebMono1 p0 `sub` one
 
-instance (Zero a) => Zero (RangeElem a) where
+instance Zero (RangeElem a) where
   zero = EPoint zero
   isZero (EPoint x) = isZero x
   isZero (ELimit _) = False

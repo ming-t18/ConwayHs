@@ -27,12 +27,14 @@ module Data.Conway.Simplicity.SeqArith
     multMonoSeq,
     multMonoSeqByConst,
     mono1Seq,
+    seqVebOrderView,
+    veb1Seq,
     -- mono1,
     -- veb1,
   )
 where
 
-import Data.Conway.Conway (Conway, VebMono, VebMonoI (..), fromVebMono1, leadingView)
+import Data.Conway.Conway (Conway, Ordinal, VebMono, VebMonoI (..), fromVebMono1, leadingView)
 import Data.Conway.Helpers (archiClass)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion
@@ -196,5 +198,22 @@ multSeqByConst a ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
 
 -- a(b + s2 Y) = a b + s2 a Y
 
+-- * Omega-map (@mono1@) and the Veblen hierarchy (@veb1@)
+
+-- | Given a @ConwaySeq@, determines if the limit has a Veblen order @veb1 o _@
+-- and returns @Maybe@ of the order.
+seqVebOrderView :: ConwaySeq a -> Maybe Ordinal
+seqVebOrderView (ConwaySeq (isZero -> True) True (Mono1Seq vs)) =
+  case vs of
+    Veb1ArgSeq o _ -> Just o
+    Veb1OrderSeq cs _ -> Just $ limConwaySeq cs
+    Veb1IterSeq o _ -> Just o
+seqVebOrderView _ = Nothing
+
 mono1Seq :: ConwaySeq a -> ConwaySeq a
-mono1Seq _ = error "TODO"
+mono1Seq s@(seqVebOrderView -> Just _) = s
+mono1Seq s = fromMonoSeq $ Mono1Seq (Veb1ArgSeq zero s)
+
+veb1Seq :: Ordinal -> ConwaySeq a -> ConwaySeq a
+veb1Seq o s@(seqVebOrderView -> Just o') | o < o' = s
+veb1Seq o s = fromMonoSeq $ Mono1Seq (Veb1ArgSeq o s)

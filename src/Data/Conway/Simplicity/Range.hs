@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Conway.Simplicity.Range
   ( Range,
@@ -13,23 +15,30 @@ module Data.Conway.Simplicity.Range
     rangeFlatMap,
     rangeProd,
     rangeSimplify,
+    rangeFromLimit,
+    rangeDv,
+    rangeCv,
+    rangeMono1,
+    rangeVeb1,
+    rangeLimit,
   )
 where
 
 import Data.Conway.Conway
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
+import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.ConwaySeq
 import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Instances ()
 import Data.Conway.Simplicity.SeqArith
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
+import Data.List (intercalate)
 import Data.Maybe (maybeToList)
 import Data.Set (Set)
 import qualified Data.Set as S
 
-newtype Range a = Range (Set (RangeElem a))
-  deriving (Show)
+newtype Range a = Range {rangeToSet :: Set (RangeElem a)}
 
 rangeEmpty :: Range a
 rangeEmpty = Range S.empty
@@ -40,9 +49,6 @@ point = rangeFromPoint
 
 rangeFromSet :: Set (RangeElem a) -> Range a
 rangeFromSet = Range
-
-rangeToSet :: Range a -> Set (RangeElem a)
-rangeToSet (Range xs) = xs
 
 rangeToList :: Range a -> [RangeElem a]
 rangeToList (Range xs) = S.toAscList xs
@@ -59,6 +65,9 @@ rangeSimplify r@(Range xs) =
         Nothing -> r
         Just (rMax, _) -> Range $ S.fromAscList [rMin, rMax]
 
+rangeFromLimit :: ConwaySeq a -> Range a
+rangeFromLimit = Range . S.singleton . ELimit
+
 rangeMap :: (OrdRing b, FiniteSignExpansion b) => (RangeElem a -> RangeElem b) -> Range a -> Range b
 rangeMap f = Range . S.map f . rangeToSet
 
@@ -70,6 +79,16 @@ rangeProd f xr yr = Range $ S.fromList [f x y | x <- rangeToList xr, y <- rangeT
 
 rangeFlatProd :: (Foldable f, OrdRing b, FiniteSignExpansion b) => (RangeElem a -> RangeElem a -> f (RangeElem b)) -> Range a -> Range a -> Range b
 rangeFlatProd f xr yr = Range $ S.unions [foldMap S.singleton $ f x y | x <- rangeToList xr, y <- rangeToList yr]
+
+-- | Take the limit of all range elements.
+rangeLimit :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a
+rangeLimit = Range . S.map (rangeElem EPoint (EPoint . limConwaySeq)) . rangeToSet
+
+rangeDv, rangeCv :: Range a
+rangeDv = rangeFromLimit $ fromMonoSeq $ MonoMultSeq zero True
+rangeCv = rangeFromLimit $ fromMonoSeq $ MonoMultSeq zero False
+
+-- * Range arithmetic operations
 
 rangeUnop ::
   (OrdRing b, FiniteSignExpansion b) =>
@@ -116,12 +135,6 @@ rangeBinopM single fromM p lp pl ll =
     (EPoint x, ELimit y) -> fromM $ ELimit <$> x `pl` y
     (ELimit x, ELimit y) -> ELimit <$> (x `ll` y)
 
-instance (OrdRing a, FiniteSignExpansion a) => Semigroup (Range a) where
-  (<>) = rangeCombine
-
-instance (OrdRing a, FiniteSignExpansion a) => Monoid (Range a) where
-  mempty = rangeEmpty
-
 instance (Num a, OrdRing a, FiniteSignExpansion a) => Num (Range a) where
   (+) = rangeBinop One (+) (flip addOffset) addOffset addSeq
   (*) = rangeBinopM (: []) maybeToList (*) (flip multSeqByConst) multSeqByConst multSeq
@@ -130,3 +143,23 @@ instance (Num a, OrdRing a, FiniteSignExpansion a) => Num (Range a) where
   fromInteger = rangeFromPoint . fromInteger
   (-) = rangeBinop One (-) subSeqPoint subPointSeq subSeq
   negate = rangeUnop negate negConwaySeq
+
+rangeMono1 :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a
+rangeMono1 = rangeUnop mono1 mono1Seq
+
+rangeVeb1 :: (OrdRing a, FiniteSignExpansion a) => Ordinal -> Range a -> Range a
+rangeVeb1 o = rangeUnop (veb1 o) (veb1Seq o)
+
+-- * Range Instances
+
+instance (OrdRing a, FiniteSignExpansion a) => Semigroup (Range a) where
+  (<>) = rangeCombine
+
+instance (OrdRing a, FiniteSignExpansion a) => Monoid (Range a) where
+  mempty = rangeEmpty
+
+instance (Show a, OrdRing a) => Show (Range a) where
+  show (Range xs) = "{" ++ intercalate ", " (map show' $ S.toAscList xs) ++ "}"
+    where
+      show' (EPoint p) = show p
+      show' (ELimit l) = show l
