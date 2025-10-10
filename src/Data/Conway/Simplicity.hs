@@ -88,11 +88,14 @@ module Data.Conway.Simplicity
     ParentSeq0,
     RangeElem (..),
     RangeElemMono (..),
-    ConwaySeq (..),
+    ConwaySeq,
     MonoSeq (..),
     FixBase,
     Veb1Seq (..),
     LeftRight (..),
+    csBase,
+    csSign,
+    csTerm,
     toPair,
 
     -- * Parent sequence

@@ -5,6 +5,8 @@ module Data.Conway.Simplicity.ConwaySeq
     archiClassMonoSeq,
     fromSignedMonoSeqOffset,
     addOffset,
+    subPointSeq,
+    subSeqPoint,
     negConwaySeq,
   )
 where
@@ -41,6 +43,12 @@ addOffset off cs@(ConwaySeq base _ seqTerm)
       MonoMultSeq _ True -> True
       _ -> False
     base'' = if absorb then cutOffArchiClassExclusive pTerm base' else cutOffArchiClass pTerm base'
+
+subPointSeq :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> ConwaySeq a
+subPointSeq p cs = p `addOffset` negConwaySeq cs
+
+subSeqPoint :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a -> ConwaySeq a
+subSeqPoint cs p = neg p `addOffset` cs
 
 negConwaySeq :: (OrdZero a, One a) => ConwaySeq a -> ConwaySeq a
 negConwaySeq (ConwaySeq base s m) = ConwaySeq (neg base) (not s) m

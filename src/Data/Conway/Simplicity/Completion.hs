@@ -1,6 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# HLINT ignore "Use tuple-section" #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Data.Conway.Simplicity.Completion
   ( Limit (..),
@@ -14,6 +17,8 @@ module Data.Conway.Simplicity.Completion
     parentSeq,
     parentSeqWithSign,
     parentSeqSign,
+    conwaySeqSign,
+    ordKey,
   )
 where
 
@@ -26,7 +31,7 @@ import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Simplicity.Parent (parentConway)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 
 -- | Typeclass for type @a@ that represents a sequence that completes to a @limit@ of type @b@
 class Limit a b | a -> b where
@@ -171,11 +176,21 @@ parentSeqWithSign x0 =
     limL = limParentSeqDir True seqL
     limR = limParentSeqDir False seqR
 
-parentSeqSign :: ParentSeq a -> Maybe Bool
-parentSeqSign = (>>= rangeElem (const Nothing) (onTerm . csTerm))
+-- | Given a @ConwaySeq@, determine if it is increase or decreasing
+conwaySeqSign :: ConwaySeq a -> Bool
+conwaySeqSign (ConwaySeq {csSign = sign, csTerm = mSeq}) = (/= sign) $ onTerm mSeq
   where
-    onTerm :: MonoSeq a -> Maybe Bool
-    onTerm (MonoMultSeq _ b) = Just b
-    onTerm (Mono1Seq (Veb1ArgSeq _ c)) = parentSeqSign $ psLim c
-    onTerm (Mono1Seq (Veb1OrderSeq _ b)) = snd <$> b
-    onTerm (Mono1Seq (Veb1IterSeq _ b)) = snd <$> b
+    onTerm :: MonoSeq a -> Bool
+    onTerm (MonoMultSeq _ b) = b
+    onTerm (Mono1Seq (Veb1ArgSeq _ c)) = fromMaybe True $ parentSeqSign $ psLim c
+    onTerm (Mono1Seq (Veb1OrderSeq _ b)) = maybe True snd b
+    onTerm (Mono1Seq (Veb1IterSeq _ b)) = maybe True snd b
+
+orderingConwaySeq :: ConwaySeq a -> Ordering
+orderingConwaySeq s = if conwaySeqSign s then LT else GT
+
+parentSeqSign :: ParentSeq a -> Maybe Bool
+parentSeqSign = (>>= rangeElem (const Nothing) (Just . conwaySeqSign))
+
+ordKey :: (OrdRing a, FiniteSignExpansion a) => RangeElem a -> (Conway a, Ordering)
+ordKey = rangeElem (,EQ) (\s -> (limConwaySeq s, orderingConwaySeq s))
