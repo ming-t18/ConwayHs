@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Conway.Simplicity.Range
   ( Range,
@@ -18,9 +19,21 @@ module Data.Conway.Simplicity.Range
     rangeFromLimit,
     rangeDv,
     rangeCv,
+    rangeNeg,
     rangeMono1,
     rangeVeb1,
+
+    -- * Ordering and interval
     rangeLimit,
+    rangeExtreme,
+    rangeMin,
+    rangeMax,
+    rangeExtreme',
+    rangeMin',
+    rangeMax',
+    rangeLt,
+    rangeNull,
+    rangeContains,
   )
 where
 
@@ -38,7 +51,15 @@ import Data.Maybe (maybeToList)
 import Data.Set (Set)
 import qualified Data.Set as S
 
+-- | A range of surreal numbers, which is a set of @RangeElem@s.
+--
+-- Represents a list of point or limit expressions.
+-- Can also can be treated as an interval where the openness/closeness
+-- of each side depends on if the ends are point or limit.
 newtype Range a = Range {rangeToSet :: Set (RangeElem a)}
+
+rangeNull :: Range a -> Bool
+rangeNull (Range xs) = S.null xs
 
 rangeEmpty :: Range a
 rangeEmpty = Range S.empty
@@ -80,9 +101,49 @@ rangeProd f xr yr = Range $ S.fromList [f x y | x <- rangeToList xr, y <- rangeT
 rangeFlatProd :: (Foldable f, OrdRing b, FiniteSignExpansion b) => (RangeElem a -> RangeElem a -> f (RangeElem b)) -> Range a -> Range a -> Range b
 rangeFlatProd f xr yr = Range $ S.unions [foldMap S.singleton $ f x y | x <- rangeToList xr, y <- rangeToList yr]
 
+-- * Ordering and interval
+
+takeLimit :: (OrdRing a, FiniteSignExpansion a) => RangeElem a -> Conway a
+takeLimit = rangeElem id limConwaySeq
+
 -- | Take the limit of all range elements.
 rangeLimit :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a
-rangeLimit = Range . S.map (rangeElem EPoint (EPoint . limConwaySeq)) . rangeToSet
+rangeLimit = Range . S.map (EPoint . takeLimit) . rangeToSet
+
+rangeExtreme :: (OrdRing a, FiniteSignExpansion a) => Bool -> Range a -> Maybe (Conway a)
+rangeExtreme d = ((takeLimit . fst) <$>) . view . rangeToSet . rangeSimplify
+  where
+    view = if d then S.maxView else S.minView
+
+rangeMin, rangeMax :: (OrdRing a, FiniteSignExpansion a) => Range a -> Maybe (Conway a)
+rangeMin = rangeExtreme False
+rangeMax = rangeExtreme True
+
+takeLimit' :: (OrdRing a, FiniteSignExpansion a) => Ordering -> RangeElem a -> (Conway a, Ordering)
+takeLimit' o = rangeElem (,EQ) ((,o) . limConwaySeq)
+
+rangeExtreme' :: (OrdRing a, FiniteSignExpansion a) => Bool -> Range a -> Maybe (Conway a, Ordering)
+rangeExtreme' d = ((takeLimit' o . fst) <$>) . view . rangeToSet . rangeSimplify
+  where
+    o = if d then GT else LT
+    view = if d then S.maxView else S.minView
+
+rangeMin', rangeMax' :: (OrdRing a, FiniteSignExpansion a) => Range a -> Maybe (Conway a, Ordering)
+
+-- | Gets the minimum interval point of a @Range@.
+rangeMin' = rangeExtreme' False
+
+-- | Gets the maximum interval point of a @Range@.
+rangeMax' = rangeExtreme' True
+
+rangeContains :: (OrdRing a, FiniteSignExpansion a) => Range a -> Conway a -> Bool
+rangeContains r x = maybe True (<= x') (rangeMin' r) && maybe True (x' <=) (rangeMax' r) where x' = (x, EQ)
+
+-- | @rx rangeLt ry@ if and only if pairwise @x < y@ for all @x in rx@ and @y in ry@
+rangeLt :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a -> Bool
+rangeLt x y = rangeMax x < rangeMin y
+
+-- * Primitive
 
 rangeDv, rangeCv :: Range a
 rangeDv = rangeFromLimit $ fromMonoSeq $ MonoMultSeq zero True
@@ -142,7 +203,10 @@ instance (Num a, OrdRing a, FiniteSignExpansion a) => Num (Range a) where
   signum _ = error "Range.singnum: not implemented"
   fromInteger = rangeFromPoint . fromInteger
   (-) = rangeBinop One (-) subSeqPoint subPointSeq subSeq
-  negate = rangeUnop negate negConwaySeq
+  negate = rangeNeg
+
+rangeNeg :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a
+rangeNeg = rangeUnop neg negConwaySeq
 
 rangeMono1 :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a
 rangeMono1 = rangeUnop mono1 mono1Seq
