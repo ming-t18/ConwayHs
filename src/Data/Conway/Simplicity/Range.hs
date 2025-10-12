@@ -45,7 +45,7 @@ import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Instances ()
 import Data.Conway.Simplicity.SeqArith
 import Data.Conway.Simplicity.Types
-import Data.Conway.Typeclasses
+import Data.Conway.Typeclasses as T
 import Data.List (intercalate)
 import Data.Maybe (maybeToList)
 import Data.Set (Set)
@@ -75,7 +75,7 @@ rangeToList :: Range a -> [RangeElem a]
 rangeToList (Range xs) = S.toAscList xs
 
 rangeCombine :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a -> Range a
-rangeCombine (Range xs) (Range ys) = Range (S.union xs ys)
+rangeCombine (Range xs) (Range ys) = Range $ S.union xs ys
 
 rangeSimplify :: (OrdZero a, One a) => Range a -> Range a
 rangeSimplify r@(Range xs) =

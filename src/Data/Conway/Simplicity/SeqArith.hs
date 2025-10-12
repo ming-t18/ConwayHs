@@ -55,12 +55,13 @@ import Data.Maybe (fromJust, maybeToList)
 
 addSeq, subSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> OneOrTwo (ConwaySeq a)
 addSeq ConwaySeq {csBase = base1, csSign = s1, csTerm = t1} ConwaySeq {csBase = base2, csSign = s2, csTerm = t2} =
-  fmap (\(Signed (s'', t'')) -> normalize $ ConwaySeq {csBase = base1 `add` base2, csSign = s'', csTerm = t''}) t'
+  fromSignedMonoSeqOffset base3 <$> sm
   where
-    normalize cs3@ConwaySeq {csBase = base3} = addOffset base3 $ cs3 {csBase = zero}
-    t' = case (s1, s2) of
-      (False, False) -> One $ signedNeg (t1 `addMono` t2)
+    base3 = base1 `add` base2
+    -- normalize cs3@ConwaySeq {csBase = base3} = addOffset base3 $ cs3 {csBase = zero}
+    sm = case (s1, s2) of
       (True, True) -> One $ signedPos (t1 `addMono` t2)
+      (False, False) -> One $ signedNeg (t1 `addMono` t2)
       (True, False) -> t1 `subMono` t2
       (False, True) -> t2 `subMono` t1
 subSeq s1 s2 = s1 `addSeq` negConwaySeq s2
@@ -79,10 +80,10 @@ addMono s1 s2 =
         (MonoMultSeq _ d1, MonoMultSeq _ d2) ->
           case (d1, d2) of
             (True, True) -> s1
+            (False, False) -> s1
             (True, False) -> s1
             (False, True) -> s2
-            (False, False) -> s1
-        -- w^p.k + w^[-> p] = w^p(-> k + 1) = w^p
+        -- w^p.k + w^[-> p] = w^p.(-> k + 1) = w^p.k
         -- w^p.2^(-k) + w^[-> p] = w^p.(-> 0) + w^[-> p] = w^[-> p]
         (MonoMultSeq _ d1, Mono1Seq _) -> if d1 then s1 else s2
         (Mono1Seq _, MonoMultSeq _ d2) -> if d2 then s2 else s1
@@ -166,6 +167,12 @@ multMonoSeqByConst c m
   | isNegative c = Just $ signedNeg $ multMonoSeqByPositive (neg c) m
   | otherwise = Just $ signedPos $ multMonoSeqByPositive c m
 
+multSign :: Bool -> Bool -> Bool
+multSign True True = True
+multSign False False = True
+multSign True False = False
+multSign False True = False
+
 multSeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> ConwaySeq a -> [ConwaySeq a]
 multSeq ConwaySeq {csBase = a, csSign = s1, csTerm = x} ConwaySeq {csBase = b, csSign = s2, csTerm = y} =
   (\(Signed (sign, z)) -> addOffset ab $ fromSignedMonoSeq $ Signed (sign, z))
@@ -175,7 +182,7 @@ multSeq ConwaySeq {csBase = a, csSign = s1, csTerm = x} ConwaySeq {csBase = b, c
     xy' = x `multMonoSeq` y
     bx' = b `multMonoSeqByConst` x
     ay' = a `multMonoSeqByConst` y
-    s1s2 = s1 /= s2
+    s1s2 = s1 `multSign` s2
     res = do
       xy <- listFrom12 $ withSign s1s2 <$> xy'
       case (bx', ay') of
