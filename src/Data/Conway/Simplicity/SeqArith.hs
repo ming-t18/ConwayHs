@@ -43,7 +43,7 @@ import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses (AddSub (..), One, OrdRing, OrdZero (..), Zero (..))
 import qualified Data.Conway.Typeclasses as T
-import Data.Maybe (fromJust, maybeToList)
+import Data.Maybe (fromJust)
 
 -- sub :: MonoSeq a -> MonoSeq a -> [MonoSeq a]
 -- subCancel :: MonoSeq a -> MonoSeq a -> Maybe (Either (MonoSeq a) (MonoSeq a))
