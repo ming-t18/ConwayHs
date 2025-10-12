@@ -178,13 +178,14 @@ parentSeqWithSign x0 =
 
 -- | Given a @ConwaySeq@, determine if it is increase or decreasing
 conwaySeqSign :: ConwaySeq a -> Bool
-conwaySeqSign (ConwaySeq {csSign = sign, csTerm = mSeq}) = (/= sign) $ onTerm mSeq
+conwaySeqSign (ConwaySeq {csSign = sign, csTerm = mSeq}) = (== sign) $ onTerm mSeq
   where
     onTerm :: MonoSeq a -> Bool
     onTerm (MonoMultSeq _ b) = b
     onTerm (Mono1Seq (Veb1ArgSeq _ c)) = fromMaybe True $ parentSeqSign $ psLim c
-    onTerm (Mono1Seq (Veb1OrderSeq _ b)) = maybe True snd b
-    onTerm (Mono1Seq (Veb1IterSeq _ b)) = maybe True snd b
+    onTerm (Mono1Seq (Veb1OrderSeq _ b)) = maybe True fixBaseSign b
+    onTerm (Mono1Seq (Veb1IterSeq _ b)) = maybe True fixBaseSign b
+    fixBaseSign = snd
 
 orderingConwaySeq :: ConwaySeq a -> Ordering
 orderingConwaySeq s = if conwaySeqSign s then LT else GT
