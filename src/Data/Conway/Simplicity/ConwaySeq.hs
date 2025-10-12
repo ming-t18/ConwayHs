@@ -12,7 +12,7 @@ module Data.Conway.Simplicity.ConwaySeq
 where
 
 import Data.Conway.Conway
-import Data.Conway.Helpers (archiClass, cutOffArchiClass, cutOffArchiClassExclusive)
+import Data.Conway.Helpers (archiClass, cutOffArchiClass, cutOffArchiClassExclusive, toExponent)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.HelperTypes
@@ -23,14 +23,17 @@ import Data.Maybe (fromJust)
 fromMonoSeq :: MonoSeq a -> ConwaySeq a
 fromMonoSeq = ConwaySeq zero True
 
+-- | Returns a @ConwaySeq@ with zero base
 fromSignedMonoSeq :: Signed (MonoSeq a) -> ConwaySeq a
 fromSignedMonoSeq = uncurry (ConwaySeq zero) . getSigned
 
+-- | Returns a @ConwaySeq@ with zero base
 fromSignedMonoSeqOffset :: (OrdRing a, FiniteSignExpansion a) => Conway a -> Signed (MonoSeq a) -> ConwaySeq a
 fromSignedMonoSeqOffset base s = addOffset base $ fromSignedMonoSeq s
 
 archiClassMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
-archiClassMonoSeq = fromJust . archiClass . limMonoSeq
+archiClassMonoSeq (MonoMultSeq p _) = toExponent p
+archiClassMonoSeq m@(Mono1Seq _) = fromJust $ archiClass $ limMonoSeq m
 
 addOffset :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> ConwaySeq a
 addOffset off cs@(ConwaySeq base _ seqTerm)
@@ -52,3 +55,5 @@ subSeqPoint cs p = neg p `addOffset` cs
 
 negConwaySeq :: (OrdZero a, One a) => ConwaySeq a -> ConwaySeq a
 negConwaySeq (ConwaySeq base s m) = ConwaySeq (neg base) (not s) m
+
+-- -(a + m) = (-a) - m, -(a - m) = (-a) + m
