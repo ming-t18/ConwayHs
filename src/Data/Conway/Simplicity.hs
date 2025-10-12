@@ -1,4 +1,35 @@
--- | Let @S + veb o p c@ be a @Conway@ with a trailing term.
+-- | Module containing tools to represent surreal numbers in terms of
+-- their simpler versions.
+--
+-- * Ranges
+--
+-- A surreal number @x@ can be defined in terms of @{left | right}@
+-- where @left@ and @right@ are sets of surreals. They are often
+-- called "ranges"
+--
+-- When talking about surreals, we often write expressions to perform
+-- arithmetic on the ranges, and apply cofinality ([Gonshor] Chapter 2)
+-- to simplify the ranges.
+--
+-- In this library, ranges are modeled as a collection of range elements.
+--
+-- A range element (@RangeElem a@) is basically @base + seq@ or @base - seq@
+-- where @seq :: MonoSeq a@ is a sequence with the limit of a monomial.
+--
+-- The type @Range a@ represents a @Set@ of range elements.
+--
+-- Arithmetic operations can be performed on ranges. They include
+-- @add, sub, mult, mono1, veb1@.
+--
+-- * Left/right forms
+--
+-- The type @LRRange a@ represents the @{left | right}@ form of a @Conway a@.
+--
+-- It is constructed by the operator @left :|: right@ where @left :|: right@
+-- are both of type @Range a@.
+--
+-- * More details on ranges and their simplifications
+-- Let @S + veb o p c@ be a @Conway@ with a trailing term.
 --
 -- Let @'@ be the left parent of a surreal number, and @''@ be the right parent.
 --
@@ -84,7 +115,17 @@
 --
 --   * Veb1RLimitLimit: @(veb1 o p)'' = veb1 o p''@
 module Data.Conway.Simplicity
-  ( ParentSeq,
+  ( -- * Left-Right forms
+    LRRange (..),
+
+    -- * Range
+    Range,
+    point,
+    rangeCv,
+    rangeDv,
+
+    -- * RangeElem
+    ParentSeq,
     ParentSeq0,
     RangeElem (..),
     RangeElemMono (..),
@@ -126,6 +167,8 @@ where
 
 import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Descent
+import Data.Conway.Simplicity.LeftRightRange
 import Data.Conway.Simplicity.Parent
+import Data.Conway.Simplicity.Range
 import Data.Conway.Simplicity.Seq
 import Data.Conway.Simplicity.Types
