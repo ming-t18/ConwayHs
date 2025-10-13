@@ -41,6 +41,7 @@ library
       Data.Conway.Seq.InfList
       Data.Conway.Seq.Types
       Data.Conway.SignExpansion
+      Data.Conway.SignExpansion.CommonPrefix
       Data.Conway.SignExpansion.Conway
       Data.Conway.SignExpansion.Dyadic
       Data.Conway.SignExpansion.Parser

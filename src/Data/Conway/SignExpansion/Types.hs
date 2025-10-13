@@ -35,10 +35,10 @@ where
 
 import Data.Bifunctor (first)
 import Data.Conway.Conway
-import Data.Conway.FundamentalSeq (isLimit)
 import Data.Conway.MonoTerm
 import Data.Conway.OrdinalArith
 import qualified Data.Conway.Seq as Seq
+import qualified Data.Conway.SignExpansion.CommonPrefix as C
 import Data.Conway.Typeclasses
 import qualified Data.Foldable as F
 import Prelude hiding (length, negate)
@@ -140,33 +140,6 @@ index (SignExpansion ((s, n) : ss)) i =
     (LT, _) -> s
     (_, d) -> index (SignExpansion ss) d
 
-commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
-commonPrefix = curry $ recurse empty
-  where
-    recurse :: SignExpansion -> (SignExpansion, SignExpansion) -> SignExpansion
-    recurse acc (SignExpansion [], _) = acc
-    recurse acc (_, SignExpansion []) = acc
-    recurse acc (SignExpansion (e0@(s0, n0) : xs0), SignExpansion ((s1, n1) : xs1))
-      | s0 == s1 =
-          if n0 == n1
-            then recurse (acc +++ single e0) (SignExpansion xs0, SignExpansion xs1)
-            else acc +++ single (s0, min n0 n1)
-      | otherwise = acc
-
-takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
-takeCommonPrefix = curry $ recurse empty
-  where
-    recurse :: SignExpansion -> (SignExpansion, SignExpansion) -> (SignExpansion, (SignExpansion, SignExpansion))
-    recurse acc p@(SignExpansion [], _) = (acc, p)
-    recurse acc p@(_, SignExpansion []) = (acc, p)
-    recurse acc p@(SignExpansion (e0@(s0, n0) : xs0), SignExpansion ((s1, n1) : xs1))
-      | s0 == s1 =
-          case n0 `ordSymDiff` n1 of
-            (EQ, _) -> recurse (acc +++ single e0) (SignExpansion xs0, SignExpansion xs1)
-            (LT, d) -> (acc +++ single (s0, n0), (SignExpansion xs0, single (s1, d) +++ SignExpansion xs1))
-            (GT, d) -> (acc +++ single (s1, n1), (single (s0, d) +++ SignExpansion xs0, SignExpansion xs1))
-      | otherwise = (acc, p)
-
 countSigns :: Bool -> SignExpansion -> Ordinal
 countSigns s0 (SignExpansion xs) = foldl (\c (s, n) -> if s == s0 then c `ordAdd` n else c) 0 xs
 
@@ -194,19 +167,16 @@ takeUntilNthSign (s, n) = loop (n, empty)
             (GT, d) -> loop (d, acc +++ single (s0, n0)) $ SignExpansion xs
     loop _ (SignExpansion []) = error "takeUntilNthSign: out of bounds"
 
+commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
+commonPrefix (SignExpansion xs) (SignExpansion ys) = fromList $ C.commonPrefix xs ys
+
+takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
+takeCommonPrefix (SignExpansion xs) (SignExpansion ys) = (fromList cs', (fromList xs', fromList ys'))
+  where
+    (cs', (xs', ys')) = C.takeCommonPrefix ordSymDiff xs ys
+
 -- | Returns the simplest @SignExpansion@ that is between the two arguments: @x < construct x y && construct x y < y@
 construct :: SignExpansion -> SignExpansion -> SignExpansion
-construct x y
+construct x@(SignExpansion xs) y@(SignExpansion ys)
   | x >= y = error "construct: the first arg must be less than the second arg"
-  | otherwise =
-      c +++ case (toList xr, toList yr) of
-        ([], [(True, 1)]) -> fromList [(True, 1), (False, 1)]
-        ([], [(True, 1), (False, n)]) -> fromList [(True, 1), (False, n `ordAdd` 1)]
-        ([], (True, _) : _) -> fromList [(True, 1)]
-        ([(False, 1)], []) -> fromList [(False, 1), (True, 1)]
-        ([(False, 1), (True, n)], []) -> fromList [(False, 1), (True, n `ordAdd` 1)]
-        ((False, _) : _, []) -> fromList [(False, 1)]
-        -- diverging signs
-        (_, _) -> empty
-  where
-    (c, (xr, yr)) = takeCommonPrefix x y
+  | otherwise = fromList $ C.construct ordSymDiff xs ys
