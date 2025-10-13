@@ -31,6 +31,11 @@ module Data.Conway.SignExpansion.Dyadic
 
     -- * Parsing
     parseDyadicSE,
+
+    -- * Common prefix
+    commonPrefixFSE,
+    takeCommonPrefixFSE,
+    constructFSE,
   )
 where
 
@@ -250,3 +255,48 @@ parseFracSE x0 dx ((sign, n) : xs) = parseFracSE x0' dx' xs
     dx' = dx `shr` fromIntegral n
     delta = sum [dx `shr` fromIntegral (i - 1) | i <- [1 .. n]]
     x0' = if sign then x0 + delta else x0 - delta
+
+-- * Common prefix and @{ left | right }@
+
+commonPrefixFSE :: FSE -> FSE -> FSE
+commonPrefixFSE = curry $ recurse empty
+  where
+    recurse :: FSE -> (FSE, FSE) -> FSE
+    recurse acc (FSE [], _) = acc
+    recurse acc (_, FSE []) = acc
+    recurse acc (FSE (e0@(s0, n0) : xs0), FSE ((s1, n1) : xs1))
+      | s0 == s1 =
+          if n0 == n1
+            then recurse (acc +++. single e0) (FSE xs0, FSE xs1)
+            else acc +++. single (s0, min n0 n1)
+      | otherwise = acc
+
+takeCommonPrefixFSE :: FSE -> FSE -> (FSE, (FSE, FSE))
+takeCommonPrefixFSE = curry $ recurse empty
+  where
+    recurse :: FSE -> (FSE, FSE) -> (FSE, (FSE, FSE))
+    recurse acc p@(FSE [], _) = (acc, p)
+    recurse acc p@(_, FSE []) = (acc, p)
+    recurse acc p@(FSE (e0@(s0, n0) : xs0), FSE ((s1, n1) : xs1))
+      | s0 == s1 =
+          case n0 `compare` n1 of
+            EQ -> recurse (acc +++. single e0) (FSE xs0, FSE xs1)
+            LT -> let d = n1 - n0 in (acc +++. single (s0, n0), (FSE xs0, single (s1, d) +++. FSE xs1))
+            GT -> let d = n0 - n1 in (acc +++. single (s1, n1), (single (s0, d) +++. FSE xs0, FSE xs1))
+      | otherwise = (acc, p)
+
+constructFSE :: FSE -> FSE -> FSE
+constructFSE x y
+  | x >= y = error "constructFSE: the first arg must be less than the second arg"
+  | otherwise =
+      c +++. case (toList xr, toList yr) of
+        ([], [(True, 1)]) -> fromList [(True, 1), (False, 1)]
+        ([], [(True, 1), (False, n)]) -> fromList [(True, 1), (False, n + 1)]
+        ([], (True, _) : _) -> fromList [(True, 1)]
+        ([(False, 1)], []) -> fromList [(False, 1), (True, 1)]
+        ([(False, 1), (True, n)], []) -> fromList [(False, 1), (True, n + 1)]
+        ((False, _) : _, []) -> fromList [(False, 1)]
+        -- diverging signs
+        (_, _) -> empty
+  where
+    (c, (xr, yr)) = takeCommonPrefixFSE x y
