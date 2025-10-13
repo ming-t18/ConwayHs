@@ -5,6 +5,7 @@ module Specs.SignExpansion
   ( testReducedSignExpansion,
     testSignExpansionConway,
     testParseSignExpansion,
+    testConstruct,
   )
 where
 
