@@ -1,11 +1,13 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module Data.Conway.Helpers (isInteger, archiClass, trailingArchiClass, toExponent, partitionArchiClass, cutOffArchiClass, cutOffArchiClassExclusive) where
+module Data.Conway.Helpers (isInteger, archiClass, trailingArchiClass, toExponent, partitionArchiClass, cutOffArchiClass, cutOffArchiClassExclusive, commonAncestor, simplestBetween) where
 
 import Data.Bifunctor (bimap)
 import Data.Conway.Conway
+import Data.Conway.SignExpansion (construct, conwaySE, parseToConway)
 import Data.Conway.SignExpansion.Conway (isAllMinusesFinite, isAllPlusesFinite)
 import Data.Conway.SignExpansion.Dyadic
+import Data.Conway.SignExpansion.Types (commonPrefix)
 import Data.Conway.Typeclasses
 import Data.Map.Strict ()
 import qualified Data.Map.Strict as M
@@ -41,3 +43,12 @@ partitionArchiClass p = bimap conway conway . M.partitionWithKey (\k _ -> p k) .
 cutOffArchiClass, cutOffArchiClassExclusive :: (OrdZero a, One a) => Conway a -> Conway a -> Conway a
 cutOffArchiClass p = fst . partitionArchiClass ((>= p) . toExponent)
 cutOffArchiClassExclusive p = fst . partitionArchiClass ((> p) . toExponent)
+
+commonAncestor, simplestBetween :: (OrdRing a, FiniteSignExpansion a) => Conway a -> Conway a -> Conway a
+
+-- | Gets the simplest @z = commonAncestor x y@ such that @x <= z && z <= y@
+commonAncestor x y = parseToConway $ commonPrefix (conwaySE x) (conwaySE y)
+
+-- | Gets the simplest @z = simplestBetween x y@ such that @x < z && z < y@.
+-- This is the @{ left | right }@ construction of a surreal number.
+simplestBetween x y = parseToConway $ construct (conwaySE x) (conwaySE y)
