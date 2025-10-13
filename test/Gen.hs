@@ -10,6 +10,7 @@ module Gen
     NaturalGen (..),
     FiniteOrdGen (..),
     OrdV0Gen (..),
+    asc2,
   )
 where
 
@@ -141,3 +142,10 @@ instance Arbitrary SignExpansion where
 instance Arbitrary FSE where
   arbitrary = SED.fromList <$> arbitrary
   shrink x = SED.fromList <$> shrink (SED.toList x)
+
+-- | Tests a property @p x y@ ensuring @x < y@.
+asc2 :: (Ord a, Testable t) => (a -> a -> t) -> ((a, a) -> Property)
+asc2 p (x, y) = case x `compare` y of
+  EQ -> False ==> True
+  LT -> True ==> p x y
+  GT -> True ==> p y x

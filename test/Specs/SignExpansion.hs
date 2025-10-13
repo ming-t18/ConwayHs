@@ -5,6 +5,7 @@ module Specs.SignExpansion
   ( testReducedSignExpansion,
     testSignExpansionConway,
     testParseSignExpansion,
+    testConstruct,
   )
 where
 
@@ -13,7 +14,6 @@ import Data.Conway.Conway
 import Data.Conway.Dyadic
 import Data.Conway.OrdinalArith
 import qualified Data.Conway.Seq as Seq
-import Data.Conway.SignExpansion ()
 import Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Dyadic (finiteSE)
 import Data.Conway.SignExpansion.Reduce (Reduced (..))
@@ -125,6 +125,23 @@ testReducedSignExpansion = do
 
       it "unreduce . reduce === Just for descending lists of sign expansions" $ do
         qc (\(S.toDescList . S.fromList -> ps) -> R.unreduce (R.reduce ps) === Just ps)
+
+testConstruct :: SpecWith ()
+testConstruct = do
+  describe "construct" $ do
+    describe "base cases" $ do
+      let ordSucc = (`ordAdd` 1)
+      it "construct [] [+^n] = [+] for n > 1" $
+        qc (\n -> n > 1 ==> construct empty (SE.fromList [(True, n)]) === SE.fromList [(True, 1)])
+      it "construct [] [+^(n + 1) & S] = [+] for n > 1" $
+        qc (\n s -> n > 1 ==> construct empty (SE.fromList [(True, ordSucc n)] +++ s) === SE.fromList [(True, 1)])
+      it "construct [] [+ -^n] = [+ -^(n + 1)] for n >= 0" $
+        qc (\n -> construct empty (SE.fromList [(True, 1), (False, n `ordAdd` 1)]) === SE.fromList [(True, 1), (False, n `ordAdd` 2)])
+
+    it "negation symmetry" $ qc $ asc2 (\x y -> construct x y === neg (construct (neg y) (neg x)))
+    it "prepend common prefix" $ qc (\p -> asc2 (\x y -> construct (p +++ x) (p +++ y) === p +++ construct x y))
+    it "result shares a common prefix" $ qc (\x -> asc2 (\y z -> construct (x +++ y) (x +++ z) === x +++ construct y z))
+    it "result is exclusively in between" $ qc $ asc2 (\x y -> let z = construct x y in x < z .&&. z < y)
 
 testSignExpansionConway :: SpecWith ()
 testSignExpansionConway = do

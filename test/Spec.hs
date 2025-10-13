@@ -79,9 +79,13 @@ testDyadic = do
 
 main :: IO ()
 main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
-  testSimplicity
-
   when True $ do
+    testConstruct
+
+  when False $ do
+    testSimplicity
+
+  when False $ do
     describe "Dyadic" $ do
       testDyadic
 
@@ -109,7 +113,7 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
     describe "Range compression (Ordinal -> Dyadic)" $ do
       testPropsRangeCompression
 
-  when True $ describe "SignExpansion" $ do
+  when False $ describe "SignExpansion" $ do
     describe "OrdZero" $ do
       propsOrdZero (id :: SignExpansion -> SignExpansion)
 

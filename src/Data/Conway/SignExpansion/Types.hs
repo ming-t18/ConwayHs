@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Data.Conway.SignExpansion.Types
   ( -- * Construction and decomposition
@@ -30,11 +29,13 @@ module Data.Conway.SignExpansion.Types
     -- * Common prefix
     commonPrefix,
     takeCommonPrefix,
+    construct,
   )
 where
 
 import Data.Bifunctor (first)
 import Data.Conway.Conway
+import Data.Conway.FundamentalSeq (isLimit)
 import Data.Conway.MonoTerm
 import Data.Conway.OrdinalArith
 import qualified Data.Conway.Seq as Seq
@@ -192,3 +193,20 @@ takeUntilNthSign (s, n) = loop (n, empty)
             (LT, _) -> acc +++ single (s0, n')
             (GT, d) -> loop (d, acc +++ single (s0, n0)) $ SignExpansion xs
     loop _ (SignExpansion []) = error "takeUntilNthSign: out of bounds"
+
+-- | Returns the simplest @SignExpansion@ that is between the two arguments: @x < construct x y && construct x y < y@
+construct :: SignExpansion -> SignExpansion -> SignExpansion
+construct x y
+  | x >= y = error "construct: the first arg must be less than the second arg"
+  | otherwise =
+      c +++ case (toList xr, toList yr) of
+        ([], [(True, 1)]) -> fromList [(True, 1), (False, 1)]
+        ([], [(True, 1), (False, n)]) -> fromList [(True, 1), (False, n `ordAdd` 1)]
+        ([], (True, _) : _) -> fromList [(True, 1)]
+        ([(False, 1)], []) -> fromList [(False, 1), (True, 1)]
+        ([(False, 1), (True, n)], []) -> fromList [(False, 1), (True, n `ordAdd` 1)]
+        ((False, _) : _, []) -> fromList [(False, 1)]
+        -- diverging signs
+        (_, _) -> empty
+  where
+    (c, (xr, yr)) = takeCommonPrefix x y
