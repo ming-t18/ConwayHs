@@ -45,6 +45,7 @@ module Data.Conway.SignExpansion
     commonPrefix,
     takeCommonPrefix,
     construct,
+    lastSign,
 
     -- * Generation
     ParseVeb (..),

@@ -21,6 +21,7 @@ module Data.Conway.SignExpansion.Types
     index,
     takeLeading,
     takeUntilNthSign,
+    lastSign,
 
     -- * Counting
     length,
@@ -180,3 +181,8 @@ construct :: SignExpansion -> SignExpansion -> SignExpansion
 construct x@(SignExpansion xs) y@(SignExpansion ys)
   | x >= y = error "construct: the first arg must be less than the second arg"
   | otherwise = fromList $ C.construct ordSymDiff xs ys
+
+lastSign :: SignExpansion -> Maybe Bool
+lastSign (SignExpansion []) = Nothing
+lastSign (SignExpansion [(s, _)]) = Just s
+lastSign (SignExpansion (_ : xs)) = lastSign $ SignExpansion xs

@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# HLINT ignore "Use tuple-section" #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -12,6 +11,7 @@ module Data.Conway.Simplicity.Completion
     limVeb1Seq,
     limVeb1SeqVebMono,
     limParentSeq,
+    limParentSeqDir,
     limLR,
     birthdayLimParentSeq,
     parentSeq,

@@ -11,8 +11,10 @@ import Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.SignExpansion.Types ()
 import Data.Conway.Simplicity
+import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Prefix
-import Data.Conway.Typeclasses (OrdRing)
+import Data.Conway.Simplicity.SignExpansionSeq
+import Data.Conway.Typeclasses
 import Data.Maybe (fromJust)
 import Gen
 import Props
@@ -94,6 +96,24 @@ testSimplicity = do
 
     it "left limit sequence is increasing and right limit sequence is decreasing at 0 and 1" $ do
       qc (\(ConwayGen (x :: CD)) -> propIncreasingLR 0 1 x)
+
+  describe "SignExpansionSeq" $ do
+    it "recovering limit" $ do
+      qc
+        ( \(ConwayGen (x :: CD)) ->
+            let se = conwaySE x
+             in case SE.lastSign se of
+                  Nothing -> False ==> True
+                  Just sign ->
+                    True ==> limParentSeqSEDir sign (parentSeqSignExpansion $ conwaySE x) === Just (conwaySE x)
+        )
+
+    it "limit of birthday" $ do
+      qc
+        ( \(ConwayGen (x :: CD)) ->
+            let se = conwaySE x
+             in x /= 0 ==> limParentSeqDir True (birthdaySeq $ parentSeqSignExpansion se) === Just (SE.birthday x)
+        )
 
   describe "simplicity sequences: x = { left | right }" $ do
     -- "sufficiently large i" for sequences in general,

@@ -107,9 +107,11 @@ main = hspec $ parallel $ modifyMaxSuccess (const 500) $ do
     describe "Range compression (Ordinal -> Dyadic)" $ do
       testPropsRangeCompression
 
+    -- when False $ do
     describe "simplicity" $ do
       testSimplicity
 
+    -- when False $ do
     describe "SignExpansion" $ do
       describe "OrdZero" $ do
         propsOrdZero (id :: SignExpansion -> SignExpansion)

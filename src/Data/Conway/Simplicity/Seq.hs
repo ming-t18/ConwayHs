@@ -15,7 +15,7 @@ import Data.Conway.Conway
 import Data.Conway.Helpers
 import Data.Conway.Seq.InfList (Infinite)
 import qualified Data.Conway.Seq.InfList as I
-import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion (parseFiniteSE), fromList)
+import Data.Conway.SignExpansion.Dyadic as SED
 import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Types
@@ -28,6 +28,12 @@ toPointOrSeq = (rangeElem Left (Right . conwaySeq) <$>)
 conwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Infinite (Conway a)
 monoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Infinite (Conway a)
 veb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Infinite (Conway a)
+conwaySeq ConwaySeq {csBase = (trailingView -> Just (prefix, (pLast, cLast))), csSign = isAdd, csTerm = MonoMultSeq p False}
+  | p == pLast = I.generate gen
+  where
+    gen i = prefix `add` fromVebMono (p, parseFiniteSE' (seLast +++. SED.single (sign', i)))
+    seLast = finiteSE cLast
+    sign' = not isAdd
 conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
   addBase <$> doSkip (if shouldSkipInitialZero then mseq else ensureLeadingZero mseq)
   where
