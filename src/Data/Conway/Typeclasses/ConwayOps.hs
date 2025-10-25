@@ -1,12 +1,17 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Data.Conway.Typeclasses.ConwayOps (Veb (..), UnVeb (..), mono1, eps) where
+module Data.Conway.Typeclasses.ConwayOps (Veb (..), UnVeb (..), eps) where
 
 import Data.Conway.Typeclasses.Algebra
 
 class (OrdZero o, Ord o) => Veb o a | a -> o where
+  {-# MINIMAL veb1 #-}
+
   -- | Evaluates the Veblen hierarchy function
   veb1 :: o -> a -> a
+
+  mono1 :: a -> a
+  mono1 = veb1 zero
 
 -- | A generic typeclass for a type @a@ that contains
 -- a Veblen hierarchy function @veblen@ indexed by an order
@@ -27,9 +32,6 @@ class (OrdZero o, Ord a) => UnVeb o a | a -> o where
   --
   -- * @Nothing@ otherwise
   unVeb1 :: a -> Maybe (o, a)
-
-mono1 :: (Veb o a) => a -> a
-mono1 = veb1 zero
 
 eps :: (One o, Veb o a) => a -> a
 eps = veb1 one

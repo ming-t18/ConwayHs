@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Data.Conway.SignExpansion.Conway
   ( isAllPluses,
     isAllMinuses,
@@ -29,6 +33,7 @@ import Data.Conway.SignExpansion.Reduce
 import Data.Conway.SignExpansion.Types as SE
 import Data.Conway.SignExpansion.Veb
 import Data.Conway.Typeclasses
+import qualified Data.Conway.Typeclasses.ConwayOps as CO
 import Data.Foldable (foldl')
 
 -- * Is all pluses
@@ -101,3 +106,7 @@ monoSE p c
 vebSE :: (One a, FiniteSignExpansion a, OrdZero a) => Ordinal -> SignExpansion -> a -> SignExpansion
 vebSE 0 p c = monoSE p c
 vebSE o p c = monoSE (veb1SE o p) c
+
+instance CO.Veb Ordinal SignExpansion where
+  veb1 = veb1SE
+  mono1 = mono1SE

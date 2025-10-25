@@ -191,6 +191,7 @@ instance (OrdZero a, One a, Show a, OrdZero n, One n, Show n) => Show (VebMonoI 
 
 instance (OrdZero a, One a, OrdZero n, One n) => CO.Veb (ConwayI n n) (ConwayI n a) where
   veb1 = phi
+  mono1 = w'
 
 instance (OrdZero a, One a, OrdZero n, One n) => CO.UnVeb (ConwayI n n) (ConwayI n a) where
   unVeb1 (Conway xs) =
@@ -344,10 +345,10 @@ fixedPointView x
 mono :: (Mult a, OrdZero n, One n) => ConwayI n a -> a -> ConwayI n a
 mono = veb zero
 
-mono1, w' :: (Mult a, OrdZero n, One n) => ConwayI n a -> ConwayI n a
+mono1, w' :: (OrdZero n, OrdZero a, One a, One n) => ConwayI n a -> ConwayI n a
 
 -- | The power of omega, @mono1 p === veb1 0 p@
-mono1 p = veb zero p one
+mono1 p = veb1 zero p
 
 veb1, phi :: (One a, OrdZero a, OrdZero n, One n) => ConwayI n n -> ConwayI n a -> ConwayI n a
 

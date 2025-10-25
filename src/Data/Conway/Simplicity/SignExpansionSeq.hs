@@ -139,3 +139,8 @@ commonPrefixSERE s1 s2
     (l1, o1) = toOrdInv s1
     (l2, o2) = toOrdInv s2
     cpl = SE.commonPrefix l1 l2
+
+-- TODO implement
+-- instance CO.Veb Ordinal (SignExpansionSeq a) where
+--   veb1 = veb1SESeq
+--   mono1 = mono1SESeq

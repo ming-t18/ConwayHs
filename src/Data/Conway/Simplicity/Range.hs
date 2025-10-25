@@ -53,6 +53,7 @@ import Data.Conway.Simplicity.Instances ()
 import Data.Conway.Simplicity.SeqArith
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses as T
+import qualified Data.Conway.Typeclasses.ConwayOps as CO
 import Data.List (intercalate)
 import Data.Maybe (maybeToList)
 import Data.Set (Set)
@@ -297,3 +298,7 @@ instance (OrdRing a, FiniteSignExpansion a) => Mult (Range a) where
   mult = rangeMult
 
 instance (OrdRing a, FiniteSignExpansion a) => OrdRing (Range a)
+
+instance (OrdRing a, FiniteSignExpansion a) => CO.Veb Ordinal (Range a) where
+  veb1 = rangeVeb1
+  mono1 = rangeMono1

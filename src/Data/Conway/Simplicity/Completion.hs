@@ -2,7 +2,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Data.Conway.Simplicity.Completion
   ( Limit (..),
