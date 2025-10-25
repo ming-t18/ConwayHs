@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -67,6 +68,7 @@ where
 
 import Data.Conway.MonoTerm
 import Data.Conway.Typeclasses
+import qualified Data.Conway.Typeclasses.ConwayOps as CO
 import Data.Foldable
 import Data.List (intercalate)
 import Data.Map.Strict (Map)
@@ -187,9 +189,11 @@ instance (OrdZero a, One a, Show a, OrdZero n, One n, Show n) => Show (VebMonoI 
       showTerm "1" p' = "ε_{" ++ p' ++ "}"
       showTerm a' p' = "φ[" ++ a' ++ ", " ++ p' ++ "]"
 
-instance (OrdZero a, One a, OrdZero n, One n) => Veblen (ConwayI n a) (ConwayI n n) where
-  veblen = veb1
-  unVeblen (Conway xs) =
+instance (OrdZero a, One a, OrdZero n, One n) => CO.Veb (ConwayI n n) (ConwayI n a) where
+  veb1 = phi
+
+instance (OrdZero a, One a, OrdZero n, One n) => CO.UnVeb (ConwayI n n) (ConwayI n a) where
+  unVeb1 (Conway xs) =
     case M.toList xs of
       [] -> Just (zero, zero)
       [(VebMono p a, c)]

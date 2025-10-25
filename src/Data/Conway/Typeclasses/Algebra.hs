@@ -1,0 +1,236 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LambdaCase #-}
+
+module Data.Conway.Typeclasses.Algebra
+  ( Zero (..),
+    One (..),
+    OrdZero (..),
+    AddSub (..),
+    Mult (..),
+    OrdRing,
+
+    -- * Zero-only type
+    ZeroOnly (..),
+  )
+where
+
+import Data.Ratio (Ratio, (%))
+import Numeric.Natural
+
+class Zero a where
+  zero :: a
+  isZero :: a -> Bool
+
+class One a where
+  one :: a
+  isOne :: a -> Bool
+
+-- | Typeclass for a total order with a zero element and negation around the zero element.
+--
+-- IMPORTANT: @neg@ is a partial function for types where negative values cannot be represented.
+--
+-- Properties:
+--
+-- 1. @neg zero == zero@
+--
+-- 2. @neg (neg x) == x@
+--
+-- 3. @x >= y ==> neg y >= neg x@
+--
+-- 4. @isPositive, isNegative, compareZero@ perform comparisons against @zero@
+class (Zero a, Ord a) => OrdZero a where
+  {-# MINIMAL neg #-}
+  neg :: a -> a
+  isPositive, isNegative :: a -> Bool
+  isPositive = (> zero)
+  isNegative = (< zero)
+  compareZero :: a -> Ordering
+  compareZero x = compare x zero
+
+class (OrdZero a) => AddSub a where
+  add :: a -> a -> a
+  sub :: a -> a -> a
+  sub a b = add a (neg b)
+
+class (OrdZero a, One a) => Mult a where
+  mult :: a -> a -> a
+
+class (OrdZero a, AddSub a, Mult a) => OrdRing a
+
+--
+
+-- * Ordering
+
+instance Zero Ordering where
+  zero = EQ
+  isZero EQ = True
+  isZero _ = False
+
+instance One Ordering where
+  one = GT
+  isOne GT = True
+  isOne _ = False
+
+instance OrdZero Ordering where
+  neg = \case
+    GT -> LT
+    EQ -> EQ
+    LT -> GT
+
+-- * Integer
+
+instance Zero Integer where
+  zero = 0
+  isZero = (==) 0
+
+instance One Integer where
+  one = 1
+  isOne = (==) 1
+
+instance OrdZero Integer where
+  neg = negate
+
+instance AddSub Integer where
+  add = (+)
+  sub = (-)
+
+instance Mult Integer where
+  mult = (*)
+
+instance OrdRing Integer
+
+-- * Int
+
+instance Zero Int where
+  zero = 0
+  isZero = (==) 0
+
+instance One Int where
+  one = 1
+  isOne = (==) 1
+
+instance OrdZero Int where
+  neg = negate
+
+instance AddSub Int where
+  add = (+)
+  sub = (-)
+
+instance Mult Int where
+  mult = (*)
+
+instance OrdRing Int
+
+-- * Natural
+
+instance Zero Natural where
+  zero = 0
+  isZero = (==) 0
+
+instance One Natural where
+  one = 1
+  isOne = (==) 1
+
+-- | Negating a non-zero natural number causes the arithmetic underflow error.
+instance OrdZero Natural where
+  neg = negate
+
+-- isNegative _ = False
+
+-- | @sub@ is subject to arithmetic underflow errors.
+instance AddSub Natural where
+  add = (+)
+  sub = (-)
+
+instance Mult Natural where
+  mult = (*)
+
+instance OrdRing Natural
+
+-- * Float
+
+instance Zero Float where
+  zero = 0
+  isZero = (==) 0
+
+instance One Float where
+  one = 1
+  isOne = (==) 1
+
+instance OrdZero Float where
+  neg = negate
+
+instance AddSub Float where
+  add = (+)
+  sub = (-)
+
+instance Mult Float where
+  mult = (*)
+
+instance OrdRing Float
+
+-- * Ratio
+
+instance (Integral a, Zero a, One a) => Zero (Ratio a) where
+  zero = zero % one
+  isZero = (==) zero
+
+instance (Integral a, One a) => One (Ratio a) where
+  one = one % one
+  isOne = (==) 1
+
+instance (Integral a, OrdZero a, One a, Num a) => OrdZero (Ratio a) where
+  neg a = -a
+
+instance (Integral a, Num a, OrdZero a, One a) => AddSub (Ratio a) where
+  add = (+)
+  sub = (-)
+
+instance (Integral a, Num a, OrdZero a, One a) => Mult (Ratio a) where
+  mult = (*)
+
+instance (Integral a, Num a, OrdRing a) => OrdRing (Ratio a)
+
+instance (Zero a) => Zero (Either a b) where
+  zero = Left zero
+  isZero (Left z) = isZero z
+  isZero _ = False
+
+instance (Ord a, Zero a, Ord b, OrdZero a) => OrdZero (Either a b) where
+  neg (Left x) = Left (neg x)
+  neg (Right y) = Right y
+
+instance (Zero a, Zero b) => Zero (a, b) where
+  zero = (zero, zero)
+  isZero (x, y) = isZero x && isZero y
+
+instance (OrdZero a, OrdZero b) => OrdZero (a, b) where
+  neg (a, b) = (neg a, neg b)
+
+-- * A type with only zero element
+
+data ZeroOnly = ZeroOnly
+  deriving (Eq, Ord)
+
+instance Show ZeroOnly where
+  show ZeroOnly = "0"
+
+instance Zero ZeroOnly where
+  zero = ZeroOnly
+  isZero _ = True
+
+instance One ZeroOnly where
+  one = error "No one element for ZeroOnly"
+  isOne _ = False
+
+instance OrdZero ZeroOnly where
+  neg = id
+
+instance AddSub ZeroOnly where
+  add _ _ = zero
+  sub _ _ = zero
+
+instance Mult ZeroOnly where
+  mult _ _ = zero
+
+instance OrdRing ZeroOnly

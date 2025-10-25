@@ -64,6 +64,8 @@ library
       Data.Conway.Simplicity.SignExpansionSeq
       Data.Conway.Simplicity.Types
       Data.Conway.Typeclasses
+      Data.Conway.Typeclasses.Algebra
+      Data.Conway.Typeclasses.ConwayOps
   other-modules:
       Paths_ConwayHs
   hs-source-dirs:
