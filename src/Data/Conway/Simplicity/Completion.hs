@@ -5,6 +5,7 @@
 
 module Data.Conway.Simplicity.Completion
   ( Limit (..),
+    ParentRepr (..),
     limConwaySeq,
     limMonoSeq,
     limVeb1Seq,
@@ -17,7 +18,6 @@ module Data.Conway.Simplicity.Completion
     parentSeqWithSign,
     parentSeqSign,
     conwaySeqSign,
-    ordKey,
   )
 where
 
@@ -33,24 +33,47 @@ import Data.Conway.Typeclasses
 import Data.Maybe (fromJust, fromMaybe)
 
 -- | Typeclass for type @a@ that represents a sequence that completes to a @limit@ of type @b@
-class Limit a b | a -> b where
+class Limit seq a | seq -> a where
+  {-# MINIMAL limit, limitSign #-}
+
   -- | Completion of the limit.
-  limit :: a -> b
+  limit :: seq -> a
+
+  -- | The sign of the limit, which is either from below (@True@) or from above (@False@)
+  limitSign :: seq -> Bool
+
+  limitOrdering :: seq -> Ordering
+  limitOrdering s = if limitSign s then LT else GT
+
+class (Ord a, Limit seq a) => ParentRepr p a seq | p -> a, p -> seq where
+  {-# MINIMAL toEither, fromEither #-}
+  toEither :: p -> Either a seq
+  fromEither :: Either a seq -> p
+  ordKey :: p -> (a, Ordering)
+  ordKey pr = case toEither pr of
+    Left p -> (p, EQ)
+    Right s -> (limit s, limitOrdering s)
 
 instance (OrdRing a, FiniteSignExpansion a) => Limit (ConwaySeq a) (Conway a) where
   limit = limConwaySeq
+  limitSign = conwaySeqSign
 
 instance (OrdRing a, FiniteSignExpansion a) => Limit (MonoSeq a) (Conway a) where
   limit = limMonoSeq
+  limitSign = monoSeqSign
 
 instance (OrdRing a, FiniteSignExpansion a) => Limit (Veb1Seq a) (VebMono a) where
   limit = limVeb1SeqVebMono
+  limitSign = veb1SeqSign
 
-instance (OrdRing a, FiniteSignExpansion a) => Limit (ParentSeq a) (Maybe (Conway a)) where
-  limit = limParentSeq
+instance (OrdRing a, FiniteSignExpansion a) => ParentRepr (RangeElem a) (Conway a) (ConwaySeq a) where
+  toEither = rangeElem Left Right
+  fromEither = either EPoint ELimit
 
-instance (OrdRing a, FiniteSignExpansion a) => Limit (LeftRight a) (Conway a) where
-  limit = limLR
+-- TODO fix
+-- instance (OrdRing a, FiniteSignExpansion a) => ParentRepr (RangeElemMono a) (VebMono a) (MonoSeq a) where
+--   toEither = rangeElem0 Left Right
+--   fromEither = either MPoint MLimit
 
 appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
 limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
@@ -177,13 +200,18 @@ parentSeqWithSign x0 =
 
 -- | Given a @ConwaySeq@, determine if it is increase or decreasing
 conwaySeqSign :: ConwaySeq a -> Bool
-conwaySeqSign (ConwaySeq {csSign = sign, csTerm = mSeq}) = (== sign) $ onTerm mSeq
+conwaySeqSign (ConwaySeq {csSign = sign, csTerm = mSeq}) = (== sign) $ monoSeqSign mSeq
+
+monoSeqSign :: MonoSeq a -> Bool
+monoSeqSign (MonoMultSeq _ b) = b
+monoSeqSign (Mono1Seq p) = veb1SeqSign p
+
+veb1SeqSign :: Veb1Seq a -> Bool
+veb1SeqSign v = case v of
+  (Veb1ArgSeq _ c) -> fromMaybe True $ parentSeqSign $ psLim c
+  (Veb1OrderSeq _ b) -> maybe True fixBaseSign b
+  (Veb1IterSeq _ b) -> maybe True fixBaseSign b
   where
-    onTerm :: MonoSeq a -> Bool
-    onTerm (MonoMultSeq _ b) = b
-    onTerm (Mono1Seq (Veb1ArgSeq _ c)) = fromMaybe True $ parentSeqSign $ psLim c
-    onTerm (Mono1Seq (Veb1OrderSeq _ b)) = maybe True fixBaseSign b
-    onTerm (Mono1Seq (Veb1IterSeq _ b)) = maybe True fixBaseSign b
     fixBaseSign = snd
 
 orderingConwaySeq :: ConwaySeq a -> Ordering
@@ -192,5 +220,5 @@ orderingConwaySeq s = if conwaySeqSign s then LT else GT
 parentSeqSign :: ParentSeq a -> Maybe Bool
 parentSeqSign = (>>= rangeElem (const Nothing) (Just . conwaySeqSign))
 
-ordKey :: (OrdRing a, FiniteSignExpansion a) => RangeElem a -> (Conway a, Ordering)
-ordKey = rangeElem (,EQ) (\s -> (limConwaySeq s, orderingConwaySeq s))
+ordKeyRangeElem :: (OrdRing a, FiniteSignExpansion a) => RangeElem a -> (Conway a, Ordering)
+ordKeyRangeElem = rangeElem (,EQ) (\s -> (limConwaySeq s, orderingConwaySeq s))

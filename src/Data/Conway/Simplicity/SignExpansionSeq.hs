@@ -126,6 +126,7 @@ birthdaySeq pse =
 
 instance Limit SignExpansionSeq SignExpansion where
   limit = limSignExpansionSeq
+  limitSign = sesSign
 
 -- * Common prefix and construct operations
 
