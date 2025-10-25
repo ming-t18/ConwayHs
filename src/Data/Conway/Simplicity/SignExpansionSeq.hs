@@ -27,7 +27,7 @@ import Data.Conway.Seq.InfList (Infinite)
 import qualified Data.Conway.Seq.InfList as I
 import qualified Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Types (SignExpansion, (+++))
-import Data.Conway.Simplicity.Completion (Limit (..), limMonoSeq, parentSeq)
+import Data.Conway.Simplicity.Completion (Limit (..), parentSeq)
 import Data.Conway.Simplicity.ConwaySeq (addOffset)
 import Data.Conway.Simplicity.OrdinalSeq
 import Data.Conway.Simplicity.Seq (monoSeq)
@@ -109,7 +109,7 @@ signExpansionSeqToInfList (SignExpansionSeq base sign term) =
 
 limSignExpansionSeq :: SignExpansionSeq -> SignExpansion
 limSignExpansionSeq (SignExpansionSeq base sign term) =
-  base +++ SE.single (sign, limMonoSeq term)
+  base +++ SE.single (sign, limit term)
 
 limParentSeqSE :: ParentSeqSignExpansion -> Maybe SignExpansion
 limParentSeqSE = (seRangeElem id limSignExpansionSeq <$>)

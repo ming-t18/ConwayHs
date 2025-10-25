@@ -152,9 +152,6 @@ module Data.Conway.Simplicity
     veb1Seq,
 
     -- * Limit completion
-    limConwaySeq,
-    limMonoSeq,
-    limVeb1Seq,
     limParentSeq,
     limLR,
 

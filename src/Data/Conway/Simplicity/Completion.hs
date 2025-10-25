@@ -1,15 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Data.Conway.Simplicity.Completion
   ( Limit (..),
     ParentRepr (..),
-    limConwaySeq,
-    limMonoSeq,
-    limVeb1Seq,
-    limVeb1SeqVebMono,
     limParentSeq,
     limParentSeqDir,
     limLR,
@@ -17,7 +12,6 @@ module Data.Conway.Simplicity.Completion
     parentSeq,
     parentSeqWithSign,
     parentSeqSign,
-    conwaySeqSign,
   )
 where
 
@@ -219,6 +213,3 @@ orderingConwaySeq s = if conwaySeqSign s then LT else GT
 
 parentSeqSign :: ParentSeq a -> Maybe Bool
 parentSeqSign = (>>= rangeElem (const Nothing) (Just . conwaySeqSign))
-
-ordKeyRangeElem :: (OrdRing a, FiniteSignExpansion a) => RangeElem a -> (Conway a, Ordering)
-ordKeyRangeElem = rangeElem (,EQ) (\s -> (limConwaySeq s, orderingConwaySeq s))

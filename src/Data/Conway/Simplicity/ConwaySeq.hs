@@ -14,7 +14,7 @@ where
 import Data.Conway.Conway
 import Data.Conway.Helpers (archiClass, cutOffArchiClass, cutOffArchiClassExclusive, toExponent)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
-import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion (Limit (..))
 import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
@@ -33,7 +33,7 @@ fromSignedMonoSeqOffset base s = addOffset base $ fromSignedMonoSeq s
 
 archiClassMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
 archiClassMonoSeq (MonoMultSeq p _) = toExponent p
-archiClassMonoSeq m@(Mono1Seq _) = fromJust $ archiClass $ limMonoSeq m
+archiClassMonoSeq m@(Mono1Seq _) = fromJust $ archiClass $ limit m
 
 addOffset :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ConwaySeq a -> ConwaySeq a
 addOffset off cs@(ConwaySeq base _ seqTerm)
