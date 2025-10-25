@@ -106,7 +106,7 @@ testReducedSignExpansion = do
     it "unreduce [Reduced p0, reduceSingle p0 p] === Just [p0, unreduceSingle p0 p] if p < p0" $ do
       qc (\(p0, p) -> p < p0 ==> R.unreduce [Reduced p0, R.reduceSingle p0 p] === Just [p0, p])
 
-    when True $ do
+    modifyMaxSuccess (const 50) $ do
       it "unreduce . reduce === Just for descending lists of sign expansions of length 2" $ do
         qc
           ( \p0 p1 ->
