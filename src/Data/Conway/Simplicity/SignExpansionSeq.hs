@@ -14,8 +14,11 @@ module Data.Conway.Simplicity.SignExpansionSeq
     limParentSeqSE,
     limParentSeqSEDir,
     birthdaySeq,
-    commonPrefixSERE,
-    constructSERE,
+
+    -- * Common prefix
+    constructToSE,
+    construct,
+    commonPrefix,
   )
 where
 
@@ -126,14 +129,14 @@ instance Limit SignExpansionSeq SignExpansion where
 
 -- * Common prefix and construct operations
 
-commonPrefixSERE :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansionRangeElem
-commonPrefixSERE s1 s2
+commonPrefix :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansionRangeElem
+commonPrefix s1 s2
   | l1 == l2 =
       case (o1, o2) of
         (EQ, EQ) -> s1
         (_, EQ) -> s1
         (EQ, _) -> s2
-        (_, _) -> error "commonPrefixSERE: not possible"
+        (_, _) -> error "commonPrefix: not possible"
   | cpl == l1 = s1
   | otherwise = s2
   where
@@ -141,13 +144,13 @@ commonPrefixSERE s1 s2
     (l2, o2) = toOrdInv s2
     cpl = SE.commonPrefix l1 l2
 
-constructSERE :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansion
-constructSERE s1 s2
+constructToSE :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansion
+constructToSE s1 s2
   | l1 > l2 =
       error "constructSERE: invalid"
   | l1 == l2 =
       case (o1, o2) of
-        (EQ, EQ) -> error "CconstructSERE: invalid"
+        (EQ, EQ) -> error "ConstructSERE: invalid"
         -- { [S +^n'] | [S +^n] } = [S +^n -]
         (LT, EQ) -> l2 SE.+++ SE.single (False, one)
         -- { [S -^n'] | [S -^n'] } = [S -^n +]
@@ -170,6 +173,9 @@ constructSERE s1 s2
     (l2, o2) = toOrdInv s2
     l3 = SE.construct l1 l2
     (_, (r1, r2)) = SE.takeCommonPrefix l1 l2
+
+construct :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansionRangeElem
+construct s1 s2 = SEPoint $ constructToSE s1 s2
 
 -- TODO implement
 -- instance CO.Veb Ordinal (SignExpansionSeq a) where
