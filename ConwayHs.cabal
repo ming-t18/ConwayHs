@@ -55,6 +55,7 @@ library
       Data.Conway.Simplicity.HelperTypes
       Data.Conway.Simplicity.Instances
       Data.Conway.Simplicity.LeftRightRange
+      Data.Conway.Simplicity.OrdinalSeq
       Data.Conway.Simplicity.Parent
       Data.Conway.Simplicity.Prefix
       Data.Conway.Simplicity.Range

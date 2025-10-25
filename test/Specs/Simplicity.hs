@@ -15,7 +15,7 @@ import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.Prefix
 import Data.Conway.Simplicity.SignExpansionSeq
 import Data.Conway.Typeclasses
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Gen
 import Props
 import Test.Hspec
@@ -112,7 +112,7 @@ testSimplicity = do
       qc
         ( \(ConwayGen (x :: CD)) ->
             let se = conwaySE x
-             in x /= 0 ==> limParentSeqDir True (birthdaySeq $ parentSeqSignExpansion se) === Just (SE.birthday x)
+             in x /= 0 ==> fromMaybe zero (limParentSeqDir True (birthdaySeq $ parentSeqSignExpansion se)) === SE.birthday x
         )
 
   describe "simplicity sequences: x = { left | right }" $ do

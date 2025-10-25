@@ -14,6 +14,7 @@ module Data.Conway.Simplicity.SignExpansionSeq
     limParentSeqSE,
     limParentSeqSEDir,
     birthdaySeq,
+    commonPrefixSERE,
   )
 where
 
@@ -24,14 +25,14 @@ import qualified Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Types (SignExpansion, (+++))
 import Data.Conway.Simplicity.Completion (Limit (..), limMonoSeq, parentSeq)
 import Data.Conway.Simplicity.ConwaySeq (addOffset)
+import Data.Conway.Simplicity.OrdinalSeq
 import Data.Conway.Simplicity.Seq (monoSeq)
 import Data.Conway.Simplicity.Types
-import Data.Conway.Typeclasses (One (..), zero)
+import Data.Conway.Typeclasses
+import Data.Function (on)
 
 data SignExpansionRangeElem = SEPoint SignExpansion | SELimit SignExpansionSeq
   deriving (Eq, Show)
-
-type OrdMonoSeq = MonoSeq Natural
 
 -- | A limit sequence of a @SignExpansion@.
 --
@@ -43,6 +44,26 @@ data SignExpansionSeq = SignExpansionSeq
     sesTerm :: OrdMonoSeq
   }
   deriving (Eq, Show)
+
+instance Ord SignExpansionRangeElem where
+  compare = compare `on` toOrdInv
+
+toOrdInv :: SignExpansionRangeElem -> (SignExpansion, Ordering)
+toOrdInv (SEPoint p) = (p, EQ)
+toOrdInv (SELimit l@SignExpansionSeq {sesSign = True}) = (limSignExpansionSeq l, LT)
+toOrdInv (SELimit l@SignExpansionSeq {sesSign = False}) = (limSignExpansionSeq l, GT)
+
+instance Zero SignExpansionRangeElem where
+  zero = SEPoint zero
+  isZero (SEPoint p) = isZero p
+  isZero _ = False
+
+instance OrdZero SignExpansionRangeElem where
+  neg = seRangeElem (SEPoint . neg) (SELimit . flipSeq)
+
+-- | Flip the sign of the varying part of the @SignExpansionSeq@
+flipSeq :: SignExpansionSeq -> SignExpansionSeq
+flipSeq s@(SignExpansionSeq {sesSign = sign}) = s {sesSign = not sign}
 
 type ParentSeqSignExpansion = Maybe SignExpansionRangeElem
 
@@ -60,8 +81,6 @@ psseLim = Just . SELimit
 seRangeElem :: (SignExpansion -> b) -> (SignExpansionSeq -> b) -> SignExpansionRangeElem -> b
 seRangeElem f _ (SEPoint p) = f p
 seRangeElem _ g (SELimit l) = g l
-
--- * TYpes
 
 parentSeqSignExpansion :: SignExpansion -> ParentSeqSignExpansion
 parentSeqSignExpansion s =
@@ -103,3 +122,20 @@ birthdaySeq pse =
 
 instance Limit SignExpansionSeq SignExpansion where
   limit = limSignExpansionSeq
+
+-- * Common prefix and construct operations
+
+commonPrefixSERE :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansionRangeElem
+commonPrefixSERE s1 s2
+  | l1 == l2 =
+      case (o1, o2) of
+        (EQ, EQ) -> s1
+        (_, EQ) -> s1
+        (EQ, _) -> s2
+        (_, _) -> error "commonPrefixSERE: not possible"
+  | cpl == l1 = s1
+  | otherwise = s2
+  where
+    (l1, o1) = toOrdInv s1
+    (l2, o2) = toOrdInv s2
+    cpl = SE.commonPrefix l1 l2
