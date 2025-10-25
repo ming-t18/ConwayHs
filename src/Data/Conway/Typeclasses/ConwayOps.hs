@@ -59,10 +59,15 @@ class (OrdZero o) => Birthday o a | a -> o where
 -- * @birthday (commonPrefix x y)@ is maximized.
 --
 -- * @commonPrefix@ forms a meet-semilattice with @commonPrefix x zero === zero@
+--
+-- * @isPrefixOf@ and @prefixPartialCompare@ form a partial order based on simplicity.
 class (OrdZero a) => CommonPrefix a where
   {-# MINIMAL commonPrefix #-}
   commonPrefix :: a -> a -> a
+
+  isPrefixOf :: a -> a -> Bool
   isPrefixOf a b = a == commonPrefix a b
+
   prefixPartialCompare :: a -> a -> Maybe Ordering
   prefixPartialCompare a b
     | a == b = Just EQ
