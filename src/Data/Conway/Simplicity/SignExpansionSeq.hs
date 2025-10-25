@@ -15,6 +15,7 @@ module Data.Conway.Simplicity.SignExpansionSeq
     limParentSeqSEDir,
     birthdaySeq,
     commonPrefixSERE,
+    constructSERE,
   )
 where
 
@@ -139,6 +140,36 @@ commonPrefixSERE s1 s2
     (l1, o1) = toOrdInv s1
     (l2, o2) = toOrdInv s2
     cpl = SE.commonPrefix l1 l2
+
+constructSERE :: SignExpansionRangeElem -> SignExpansionRangeElem -> SignExpansion
+constructSERE s1 s2
+  | l1 > l2 =
+      error "constructSERE: invalid"
+  | l1 == l2 =
+      case (o1, o2) of
+        (EQ, EQ) -> error "CconstructSERE: invalid"
+        -- { [S +^n'] | [S +^n] } = [S +^n -]
+        (LT, EQ) -> l2 SE.+++ SE.single (False, one)
+        -- { [S -^n'] | [S -^n'] } = [S -^n +]
+        (EQ, GT) -> l1 SE.+++ SE.single (True, one)
+        (_, _) -> error "constructSERE: not possible"
+  | otherwise =
+      case (o1, o2) of
+        (EQ, GT) ->
+          case SE.toList r2 of
+            [(True, 1), (False, _)] -> l2
+            _ -> l3
+        (LT, EQ) ->
+          case SE.toList r1 of
+            [(False, 1), (True, _)] -> l2
+            _ -> l3
+        (EQ, EQ) -> l3
+        (_, _) -> error "constructSERE: not possible"
+  where
+    (l1, o1) = toOrdInv s1
+    (l2, o2) = toOrdInv s2
+    l3 = SE.construct l1 l2
+    (_, (r1, r2)) = SE.takeCommonPrefix l1 l2
 
 -- TODO implement
 -- instance CO.Veb Ordinal (SignExpansionSeq a) where
