@@ -1,4 +1,4 @@
-module Data.Conway.Simplicity.Prefix (isOrdinal, isNegOrdinal, leadingPlusesOnly) where
+module Data.Conway.Simplicity.Prefix (isOrdinal, isNegOrdinal, leadingPlusesOnly, leadingMinusesOnly) where
 
 import Data.Conway.Conway
 import Data.Conway.SignExpansion.Conway (isAllMinuses, isAllPluses, isAllPlusesFinite, isAllPlusesVebMono)
@@ -30,6 +30,9 @@ leadingPlusesOnly = fromTermsList . loop . termsList
       where
         pvm = isAllPlusesVebMono vm
         pc = isAllPlusesFinite c
+
+leadingMinusesOnly :: (FiniteSignExpansion a, One a, AddSub a) => Conway a -> Conway a
+leadingMinusesOnly = neg . leadingPlusesOnly . neg
 
 leadingPlusesOnlyFinite :: (FiniteSignExpansion a) => a -> a
 leadingPlusesOnlyFinite = parseFiniteSE' . SED.fromList . takeLeading . SED.toList . finiteSE
