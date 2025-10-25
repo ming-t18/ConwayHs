@@ -57,8 +57,9 @@ isAllMinusesFinite = not . any fst . toList . fromFSE . finiteSE
 
 -- * Conway
 
-birthday :: (One a, FiniteSignExpansion a, OrdZero a) => Conway a -> Ordinal
+birthday, birthday_ :: (One a, FiniteSignExpansion a, OrdZero a) => Conway a -> Ordinal
 birthday = SE.length . conwaySE
+birthday_ = birthday
 
 conwaySE :: (One a, FiniteSignExpansion a, OrdZero a) => Conway a -> SignExpansion
 conwaySE = termsListSE . termsList
@@ -110,3 +111,6 @@ vebSE o p c = monoSE (veb1SE o p) c
 instance CO.Veb Ordinal SignExpansion where
   veb1 = veb1SE
   mono1 = mono1SE
+
+instance (One a, FiniteSignExpansion a, OrdZero a) => CO.Birthday Ordinal (Conway a) where
+  birthday = birthday_

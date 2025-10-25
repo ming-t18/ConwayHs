@@ -41,6 +41,7 @@ import Data.Conway.OrdinalArith
 import qualified Data.Conway.Seq as Seq
 import qualified Data.Conway.SignExpansion.CommonPrefix as C
 import Data.Conway.Typeclasses
+import qualified Data.Conway.Typeclasses.ConwayOps as CO
 import qualified Data.Foldable as F
 import Prelude hiding (length, negate)
 
@@ -168,8 +169,9 @@ takeUntilNthSign (s, n) = loop (n, empty)
             (GT, d) -> loop (d, acc +++ single (s0, n0)) $ SignExpansion xs
     loop _ (SignExpansion []) = error "takeUntilNthSign: out of bounds"
 
-commonPrefix :: SignExpansion -> SignExpansion -> SignExpansion
+commonPrefix, commonPrefix_ :: SignExpansion -> SignExpansion -> SignExpansion
 commonPrefix (SignExpansion xs) (SignExpansion ys) = fromList $ C.commonPrefix xs ys
+commonPrefix_ = commonPrefix
 
 takeCommonPrefix :: SignExpansion -> SignExpansion -> (SignExpansion, (SignExpansion, SignExpansion))
 takeCommonPrefix (SignExpansion xs) (SignExpansion ys) = (fromList cs', (fromList xs', fromList ys'))
@@ -186,3 +188,12 @@ lastSign :: SignExpansion -> Maybe Bool
 lastSign (SignExpansion []) = Nothing
 lastSign (SignExpansion [(s, _)]) = Just s
 lastSign (SignExpansion (_ : xs)) = lastSign $ SignExpansion xs
+
+instance CO.Birthday Ordinal SignExpansion where
+  birthday = length
+
+instance CO.CommonPrefix SignExpansion where
+  commonPrefix = commonPrefix_
+
+instance CO.BinaryConstruct SignExpansion where
+  binaryConstruct = construct

@@ -1,8 +1,19 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Data.Conway.Typeclasses.ConwayOps (Veb (..), UnVeb (..), eps) where
+module Data.Conway.Typeclasses.ConwayOps
+  ( Veb (..),
+    UnVeb (..),
+    Birthday (..),
+    CommonPrefix (..),
+    BinaryConstruct (..),
+    (/\),
+    eps,
+  )
+where
 
 import Data.Conway.Typeclasses.Algebra
+
+infixr 6 /\
 
 class (OrdZero o, Ord o) => Veb o a | a -> o where
   {-# MINIMAL veb1 #-}
@@ -35,3 +46,45 @@ class (OrdZero o, Ord a) => UnVeb o a | a -> o where
 
 eps :: (One o, Veb o a) => a -> a
 eps = veb1 one
+
+-- | Typeclass for a type @a@ that represents a subset of surreal numbers with
+-- birthday of type @o@.
+class (OrdZero o) => Birthday o a | a -> o where
+  birthday :: a -> o
+
+-- | Typeclass for a type @a@ with the "longest common prefix" operation.
+--
+-- Properties:
+--
+-- * @birthday (commonPrefix x y)@ is maximized.
+--
+-- * @commonPrefix@ forms a meet-semilattice with @commonPrefix x zero === zero@
+class (OrdZero a) => CommonPrefix a where
+  {-# MINIMAL commonPrefix #-}
+  commonPrefix :: a -> a -> a
+  isPrefixOf a b = a == commonPrefix a b
+  prefixPartialCompare :: a -> a -> Maybe Ordering
+  prefixPartialCompare a b
+    | a == b = Just EQ
+    | c == a = Just LT
+    | c == b = Just GT
+    | otherwise = Nothing
+    where
+      c = commonPrefix a b
+
+-- simpleLeq :: a -> a -> Bool
+
+-- | Typeclass for a type @a@ with the @{ left | right }@ operation where
+-- @left@ and @right@ are single values of type @a@.
+--
+-- Properties:
+--
+-- * @birthday (binaryConstruct x y)@ is maximized
+--
+-- * Let @z = binaryConstruct x y@, @x < y && y < z@
+class (CommonPrefix a) => BinaryConstruct a where
+  -- | Partial function requiring @x < y@ for @binaryConstruct x y@.
+  binaryConstruct :: a -> a -> a
+
+(/\) :: (CommonPrefix a) => a -> a -> a
+(/\) = commonPrefix

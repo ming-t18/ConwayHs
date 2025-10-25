@@ -48,6 +48,7 @@ import qualified Data.Conway.SignExpansion.CommonPrefix as C
 import Data.Conway.SignExpansion.Types (SignExpansion)
 import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Typeclasses
+import qualified Data.Conway.Typeclasses.ConwayOps as CO
 import Data.Maybe (fromJust)
 import Prelude hiding (length)
 
@@ -160,11 +161,20 @@ class FiniteSignExpansion a where
   finiteSE :: a -> FSE
 
   finiteBirthday :: a -> Natural
-  finiteBirthday = sum . map snd . toList . finiteSE
+  finiteBirthday = length . finiteSE
 
   parseFiniteSE :: FSE -> Maybe a
   parseFiniteSE' :: FSE -> a
   parseFiniteSE' = fromJust . parseFiniteSE
+
+instance CO.Birthday Natural FSE where
+  birthday = length
+
+instance CO.CommonPrefix FSE where
+  commonPrefix = commonPrefixFSE
+
+instance CO.BinaryConstruct FSE where
+  binaryConstruct = constructFSE
 
 instance FiniteSignExpansion Dyadic where
   finiteSE = dyadicSE
