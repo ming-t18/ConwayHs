@@ -12,7 +12,7 @@ where
 
 import Data.Conway.Conway
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
-import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion (ordKey)
 import Data.Conway.Simplicity.SeqArith (mono1Seq, veb1Seq)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses

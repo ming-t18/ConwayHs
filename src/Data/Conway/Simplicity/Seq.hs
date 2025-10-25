@@ -16,7 +16,7 @@ import Data.Conway.Helpers
 import Data.Conway.Seq.InfList (Infinite)
 import qualified Data.Conway.Seq.InfList as I
 import Data.Conway.SignExpansion.Dyadic as SED
-import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion (Limit (..))
 import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
@@ -52,7 +52,7 @@ conwaySeq ConwaySeq {csBase = base, csSign = isAdd, csTerm = tSeq} =
           -- Skip lower exponents
           if pLim < pL then I.skipWhile (maybe True (> pL) . archiClass) else id
           where
-            pLim = toExponent $ limVeb1SeqVebMono s
+            pLim = toExponent $ limit s
         (_, _) -> id
     ensureLeadingZero xs@(I.consView -> (isZero -> True, _)) = xs
     ensureLeadingZero xs = I.cons zero xs

@@ -46,7 +46,7 @@ where
 
 import Data.Conway.Conway
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
-import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion (Limit (..))
 import Data.Conway.Simplicity.ConwaySeq
 import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Instances ()
@@ -119,7 +119,7 @@ rangeFlatProd' f xr yr = Range $ S.unions [rangeToSet $ f x y | x <- rangeToList
 -- * Ordering and interval
 
 takeLimit :: (OrdRing a, FiniteSignExpansion a) => RangeElem a -> Conway a
-takeLimit = rangeElem id limConwaySeq
+takeLimit = rangeElem id limit
 
 -- | Take the limit of all range elements.
 rangeLimit :: (OrdRing a, FiniteSignExpansion a) => Range a -> Range a
@@ -151,7 +151,7 @@ rangeMax = rangeExtreme True
 type BoundPoint a = (Conway a, Ordering)
 
 takeLimit' :: (OrdRing a, FiniteSignExpansion a) => Ordering -> RangeElem a -> BoundPoint a
-takeLimit' o = rangeElem (,EQ) ((,o) . limConwaySeq)
+takeLimit' o = rangeElem (,EQ) ((,o) . limit)
 
 rangeExtreme' :: (OrdRing a, FiniteSignExpansion a) => Bool -> Range a -> Maybe (BoundPoint a)
 rangeExtreme' d = ((takeLimit' o . fst) <$>) . view . rangeToSet . rangeSimplify

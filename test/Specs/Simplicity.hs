@@ -11,7 +11,7 @@ import Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
 import Data.Conway.SignExpansion.Types ()
 import Data.Conway.Simplicity
-import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion (limParentSeqDir)
 import Data.Conway.Simplicity.Prefix
 import Data.Conway.Simplicity.SignExpansionSeq
 import Data.Conway.Typeclasses

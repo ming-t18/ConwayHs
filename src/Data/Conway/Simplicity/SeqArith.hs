@@ -37,7 +37,7 @@ where
 import Data.Conway.Conway (Conway, Ordinal, VebMono, VebMonoI (..), fromVebMono1, leadingView)
 import Data.Conway.Helpers (archiClass)
 import Data.Conway.SignExpansion.Dyadic (FiniteSignExpansion)
-import Data.Conway.Simplicity.Completion
+import Data.Conway.Simplicity.Completion (Limit (..))
 import Data.Conway.Simplicity.ConwaySeq
 import Data.Conway.Simplicity.HelperTypes
 import Data.Conway.Simplicity.Types
@@ -131,7 +131,7 @@ offsetExponents :: (OrdRing a, FiniteSignExpansion a) => VebMono a -> Veb1Seq a 
 offsetExponents vOff b = Veb1ArgSeq zero $ addOffset (fromVebMono1 vOff) $ fromMonoSeq $ Mono1Seq b
 
 multMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> MonoSeq a -> OneOrTwo (MonoSeq a)
-multMonoSeq s1@(Mono1Seq p1) s2@(Mono1Seq p2) = if limVeb1Seq p1 > limVeb1Seq p2 then One s1 else One s2
+multMonoSeq s1@(Mono1Seq p1) s2@(Mono1Seq p2) = if limit p1 > limit p2 then One s1 else One s2
 multMonoSeq (MonoMultSeq p1 d1) (MonoMultSeq p2 d2) =
   case (d1, d2) of
     -- w^a.j * w^b.k = w^(a + b).k
@@ -213,7 +213,7 @@ seqVebOrderView :: ConwaySeq a -> Maybe Ordinal
 seqVebOrderView (ConwaySeq (isZero -> True) True (Mono1Seq vs)) =
   case vs of
     Veb1ArgSeq o _ -> Just o
-    Veb1OrderSeq cs _ -> Just $ limConwaySeq cs
+    Veb1OrderSeq cs _ -> Just $ limit cs
     Veb1IterSeq o _ -> Just o
 seqVebOrderView _ = Nothing
 
