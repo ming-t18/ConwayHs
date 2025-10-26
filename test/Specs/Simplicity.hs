@@ -28,7 +28,7 @@ indexParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Natural -
 indexParentSeq s i =
   ( \case
       EPoint p -> p
-      ELimit l -> ((`I.index` i) $ conwaySeq l)
+      ELimit l -> ((`I.index` i) $ toSeq l)
   )
     <$> s
 
