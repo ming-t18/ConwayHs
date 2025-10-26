@@ -139,6 +139,12 @@ module Data.Conway.Simplicity
     csTerm,
     toPair,
 
+    -- * SignExpansion
+    OrdMonoSeq,
+    SignExpansionSeq (..),
+    ParentSeqSignExpansion,
+    SignExpansionRangeElem (..),
+
     -- * Parent sequence
     parentDyadic,
     parentConway,
@@ -147,6 +153,7 @@ module Data.Conway.Simplicity
     lrConway,
 
     -- * Sequence generation
+    HasParentSeq (..),
     ParentRepr (..),
     Limit (..),
     ToSeq (..),
@@ -169,4 +176,5 @@ import Data.Conway.Simplicity.LeftRightRange
 import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Range
 import Data.Conway.Simplicity.Seq
+import Data.Conway.Simplicity.SignExpansionSeq
 import Data.Conway.Simplicity.Types

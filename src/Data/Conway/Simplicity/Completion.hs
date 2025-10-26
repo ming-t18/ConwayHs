@@ -48,6 +48,7 @@ class Limit seq a | seq -> a where
 --
 -- * Limit: @toEither@ returns @Right@
 class (Ord a, Limit seq a) => ParentRepr p a seq | p -> a, p -> seq where
+  {-# MINIMAL toEither, fromEither #-}
   toEither :: p -> Either a seq
   fromEither :: Either a seq -> p
 

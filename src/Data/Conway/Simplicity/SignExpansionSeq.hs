@@ -1,12 +1,17 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Data.Conway.Simplicity.SignExpansionSeq
   ( OrdMonoSeq,
-    SignExpansionSeq,
+    SignExpansionSeq (..),
     ParentSeqSignExpansion,
-    parentSeqSignExpansion,
-    signExpansionSeqToInfList,
-    limSignExpansionSeq,
+    SignExpansionRangeElem (..),
+    -- parentSeqSignExpansion,
+    -- signExpansionSeqToInfList,
+    -- limSignExpansionSeq,
     psseEmpty,
     pssePoint,
     psseLim,
@@ -27,10 +32,10 @@ import Data.Conway.Seq.InfList (Infinite)
 import qualified Data.Conway.Seq.InfList as I
 import qualified Data.Conway.SignExpansion as SE
 import Data.Conway.SignExpansion.Types (SignExpansion, (+++))
-import Data.Conway.Simplicity.Completion (Limit (..), parentSeq)
+import Data.Conway.Simplicity.Completion
 import Data.Conway.Simplicity.ConwaySeq (addOffset)
 import Data.Conway.Simplicity.OrdinalSeq
-import Data.Conway.Simplicity.Seq (toSeq)
+import Data.Conway.Simplicity.Seq (ToSeq (..), toSeq)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 import Data.Function (on)
@@ -64,6 +69,23 @@ instance Zero SignExpansionRangeElem where
 
 instance OrdZero SignExpansionRangeElem where
   neg = seRangeElem (SEPoint . neg) (SELimit . flipSeq)
+
+instance ParentRepr SignExpansionRangeElem SignExpansion SignExpansionSeq where
+  toEither (SEPoint p) = Left p
+  toEither (SELimit l) = Right l
+  fromEither = either SEPoint SELimit
+
+instance Limit SignExpansionSeq SignExpansion where
+  limit = limSignExpansionSeq
+  limitSign = sesSign
+
+instance HasParentSeq SignExpansion ParentSeqSignExpansion where
+  parentSeq = parentSeqSignExpansion
+  parentSeqWithSign :: SignExpansion -> Maybe (Bool, ParentSeqSignExpansion)
+  parentSeqWithSign se = (,parentSeqSignExpansion se) <$> SE.lastSign se
+
+instance ToSeq SignExpansionSeq SignExpansion where
+  toSeq = signExpansionSeqToInfList
 
 -- | Flip the sign of the varying part of the @SignExpansionSeq@
 flipSeq :: SignExpansionSeq -> SignExpansionSeq
@@ -123,10 +145,6 @@ birthdaySeq pse =
     Nothing -> Nothing
     Just (SEPoint p) -> Just $ EPoint $ SE.length p
     Just (SELimit (SignExpansionSeq base _ term)) -> Just $ ELimit (SE.length base `addOffset` ConwaySeq zero True term)
-
-instance Limit SignExpansionSeq SignExpansion where
-  limit = limSignExpansionSeq
-  limitSign = sesSign
 
 -- * Common prefix and construct operations
 
