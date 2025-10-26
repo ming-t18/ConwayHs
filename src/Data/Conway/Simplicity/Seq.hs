@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Module for enumerating the fundamental sequences of surreal numbers.
@@ -9,7 +11,7 @@
 -- * The FS of monomials must start with zero
 --
 -- * The FS of the sum of multiple monomials must remove the last term at index zero
-module Data.Conway.Simplicity.Seq (toPointOrSeq, conwaySeq, monoSeq, veb1Seq) where
+module Data.Conway.Simplicity.Seq (ToSeq (..), toPointOrSeq) where
 
 import Data.Conway.Conway
 import Data.Conway.Helpers
@@ -21,6 +23,20 @@ import Data.Conway.Simplicity.Parent
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 import Data.Maybe (fromJust)
+
+class ToSeq a b | a -> b where
+  toSeq :: a -> Infinite b
+
+instance (OrdRing a, FiniteSignExpansion a) => ToSeq (ConwaySeq a) (Conway a) where
+  toSeq = conwaySeq
+
+-- TODO change return type to VebMono
+instance (OrdRing a, FiniteSignExpansion a) => ToSeq (MonoSeq a) (Conway a) where
+  toSeq = monoSeq
+
+-- TODO change return type to VebMono
+instance (OrdRing a, FiniteSignExpansion a) => ToSeq (Veb1Seq a) (Conway a) where
+  toSeq = veb1Seq
 
 toPointOrSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Either (Conway a) (Infinite (Conway a)))
 toPointOrSeq = (rangeElem Left (Right . conwaySeq) <$>)

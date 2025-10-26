@@ -147,9 +147,7 @@ module Data.Conway.Simplicity
     lrConway,
 
     -- * Sequence generation
-    conwaySeq,
-    monoSeq,
-    veb1Seq,
+    ToSeq (..),
 
     -- * Limit completion
     limParentSeq,

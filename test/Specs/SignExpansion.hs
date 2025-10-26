@@ -137,9 +137,13 @@ testConstruct = do
     it "construct [] [+ -^n] = [+ -^(n + 1)] for n >= 0" $
       qc (\n -> construct empty (SE.fromList [(True, 1), (False, n `ordAdd` 1)]) === SE.fromList [(True, 1), (False, n `ordAdd` 2)])
 
+  it "examples" $ do
+    (SE.empty `construct` SE.fromList [(True, 1), (False, 1), (True, 1)]) `shouldBe` SE.fromList [(True, 1), (False, 2)]
+
   it "negation symmetry" $ qc $ asc2 (\x y -> construct x y === neg (construct (neg y) (neg x)))
   it "prepend common prefix" $ qc (\p -> asc2 (\x y -> construct (p +++ x) (p +++ y) === p +++ construct x y))
   it "result shares a common prefix" $ qc (\x -> asc2 (\y z -> construct (x +++ y) (x +++ z) === x +++ construct y z))
+
   it "result is exclusively in between" $ qc $ asc2 (\x y -> let z = construct x y in x < z .&&. z < y)
 
 testSignExpansionConway :: SpecWith ()

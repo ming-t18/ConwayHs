@@ -30,7 +30,7 @@ import Data.Conway.SignExpansion.Types (SignExpansion, (+++))
 import Data.Conway.Simplicity.Completion (Limit (..), parentSeq)
 import Data.Conway.Simplicity.ConwaySeq (addOffset)
 import Data.Conway.Simplicity.OrdinalSeq
-import Data.Conway.Simplicity.Seq (monoSeq)
+import Data.Conway.Simplicity.Seq (toSeq)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
 import Data.Function (on)
@@ -41,7 +41,7 @@ data SignExpansionRangeElem = SEPoint SignExpansion | SELimit SignExpansionSeq
 -- | A limit sequence of a @SignExpansion@.
 --
 -- @SignExpansionSeq base sign term@ represents a sequence
--- @generate (\i -> base <> single (sign, monoSeq term `index` i))@
+-- @generate (\i -> base <> single (sign, toSeq term `index` i))@
 data SignExpansionSeq = SignExpansionSeq
   { sesBase :: SignExpansion,
     sesSign :: Bool,
@@ -105,7 +105,7 @@ signExpansionSeqToInfList :: SignExpansionSeq -> Infinite SignExpansion
 signExpansionSeqToInfList (SignExpansionSeq base sign term) =
   I.generate $ \i -> base +++ SE.single (sign, I.index s i)
   where
-    s = monoSeq term
+    s = toSeq term
 
 limSignExpansionSeq :: SignExpansionSeq -> SignExpansion
 limSignExpansionSeq (SignExpansionSeq base sign term) =

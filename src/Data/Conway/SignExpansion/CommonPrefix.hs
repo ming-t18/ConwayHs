@@ -29,10 +29,10 @@ construct :: (Num n, Eq n) => (n -> n -> (Ordering, n)) -> [(Bool, n)] -> [(Bool
 construct symDiff x y =
   c ++ case (xr, yr) of
     ([], [(True, 1)]) -> [(True, 1), (False, 1)]
-    ([], [(True, 1), (False, n)]) -> [(True, 1), (False, n + 1)]
+    ([], (True, 1) : (False, n) : _) -> [(True, 1), (False, n + 1)]
     ([], (True, _) : _) -> [(True, 1)]
     ([(False, 1)], []) -> [(False, 1), (True, 1)]
-    ([(False, 1), (True, n)], []) -> [(False, 1), (True, n + 1)]
+    ((False, 1) : (True, n) : _, []) -> [(False, 1), (True, n + 1)]
     ((False, _) : _, []) -> [(False, 1)]
     -- diverging signs
     (_, _) -> []
