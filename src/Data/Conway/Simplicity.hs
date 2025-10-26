@@ -147,6 +147,8 @@ module Data.Conway.Simplicity
     lrConway,
 
     -- * Sequence generation
+    ParentRepr (..),
+    Limit (..),
     ToSeq (..),
 
     -- * Limit completion
@@ -155,6 +157,7 @@ module Data.Conway.Simplicity
 
     -- * Descent
     parentSeq,
+    seqFromParentSeq,
     descend,
     descent,
   )

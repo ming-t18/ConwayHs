@@ -5,13 +5,13 @@
 module Data.Conway.Simplicity.Completion
   ( Limit (..),
     ParentRepr (..),
+    HasParentSeq (..),
+    parentSeqSign,
     limParentSeq,
     limParentSeqDir,
     limLR,
     birthdayLimParentSeq,
-    parentSeq,
-    parentSeqWithSign,
-    parentSeqSign,
+    seqFromParentSeq,
   )
 where
 
@@ -24,6 +24,7 @@ import qualified Data.Conway.SignExpansion.Types as SE
 import Data.Conway.Simplicity.Parent (parentConway)
 import Data.Conway.Simplicity.Types
 import Data.Conway.Typeclasses
+import Data.Either (fromLeft, fromRight)
 import Data.Maybe (fromJust, fromMaybe)
 
 -- | Typeclass for type @a@ that represents a sequence that completes to a @limit@ of type @b@
@@ -39,14 +40,36 @@ class Limit seq a | seq -> a where
   limitOrdering :: seq -> Ordering
   limitOrdering s = if limitSign s then LT else GT
 
+-- | Typeclass for the parent sequence (of type @p@) of value of @a@.
+--
+-- The are two possible parents:
+--
+-- * Point: @toEither@ returns @Left@
+--
+-- * Limit: @toEither@ returns @Right@
 class (Ord a, Limit seq a) => ParentRepr p a seq | p -> a, p -> seq where
-  {-# MINIMAL toEither, fromEither #-}
   toEither :: p -> Either a seq
   fromEither :: Either a seq -> p
+
+  -- parentSeqSign :: Maybe p -> Maybe Bool
+
+  -- | Partial function
+  unwrapSeq :: Maybe p -> seq
+  unwrapSeq = fromRight undefined . toEither . fromJust
+
+  -- | Partial function
+  unwrapPoint :: Maybe p -> a
+  unwrapPoint = fromLeft undefined . toEither . fromJust
+
   ordKey :: p -> (a, Ordering)
   ordKey pr = case toEither pr of
     Left p -> (p, EQ)
     Right s -> (limit s, limitOrdering s)
+
+-- | Typeclass for a type with a "parent sequence".
+class (OrdZero a) => HasParentSeq a p | a -> p where
+  parentSeq :: a -> p
+  parentSeqWithSign :: a -> Maybe (Bool, p)
 
 instance (OrdRing a, FiniteSignExpansion a) => Limit (ConwaySeq a) (Conway a) where
   limit = limConwaySeq
@@ -63,6 +86,8 @@ instance (OrdRing a, FiniteSignExpansion a) => Limit (Veb1Seq a) (VebMono a) whe
 instance (OrdRing a, FiniteSignExpansion a) => ParentRepr (RangeElem a) (Conway a) (ConwaySeq a) where
   toEither = rangeElem Left Right
   fromEither = either EPoint ELimit
+
+-- parentSeqSign = (>>= rangeElem (const Nothing) (Just . conwaySeqSign))
 
 -- TODO fix
 -- instance (OrdRing a, FiniteSignExpansion a) => ParentRepr (RangeElemMono a) (VebMono a) (MonoSeq a) where
@@ -155,7 +180,7 @@ limVeb1SeqVebMono (Veb1IterSeq o' (Just (vm@(VebMono o p), s))) =
   where
     oSucc = appendSign True o'
 
-limParentSeq = (rangeElem id limConwaySeq <$>)
+limParentSeq = (either id limit . toEither <$>)
 
 limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> ParentSeq a -> Maybe (Conway a)
 limParentSeqDir sign = (rangeElem (appendSign sign) limConwaySeq <$>)
@@ -174,33 +199,30 @@ limLR (LR l r) =
 birthdayLimParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Ordinal
 birthdayLimParentSeq x = maybe zero birthday (limParentSeq x)
 
--- | Given a @Conway@, find its immediate parent sequence.
-parentSeq :: (OrdRing a, FiniteSignExpansion a) => Conway a -> ParentSeq a
-parentSeq = maybe psEmpty snd . parentSeqWithSign
+instance (OrdRing a, FiniteSignExpansion a) => HasParentSeq (Conway a) (ParentSeq a) where
+  parentSeq = maybe psEmpty snd . parentSeqWithSign
 
--- | Given a @Conway@, find its immediate parent sequence and its direction.
-parentSeqWithSign :: (OrdRing a, FiniteSignExpansion a) => Conway a -> Maybe (Bool, ParentSeq a)
-parentSeqWithSign x0 =
-  case (limL, limR) of
-    (Nothing, Nothing) -> Nothing
-    (Just _, Nothing) -> Just (True, seqL)
-    (Nothing, Just _) -> Just (False, seqR)
-    (Just x, Just y) -> if birthday x < birthday y then Just (False, seqR) else Just (True, seqL)
-  where
-    seqL = parentConway True x0
-    seqR = parentConway False x0
-    limL = limParentSeqDir True seqL
-    limR = limParentSeqDir False seqR
+  parentSeqWithSign x0 =
+    case (limL, limR) of
+      (Nothing, Nothing) -> Nothing
+      (Just _, Nothing) -> Just (True, seqL)
+      (Nothing, Just _) -> Just (False, seqR)
+      (Just x, Just y) -> if birthday x < birthday y then Just (False, seqR) else Just (True, seqL)
+    where
+      seqL = parentConway True x0
+      seqR = parentConway False x0
+      limL = limParentSeqDir True seqL
+      limR = limParentSeqDir False seqR
 
 -- | Given a @ConwaySeq@, determine if it is increase or decreasing
-conwaySeqSign :: ConwaySeq a -> Bool
+conwaySeqSign :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Bool
 conwaySeqSign (ConwaySeq {csSign = sign, csTerm = mSeq}) = (== sign) $ monoSeqSign mSeq
 
-monoSeqSign :: MonoSeq a -> Bool
+monoSeqSign :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Bool
 monoSeqSign (MonoMultSeq _ b) = b
 monoSeqSign (Mono1Seq p) = veb1SeqSign p
 
-veb1SeqSign :: Veb1Seq a -> Bool
+veb1SeqSign :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Bool
 veb1SeqSign v = case v of
   (Veb1ArgSeq _ c) -> fromMaybe True $ parentSeqSign $ psLim c
   (Veb1OrderSeq _ b) -> maybe True fixBaseSign b
@@ -208,8 +230,10 @@ veb1SeqSign v = case v of
   where
     fixBaseSign = snd
 
-orderingConwaySeq :: ConwaySeq a -> Ordering
-orderingConwaySeq s = if conwaySeqSign s then LT else GT
+-- | Partial function to unwrap a @Just@ of a limit sequence.
+seqFromParentSeq :: ParentSeq a -> ConwaySeq a
+seqFromParentSeq (Just (ELimit s)) = s
+seqFromParentSeq _ = error "seqFromParentSeq: not a limit sequence"
 
-parentSeqSign :: ParentSeq a -> Maybe Bool
-parentSeqSign = (>>= rangeElem (const Nothing) (Just . conwaySeqSign))
+parentSeqSign :: (ParentRepr p a seq) => Maybe p -> Maybe Bool
+parentSeqSign = (>>= (either (const Nothing) (Just . limitSign) . toEither))
