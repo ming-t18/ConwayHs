@@ -9,9 +9,7 @@ module Data.Conway.Simplicity.Completion
     parentSeqSign,
     limParentSeq,
     limParentSeqDir,
-    limLR,
     birthdayLimParentSeq,
-    seqFromParentSeq,
   )
 where
 
@@ -67,10 +65,12 @@ class (Ord a, Limit seq a) => ParentRepr p a seq | p -> a, p -> seq where
     Left p -> (p, EQ)
     Right s -> (limit s, limitOrdering s)
 
--- | Typeclass for a type with a "parent sequence".
-class (OrdZero a) => HasParentSeq a p | a -> p where
-  parentSeq :: a -> p
-  parentSeqWithSign :: a -> Maybe (Bool, p)
+-- | Typeclass for a type with a "parent sequence" of type @Maybe re@.
+class (OrdZero a) => HasParentSeq a re | a -> re where
+  {-# MINIMAL parentSeq, parentSeqWithSign, appendSign #-}
+  parentSeq :: a -> Maybe re
+  parentSeqWithSign :: a -> Maybe (Bool, Maybe re)
+  appendSign :: Bool -> a -> a
 
 instance (OrdRing a, FiniteSignExpansion a) => Limit (ConwaySeq a) (Conway a) where
   limit = limConwaySeq
@@ -88,23 +88,12 @@ instance (OrdRing a, FiniteSignExpansion a) => ParentRepr (RangeElem a) (Conway 
   toEither = rangeElem Left Right
   fromEither = either EPoint ELimit
 
--- parentSeqSign = (>>= rangeElem (const Nothing) (Just . conwaySeqSign))
-
 -- TODO fix
 -- instance (OrdRing a, FiniteSignExpansion a) => ParentRepr (RangeElemMono a) (VebMono a) (MonoSeq a) where
 --   toEither = rangeElem0 Left Right
 --   fromEither = either MPoint MLimit
 
-appendSign :: (OrdRing a, FiniteSignExpansion a) => Bool -> Conway a -> Conway a
-limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
-limMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
-limVeb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Conway a
-limVeb1SeqVebMono :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> VebMono a
-limParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Maybe (Conway a)
-limLR :: (OrdRing a, FiniteSignExpansion a) => LeftRight a -> Conway a
-appendSignDyadic :: (FiniteSignExpansion a) => Bool -> a -> a
-appendSignDyadic s c = fromJust $ parseFiniteSE (finiteSE c <> SED.single (s, 1 :: Natural))
-appendSign s x = parseToConway (conwaySE x <> SE.single (s, 1))
+limParentSeq :: (ParentRepr re a seq) => Maybe re -> Maybe a
 
 -- | Complete the limit @base + w^{pLim}@ where @pLim is a limit sequence@.
 --
@@ -183,24 +172,14 @@ limVeb1SeqVebMono (Veb1IterSeq o' (Just (vm@(VebMono o p), s))) =
 
 limParentSeq = (either id limit . toEither <$>)
 
-limParentSeqDir :: (OrdRing a, FiniteSignExpansion a) => Bool -> ParentSeq a -> Maybe (Conway a)
-limParentSeqDir sign = (rangeElem (appendSign sign) limConwaySeq <$>)
+limParentSeqDir :: (HasParentSeq a re, ParentRepr re a seq) => Bool -> Maybe re -> Maybe a
+limParentSeqDir sign = (either (appendSign sign) limit . toEither <$>)
 
-limLR (LR l r) =
-  case (limL, limR) of
-    (Nothing, Nothing) -> zero
-    (Just x, Nothing) -> x
-    (Nothing, Just x) -> x
-    (Just x, Just y) -> if birthday x < birthday y then y else x
-  where
-    limL = limParentSeqDir True l
-    limR = limParentSeqDir False r
-
--- | Given a @ParentSeq@, find its immediate.
+-- | Given a @ParentSeq@, find its birthday limit.
 birthdayLimParentSeq :: (OrdRing a, FiniteSignExpansion a) => ParentSeq a -> Ordinal
 birthdayLimParentSeq x = maybe zero birthday (limParentSeq x)
 
-instance (OrdRing a, FiniteSignExpansion a) => HasParentSeq (Conway a) (ParentSeq a) where
+instance (OrdRing a, FiniteSignExpansion a) => HasParentSeq (Conway a) (RangeElem a) where
   parentSeq = maybe psEmpty snd . parentSeqWithSign
 
   parentSeqWithSign x0 =
@@ -214,6 +193,16 @@ instance (OrdRing a, FiniteSignExpansion a) => HasParentSeq (Conway a) (ParentSe
       seqR = parentConway False x0
       limL = limParentSeqDir True seqL
       limR = limParentSeqDir False seqR
+
+  appendSign s x = parseToConway (conwaySE x SE.+++ SE.single (s, 1))
+
+-- * @Conway@-specific helpers
+
+limConwaySeq :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Conway a
+limMonoSeq :: (OrdRing a, FiniteSignExpansion a) => MonoSeq a -> Conway a
+limVeb1Seq :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> Conway a
+limVeb1SeqVebMono :: (OrdRing a, FiniteSignExpansion a) => Veb1Seq a -> VebMono a
+appendSignDyadic :: (FiniteSignExpansion a) => Bool -> a -> a
 
 -- | Given a @ConwaySeq@, determine if it is increase or decreasing
 conwaySeqSign :: (OrdRing a, FiniteSignExpansion a) => ConwaySeq a -> Bool
@@ -231,10 +220,7 @@ veb1SeqSign v = case v of
   where
     fixBaseSign = snd
 
--- | Partial function to unwrap a @Just@ of a limit sequence.
-seqFromParentSeq :: ParentSeq a -> ConwaySeq a
-seqFromParentSeq (Just (ELimit s)) = s
-seqFromParentSeq _ = error "seqFromParentSeq: not a limit sequence"
-
 parentSeqSign :: (ParentRepr p a seq) => Maybe p -> Maybe Bool
 parentSeqSign = (>>= (either (const Nothing) (Just . limitSign) . toEither))
+
+appendSignDyadic s c = fromJust $ parseFiniteSE (finiteSE c <> SED.single (s, 1 :: Natural))

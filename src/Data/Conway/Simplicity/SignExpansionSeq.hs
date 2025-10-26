@@ -9,13 +9,9 @@ module Data.Conway.Simplicity.SignExpansionSeq
     SignExpansionSeq (..),
     ParentSeqSignExpansion,
     SignExpansionRangeElem (..),
-    -- parentSeqSignExpansion,
-    -- signExpansionSeqToInfList,
-    -- limSignExpansionSeq,
     psseEmpty,
     pssePoint,
     psseLim,
-    seRangeElem,
     limParentSeqSE,
     limParentSeqSEDir,
     birthdaySeq,
@@ -42,6 +38,8 @@ import Data.Function (on)
 
 data SignExpansionRangeElem = SEPoint SignExpansion | SELimit SignExpansionSeq
   deriving (Eq, Show)
+
+type ParentSeqSignExpansion = Maybe SignExpansionRangeElem
 
 -- | A limit sequence of a @SignExpansion@.
 --
@@ -79,10 +77,12 @@ instance Limit SignExpansionSeq SignExpansion where
   limit = limSignExpansionSeq
   limitSign = sesSign
 
-instance HasParentSeq SignExpansion ParentSeqSignExpansion where
+instance HasParentSeq SignExpansion SignExpansionRangeElem where
   parentSeq = parentSeqSignExpansion
   parentSeqWithSign :: SignExpansion -> Maybe (Bool, ParentSeqSignExpansion)
   parentSeqWithSign se = (,parentSeqSignExpansion se) <$> SE.lastSign se
+
+  appendSign s = (SE.+++ SE.single (s, 1))
 
 instance ToSeq SignExpansionSeq SignExpansion where
   toSeq = signExpansionSeqToInfList
@@ -90,8 +90,6 @@ instance ToSeq SignExpansionSeq SignExpansion where
 -- | Flip the sign of the varying part of the @SignExpansionSeq@
 flipSeq :: SignExpansionSeq -> SignExpansionSeq
 flipSeq s@(SignExpansionSeq {sesSign = sign}) = s {sesSign = not sign}
-
-type ParentSeqSignExpansion = Maybe SignExpansionRangeElem
 
 -- * Helpers
 

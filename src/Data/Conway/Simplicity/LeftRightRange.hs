@@ -62,7 +62,7 @@ star = rangeFromPoint zero :|: rangeFromPoint zero
 toLR :: (OrdRing a, FiniteSignExpansion a) => Conway a -> LRRange a
 toLR x = toRange l :|: toRange r
   where
-    (l, r) = toPair $ lrConway x
+    (l, r) = lrConway x
 
 -- * Ordering
 

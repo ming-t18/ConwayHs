@@ -49,7 +49,6 @@ Top-level module: `Data.Conway`
     - `MonoSeq a`: the limit sequence of a monomial
     - `Veb1Seq a`: the limit sequence of a Veblen monomial $\phi(o, a)$
     - `FixBase a`: the base of a fixed-point iteration
-    - `LeftRight a`: the `{ left | right }` representation of a `Conway a`
  - Transfinite sequences
     - `Infinite a`: an infinite list with order type $\omega$
 

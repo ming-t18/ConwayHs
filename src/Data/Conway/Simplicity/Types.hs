@@ -7,13 +7,7 @@ module Data.Conway.Simplicity.Types
     MonoSeq (..),
     FixBase,
     Veb1Seq (..),
-    LeftRight (..),
     fromFixBase,
-
-    -- * @LeftRight@
-    toPair,
-    lrLeft,
-    lrRight,
 
     -- * PS builders
     psEmpty,
@@ -123,15 +117,6 @@ data Veb1Seq a
     Veb1IterSeq Ordinal (FixBase a)
   deriving (Eq)
 
-data LeftRight a = LR (ParentSeq a) (ParentSeq a)
-
-toPair :: LeftRight a -> (ParentSeq a, ParentSeq a)
-toPair (LR a b) = (a, b)
-
-lrLeft, lrRight :: LeftRight a -> ParentSeq a
-lrLeft (LR a _) = a
-lrRight (LR _ b) = b
-
 instance (OrdRing a, One a, Show a) => Show (ConwaySeq a) where
   show ConwaySeq {csBase = b, csSign = s, csTerm = t}
     | isZero b = if s then seqTail else "-" ++ seqTail
@@ -166,15 +151,6 @@ instance (OrdRing a, One a, Show a) => Show (Veb1Seq a) where
   show (Veb1IterSeq o base) = "Iter[" ++ funcPart ++ ", " ++ showFixBase base ++ "]"
     where
       funcPart = if isZero o then "w^[-]" else "φ[" ++ show o ++ ", -]"
-
-instance (OrdRing a, One a, Show a) => Show (LeftRight a) where
-  show (LR ls rs) = "{ " ++ ls' ++ " | " ++ rs' ++ " }"
-    where
-      ls' = maybe "" show' ls
-      rs' = maybe "" show' rs
-      show' re = case re of
-        EPoint p -> show p
-        ELimit l -> show l
 
 fromFixBase :: (OrdRing a) => FixBase a -> Conway a
 fromFixBase Nothing = zero

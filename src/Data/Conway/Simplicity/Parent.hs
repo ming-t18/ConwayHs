@@ -5,7 +5,6 @@ module Data.Conway.Simplicity.Parent
     ConwaySeq (..),
     MonoSeq (..),
     Veb1Seq (..),
-    LeftRight,
     lrConway,
     parentDyadic,
     parentConway,
@@ -31,8 +30,8 @@ type Direction = Bool
 parentDyadic :: (FiniteSignExpansion a) => Direction -> a -> Maybe a
 parentDyadic isLeft x = SED.parent isLeft (finiteSE x) >>= parseFiniteSE
 
-lrConway :: (OrdRing a, FiniteSignExpansion a) => Conway a -> LeftRight a
-lrConway x = LR (parentConway True x) (parentConway False x)
+lrConway :: (OrdRing a, FiniteSignExpansion a) => Conway a -> (ParentSeq a, ParentSeq a)
+lrConway x = (parentConway True x, parentConway False x)
 
 parentConway :: (OrdRing a, FiniteSignExpansion a) => Direction -> Conway a -> ParentSeq a
 parentConway isLeft x =

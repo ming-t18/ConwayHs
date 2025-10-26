@@ -133,11 +133,9 @@ module Data.Conway.Simplicity
     MonoSeq (..),
     FixBase,
     Veb1Seq (..),
-    LeftRight (..),
     csBase,
     csSign,
     csTerm,
-    toPair,
 
     -- * SignExpansion
     OrdMonoSeq,
@@ -163,8 +161,6 @@ module Data.Conway.Simplicity
     limLR,
 
     -- * Descent
-    parentSeq,
-    seqFromParentSeq,
     descend,
     descent,
   )
