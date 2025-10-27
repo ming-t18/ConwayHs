@@ -8,7 +8,6 @@ module Data.Conway.Simplicity.Conway
     MonoSeq (..),
     FixBase,
     Veb1Seq (..),
-    LeftRight (..),
   )
 where
 

@@ -56,7 +56,7 @@ propIncreasingLR i j x =
     (_, Just (ELimit _)) -> pr
     (_, _) -> False ==> True
   where
-    (l, r) = toPair $ lrConway x
+    (l, r) = lrConway x
     get = indexParentSeq
     check o s = checkOrd o (get s j) (get s i)
     (pl, pr) = (check GT l, check LT r)
@@ -77,7 +77,7 @@ testSimplicity = do
             i0
               /= j0 ==> do
                 let (i, j) = (min i0 j0, max i0 j0)
-                    (l, r) = toPair $ lrConway x
+                    (l, r) = lrConway x
                     get s k = birthday $ fromJust $ indexParentSeq s k
                     pl = checkOrd LT (get l i) (get l j)
                     pr = checkOrd LT (get r i) (get r j)
@@ -105,14 +105,14 @@ testSimplicity = do
              in case SE.lastSign se of
                   Nothing -> False ==> True
                   Just sign ->
-                    True ==> limParentSeqSEDir sign (parentSeqSignExpansion $ conwaySE x) === Just (conwaySE x)
+                    True ==> limParentSeqSEDir sign (parentSeq $ conwaySE x) === Just (conwaySE x)
         )
 
     it "limit of birthday" $ do
       qc
         ( \(ConwayGen (x :: CD)) ->
             let se = conwaySE x
-             in x /= 0 ==> fromMaybe zero (limParentSeqDir True (birthdaySeq $ parentSeqSignExpansion se)) === SE.birthday x
+             in x /= 0 ==> fromMaybe zero (limParentSeqDir True (birthdaySeq $ parentSeq se)) === SE.birthday x
         )
 
   describe "simplicity sequences: x = { left | right }" $ do
@@ -121,7 +121,7 @@ testSimplicity = do
     it "left[i] < right[i] for i > 0 and both being non-empty" $ do
       qc
         ( \(ConwayGen (x :: CD), i :: Natural) -> do
-            let (l, r) = toPair $ lrConway x
+            let (l, r) = lrConway x
                 pair = (,) <$> indexParentSeq l i <*> indexParentSeq r i
              in i
                   > 0 ==> case pair of
@@ -133,7 +133,7 @@ testSimplicity = do
       qc
         ( \(ConwayGen (x :: CD), i :: Natural) ->
             let xc = lrConway x
-                (l, r) = toPair xc
+                (l, r) = xc
              in i > 0 ==> checkBetween (indexParentSeq l i, indexParentSeq r i) $ limLR xc
         )
 
@@ -142,7 +142,7 @@ testSimplicity = do
         ( \(ConwayGen (x :: CD), i :: Natural) ->
             let xc = lrConway x
                 bx = birthday x
-                (l, r) = toPair xc
+                (l, r) = xc
                 bl = fmap birthday (indexParentSeq l i)
                 br = fmap birthday (indexParentSeq r i)
              in case (bl, br) of

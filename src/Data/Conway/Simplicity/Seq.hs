@@ -30,11 +30,9 @@ class ToSeq a b | a -> b where
 instance (OrdRing a, FiniteSignExpansion a) => ToSeq (ConwaySeq a) (Conway a) where
   toSeq = conwaySeq
 
--- TODO change return type to VebMono
 instance (OrdRing a, FiniteSignExpansion a) => ToSeq (MonoSeq a) (Conway a) where
   toSeq = monoSeq
 
--- TODO change return type to VebMono
 instance (OrdRing a, FiniteSignExpansion a) => ToSeq (Veb1Seq a) (Conway a) where
   toSeq = veb1Seq
 
